@@ -1,6 +1,6 @@
 # 3DViz
 
-**Status — 2026-10-09:** The repository contains a reusable Three.js plotter library and a Weather preview app. The CSV and live weather-signal development tools remain under the workspace's `Tools/` directory and import this repository's library.
+**Status — 2026-10-09:** The repository contains a reusable Three.js plotter library plus Weather and Science demo apps. The CSV and live weather-signal development tools remain under the workspace's `Tools/` directory and import this repository's library.
 
 3DViz is a collection of interactive 3D visualizations for science, technology, and multidimensional data. The home page is a small animated introduction with links to the available apps. It is not itself a visualization app.
 
