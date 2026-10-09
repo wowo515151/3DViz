@@ -1,4 +1,4 @@
-import { createLabeledBox } from "./labeled-box.js?v=grid-components-20261009c";
+import { createLabeledBox } from "./labeled-box.js?v=grid-components-20261009d";
 
 function finitePositive(value, name) {
   if (!Number.isFinite(value) || value <= 0) throw new RangeError(`${name} must be positive and finite.`);
@@ -101,10 +101,11 @@ export function createGrid2D(context, {
   let xVisible = xBoxes.length > 0;
   let yVisible = yBoxes.length > 0;
   let disposed = false;
-  function setLabelVisibility({ x = xVisible, y = yVisible } = {}) {
+  function setLabelVisibility({ x = xVisible, y = yVisible, render = true } = {}) {
     if (disposed) return;
     xVisible = Boolean(x); yVisible = Boolean(y);
     xGroup.visible = xVisible; yGroup.visible = yVisible;
+    if (render) context.requestRender?.();
   }
   function update(camera) {
     if (disposed || !camera) return;

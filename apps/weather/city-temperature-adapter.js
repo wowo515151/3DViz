@@ -1,4 +1,4 @@
-import { createGrid3D, createLabeledBox } from "../../library/three-viz/src/index.js?v=grid-components-20261009c";
+import { createGrid3D, createLabeledBox } from "../../library/three-viz/src/index.js?v=grid-components-20261009d";
 
 const CUBE_SIZE = 20;
 const HALF = CUBE_SIZE / 2;

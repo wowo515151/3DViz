@@ -1,4 +1,4 @@
-import { createGrid2D } from "./grid-2d.js?v=grid-components-20261009c";
+import { createGrid2D } from "./grid-2d.js?v=grid-components-20261009d";
 
 function sign(value) { return value < 0 ? -1 : 1; }
 
@@ -41,6 +41,7 @@ export function createGrid3D(context, {
   ));
   group.add(xy.object3D, xz.object3D, yz.object3D);
   let disposed = false;
+  const labelVisibility = { x:true, y:true, z:true };
   function update(camera = context.getActiveCamera()) {
     if (disposed || !camera) return;
     group.parent?.updateMatrixWorld?.(true);
@@ -58,13 +59,17 @@ export function createGrid3D(context, {
     group.updateMatrixWorld(true);
     xy.update(camera); xz.update(camera); yz.update(camera);
   }
-  function setAxisLabelsVisible({ x = true, y = true, z = true } = {}) {
+  function setAxisLabelsVisible(next = {}) {
     if (disposed) return;
-    xy.setLabelVisibility({ x, y });
-    xz.setLabelVisibility({ y:z });
+    if (Object.prototype.hasOwnProperty.call(next, "x")) labelVisibility.x = Boolean(next.x);
+    if (Object.prototype.hasOwnProperty.call(next, "y")) labelVisibility.y = Boolean(next.y);
+    if (Object.prototype.hasOwnProperty.call(next, "z")) labelVisibility.z = Boolean(next.z);
+    xy.setLabelVisibility({ x:labelVisibility.x, y:labelVisibility.y, render:false });
+    xz.setLabelVisibility({ y:labelVisibility.z, render:false });
     // The YZ plane intentionally owns no label rows, preventing duplicate axes.
-    yz.setLabelVisibility({ x:false, y:false });
+    yz.setLabelVisibility({ x:false, y:false, render:false });
     update();
+    context.requestRender?.();
   }
   const unregisterCameraListener = context.onCameraChange?.(update);
   function dispose() {
