@@ -10,11 +10,23 @@ export function makeIsosurfacePlotter(mapping, options) {
       const removeLights=addSceneLights(THREE,scene);
       const group=new THREE.Group();group.name="csv-isosurfaces";scene.add(group);
       let rows=initialRows, grid, threshold=options.threshold, shells=[], wireframes=[];
-      let nested=Boolean(options.nested), surfaceVisible=options.surfaceVisible !== false, wireframeVisible=Boolean(options.wireframe);
+      let nested=Boolean(options.nested), surfaceVisible=options.surfaceVisible !== false, wireframeVisible=Boolean(options.wireframe), tubularWires=Boolean(options.tubular);
       function clear(){
         for(const shell of shells){group.remove(shell.mesh);resources.release(shell.geometry);resources.release(shell.material);}
+        shells=[];clearWireframes();
+      }
+      function clearWireframes(){
         for(const wire of wireframes){group.remove(wire.object);resources.release(wire.geometry);resources.release(wire.material);}
-        shells=[];wireframes=[];
+        wireframes=[];
+      }
+      function buildWireframes(){
+        clearWireframes();
+        for(const shell of shells){
+          const wire=createWireframe(THREE,shell.geometry,{color:options.wireframeColor ?? options.color ?? PALETTE[0],opacity:1,full:true,tubular:tubularWires,tubeRadius:options.tubeRadius});
+          resources.track(wire.geometry);resources.track(wire.material);
+          wire.object.visible=wireframeVisible;wire.object.name=`csv-isosurface-wire-${displayNumber(shell.threshold)}`;group.add(wire.object);
+          wireframes.push({object:wire.object,geometry:wire.geometry,material:wire.material});
+        }
       }
       function levels(){
         if(!nested) return [threshold];
@@ -26,19 +38,18 @@ export function makeIsosurfacePlotter(mapping, options) {
         clear();grid=scalarGridForVolume(rows,mapping);
         if(!Number.isFinite(threshold)) threshold=(grid.scalarExtent[0]+grid.scalarExtent[1])/2;
         const selectedLevels=levels();
+        const solidLevel=selectedLevels.reduce((nearest,level)=>Math.abs(level-threshold)<Math.abs(nearest-threshold)?level:nearest,selectedLevels[0]);
         selectedLevels.forEach((level,index)=>{
           const surface=extractIsosurface(grid,level);
           const geometry=resources.track(new THREE.BufferGeometry());
           geometry.setAttribute("position",new THREE.Float32BufferAttribute(surface.positions,3));geometry.computeVertexNormals();geometry.computeBoundingSphere();
           const color=options.color ?? PALETTE[index%PALETTE.length];
-          const material=resources.track(new THREE.MeshStandardMaterial({color,roughness:.3,metalness:.12,side:THREE.DoubleSide,transparent:selectedLevels.length>1,opacity:selectedLevels.length>1?0.46:1,depthWrite:selectedLevels.length===1}));
-          const mesh=new THREE.Mesh(geometry,material);mesh.visible=surfaceVisible;mesh.userData.triangleRows=surface.triangleRows;mesh.userData.threshold=level;mesh.name=`csv-isosurface-${displayNumber(level)}`;group.add(mesh);
-          shells.push({mesh,geometry,material,threshold:level,triangleCount:surface.triangleCount});
-          const wire=createWireframe(THREE,geometry,{color:options.wireframeColor ?? color,opacity:.68,full:true});
-          resources.track(wire.geometry); resources.track(wire.material);
-          wire.object.visible=wireframeVisible;wire.object.name=`csv-isosurface-wire-${displayNumber(level)}`;group.add(wire.object);
-          wireframes.push({object:wire.object,geometry:wire.geometry,material:wire.material});
+          const material=resources.track(new THREE.MeshStandardMaterial({color,roughness:.3,metalness:.12,side:THREE.DoubleSide,transparent:false,opacity:1,depthWrite:true}));
+          const isSolidLevel=selectedLevels.length===1||level===solidLevel;
+          const mesh=new THREE.Mesh(geometry,material);mesh.visible=surfaceVisible&&isSolidLevel;mesh.userData.triangleRows=surface.triangleRows;mesh.userData.threshold=level;mesh.name=`csv-isosurface-${displayNumber(level)}`;group.add(mesh);
+          shells.push({mesh,geometry,material,threshold:level,triangleCount:surface.triangleCount,isSolidLevel});
         });
+        buildWireframes();
       }
       build();
       return {
@@ -46,8 +57,9 @@ export function makeIsosurfacePlotter(mapping, options) {
         update(nextRows){rows=nextRows;build();context.requestRender();},
         setThreshold(value){if(!Number.isFinite(value))throw new Error("Isosurface threshold must be numeric.");if(value<=grid.scalarExtent[0]||value>=grid.scalarExtent[1])throw new Error("Choose an isosurface threshold strictly between the minimum and maximum scalar values.");threshold=value;build();},
         setLayerVisible(id,visible){
-          if(id==="surface"){surfaceVisible=Boolean(visible);shells.forEach(shell=>{shell.mesh.visible=surfaceVisible;});context.requestRender();return;}
-          if(id==="wireframe"){wireframeVisible=Boolean(visible);wireframes.forEach(wire=>{wire.object.visible=wireframeVisible;});return;}
+          if(id==="surface"){surfaceVisible=Boolean(visible);shells.forEach(shell=>{shell.mesh.visible=surfaceVisible&&shell.isSolidLevel;});context.requestRender();return;}
+          if(id==="wireframe"){wireframeVisible=Boolean(visible);wireframes.forEach(wire=>{wire.object.visible=wireframeVisible;});context.requestRender();return;}
+          if(id==="tubular"){tubularWires=Boolean(visible);buildWireframes();context.requestRender();return;}
           if(id==="multiple"){nested=Boolean(visible);build();context.requestRender();return;}
           throw new Error(`Unknown isosurface layer: ${id}`);
         },

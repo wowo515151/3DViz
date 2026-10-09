@@ -2,7 +2,7 @@ import {
   mount,
   makeVectorPlotter,
   makeIsosurfacePlotter,
-} from "../../library/three-viz/src/index.js?v=20261009j";
+} from "../../library/three-viz/src/index.js?v=20261009k";
 
 const $ = selector => document.querySelector(selector);
 const PALETTE = Object.freeze({ electric: 0xed5363, magnetic: 0x529cff });
@@ -195,7 +195,7 @@ function compositeDipolePlotter(initialLayers) {
       const toggleLayer = (id, visible) => {
         if (id === "electric" || id === "magnetic") {
           componentGroups.get(id).visible = Boolean(visible);
-        } else if (id === "multiple" || id === "surface" || id === "wireframe") {
+        } else if (id === "multiple" || id === "surface" || id === "wireframe" || id === "tubular") {
           for (const plotter of plotters.filter(item => item.groupKey === "isosurfaces")) plotter.instance.setLayerVisible?.(id, Boolean(visible));
         } else if (id === "vector-mode") {
           state.animatedVectors = Boolean(visible);
@@ -310,6 +310,7 @@ function updatePlotterControls() {
     state.controller.setLayerVisible("multiple", $("#multiple-surfaces").checked);
     state.controller.setLayerVisible("surface", $("#iso-solids").checked);
     state.controller.setLayerVisible("wireframe", $("#iso-wireframes").checked);
+    state.controller.setLayerVisible("tubular", $("#iso-tubular").checked);
     state.controller.setLayerVisible("vector-mode", state.animatedVectors);
   }
 }
@@ -526,6 +527,7 @@ async function start() {
     $("#multiple-surfaces").addEventListener("change", event => state.controller.setLayerVisible("multiple", event.target.checked));
     $("#iso-solids").addEventListener("change", event => state.controller.setLayerVisible("surface", event.target.checked));
     $("#iso-wireframes").addEventListener("change", event => state.controller.setLayerVisible("wireframe", event.target.checked));
+    $("#iso-tubular").addEventListener("change", event => state.controller.setLayerVisible("tubular", event.target.checked));
   } catch (error) {
     loading.hidden = true;
     status.textContent = "VIEW FAILED";

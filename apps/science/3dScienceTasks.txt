@@ -19,6 +19,8 @@
 [x] Align Science vector position bounds with the dipole isosurface coordinate range.
 [x] Add an independent solid-surface visibility control so wireframes can remain visible alone.
 [x] Increase dipole field sampling to a 21³ grid for smoother isosurface tessellation.
+[x] Eliminate overlapping translucent solid shells; keep only the threshold shell filled while nested shell wireframes remain available.
+[x] Add instanced tubular wireframes as an optional isosurface rendering mode.
 [x] Review the updated specification against the implementation and run local library checks.
 [x] Publish the final 3DScience revision and verify 21³ sampling and wireframe-only display in Chrome on GitHub Pages.
 [x] Verify stage-only PNG and 360-degree video exports include the field legend and omit app controls.

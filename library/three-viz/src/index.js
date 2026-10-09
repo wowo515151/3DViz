@@ -25,5 +25,5 @@ export { makeHistogramPlotter } from './plotters/histogram-plotter.js';
 export { makeTrajectoryPlotter } from './plotters/trajectory-plotter.js';
 export { makeVectorPlotter } from './plotters/vector-field-plotter.js?v=aligned-field-flow-visible-20261009';
 export { makeTimeSlicePlotter } from './plotters/time-slice-plotter.js';
-export { makeIsosurfacePlotter } from './plotters/isosurface-plotter.js?v=solid-layer-20261009';
+export { makeIsosurfacePlotter } from './plotters/isosurface-plotter.js?v=no-transparency-tubular-wires-20261009';
 export { weatherTubesPlotter } from './plotters/weather-tubes-plotter.js';
