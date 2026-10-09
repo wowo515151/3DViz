@@ -1,6 +1,6 @@
 import { mount } from "../../library/three-viz/src/index.js";
-import { canadianCities, regionColors } from "./canadian-cities.js?v=canada-hourly-20261009";
-import { cityTemperatureAdapter } from "./city-temperature-adapter.js?v=canada-hourly-20261009";
+import { canadianCities, regionColors } from "./canadian-cities.js?v=canada-hourly-20261009b";
+import { cityTemperatureAdapter } from "./city-temperature-adapter.js?v=canada-hourly-20261009b";
 
 const API = "https://api.weather.gc.ca/collections/citypageweather-realtime/items";
 const $ = selector => document.querySelector(selector);
@@ -13,6 +13,7 @@ const ui = {
 };
 const regions = ["West", "Prairies", "Central", "Atlantic", "North"];
 const forecasts = new Map();
+const longitudes = new Map();
 const selected = new Set(canadianCities.map(city => city.id));
 let controller;
 let commonTimes = [];
@@ -41,6 +42,8 @@ async function fetchCity(city) {
   const data = await response.json();
   const feature = (data.features ?? []).find(item => String(item.id).toLowerCase() === city.id.toLowerCase());
   if (!feature) throw new Error("City forecast was not in ECCC search results");
+  const longitude = feature.geometry?.coordinates?.[0];
+  if (Number.isFinite(longitude)) longitudes.set(city.id, longitude);
   const rows = recordsFrom(feature);
   if (!rows.length) throw new Error("ECCC returned no hourly temperature values");
   forecasts.set(city.id, rows);
@@ -105,7 +108,7 @@ function visibleCities() {
     if (order === "name") return a.name.localeCompare(b.name, "en");
     if (order === "warmest") return (cityTemperatureNow(b) ?? -Infinity) - (cityTemperatureNow(a) ?? -Infinity);
     if (order === "coldest") return (cityTemperatureNow(a) ?? Infinity) - (cityTemperatureNow(b) ?? Infinity);
-    return canadianCities.indexOf(a) - canadianCities.indexOf(b);
+    return (longitudes.get(a.id) ?? 0) - (longitudes.get(b.id) ?? 0);
   });
 }
 function renderCityChoices() {

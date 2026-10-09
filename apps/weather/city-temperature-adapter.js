@@ -44,6 +44,26 @@ export const cityTemperatureAdapter = Object.freeze({
       tube.name = `temperature-line-${city.id}`; tube.raycast = () => {}; root.add(tube);
     });
 
+    cities.forEach((city, lane) => {
+      const canvas = document.createElement("canvas"); canvas.width = 512; canvas.height = 72;
+      const labelContext = canvas.getContext("2d");
+      labelContext.fillStyle = "rgba(8,13,19,.76)"; labelContext.fillRect(0, 5, canvas.width, 62);
+      labelContext.fillStyle = `#${(regionColors[city.region] ?? 0x9bdcff).toString(16).padStart(6, "0")}`;
+      labelContext.beginPath(); labelContext.arc(24, 36, 9, 0, Math.PI * 2); labelContext.fill();
+      const label = `${city.name}, ${city.province}`;
+      labelContext.font = "500 29px ui-monospace, monospace";
+      while (labelContext.measureText(label).width > 450 && parseInt(labelContext.font, 10) > 16) {
+        labelContext.font = `500 ${parseInt(labelContext.font, 10) - 1}px ui-monospace, monospace`;
+      }
+      labelContext.textBaseline = "middle"; labelContext.fillStyle = "#d8e8f4"; labelContext.fillText(label, 48, 36);
+      const texture = resources.track(new THREE.CanvasTexture(canvas));
+      if (THREE.SRGBColorSpace) texture.colorSpace = THREE.SRGBColorSpace;
+      const material = resources.track(new THREE.SpriteMaterial({ map:texture, transparent:true, depthTest:false, sizeAttenuation:true }));
+      const sprite = new THREE.Sprite(material); sprite.name = `city-label-${city.id}`;
+      sprite.scale.set(3.7, 0.52, 1); sprite.position.set(x(0) - 1.8, 0.65, z(lane));
+      root.add(sprite);
+    });
+
     const gridSize = Math.max(width * 0.88 + 1, laneCount * 0.88 + 1);
     const grid = new THREE.GridHelper(gridSize, Math.max(10, laneCount), 0x425364, 0x354351);
     grid.position.y = 0.45; grid.material.transparent = true; grid.material.opacity = 0.25; grid.raycast = () => {}; scene.add(grid);
