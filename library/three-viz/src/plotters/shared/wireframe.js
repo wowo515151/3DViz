@@ -1,3 +1,4 @@
+import { createCarPaintMaterial } from './materials.js';
 /** Build a disposable line or tubular wireframe layer around an existing Three.js geometry. */
 export function createWireframe(THREE, geometry, { color = 0xd6f4ff, opacity = 0.64, threshold = 1, full = false, tubeRadius = 0 } = {}) {
   const WireGeometry = full ? THREE.WireframeGeometry : THREE.EdgesGeometry;
@@ -5,14 +6,14 @@ export function createWireframe(THREE, geometry, { color = 0xd6f4ff, opacity = 0
   const wireGeometry = full ? new WireGeometry(geometry) : new WireGeometry(geometry, threshold);
   const tubular = Number.isFinite(tubeRadius) && tubeRadius > 0;
   if (tubular) {
-    if (typeof THREE.CylinderGeometry !== "function" || typeof THREE.MeshBasicMaterial !== "function" || typeof THREE.InstancedMesh !== "function" || typeof THREE.Matrix4 !== "function" || typeof THREE.Quaternion !== "function" || typeof THREE.Vector3 !== "function") {
+    if (typeof THREE.CylinderGeometry !== "function" || (typeof THREE.MeshPhysicalMaterial !== "function" && typeof THREE.MeshStandardMaterial !== "function") || typeof THREE.InstancedMesh !== "function" || typeof THREE.Matrix4 !== "function" || typeof THREE.Quaternion !== "function" || typeof THREE.Vector3 !== "function") {
       wireGeometry.dispose();
       throw new Error("Tubular wireframes need Three.js cylinder instancing support.");
     }
     const positions = wireGeometry.getAttribute("position");
     const count = Math.floor((positions?.count ?? 0) / 2);
-    const tubeGeometry = new THREE.CylinderGeometry(tubeRadius, tubeRadius, 1, 5, 1);
-    const material = new THREE.MeshBasicMaterial({ color });
+    const tubeGeometry = new THREE.CylinderGeometry(tubeRadius, tubeRadius, 1, 12, 1);
+    const material = createCarPaintMaterial(THREE, color);
     const object = new THREE.InstancedMesh(tubeGeometry, material, count);
     const matrix = new THREE.Matrix4();
     const midpoint = new THREE.Vector3();

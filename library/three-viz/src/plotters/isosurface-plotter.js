@@ -1,7 +1,8 @@
 import * as common from './shared/csv-support.js';
 const { addSceneLights, mapBars, projectedColumn, validRows, selected, categoryValue, valueOf, gridForSurface, scalarGridForVolume, displayNumber, extent, parseNumeric, scaleLinear, PALETTE } = common;
 import { extractIsosurface } from './shared/isosurface.js';
-import { createWireframe } from './shared/wireframe.js';
+import { createWireframe } from './shared/wireframe.js?v=car-paint-20261009';
+import { createCarPaintMaterial } from './shared/materials.js';
 export function makeIsosurfacePlotter(mapping, options) {
   return Object.freeze({
     capabilities:Object.freeze(["selection","thresholds","layers","tubeRadius"]),
@@ -44,7 +45,7 @@ export function makeIsosurfacePlotter(mapping, options) {
           const geometry=resources.track(new THREE.BufferGeometry());
           geometry.setAttribute("position",new THREE.Float32BufferAttribute(surface.positions,3));geometry.computeVertexNormals();geometry.computeBoundingSphere();
           const color=options.color ?? PALETTE[index%PALETTE.length];
-          const material=resources.track(new THREE.MeshStandardMaterial({color,roughness:.3,metalness:.12,side:THREE.DoubleSide,transparent:false,opacity:1,depthWrite:true}));
+          const material=resources.track(createCarPaintMaterial(THREE,color,{side:THREE.DoubleSide,transparent:false,opacity:1,depthWrite:true}));
           const isSolidLevel=selectedLevels.length===1||level===solidLevel;
           const mesh=new THREE.Mesh(geometry,material);mesh.visible=surfaceVisible&&isSolidLevel;mesh.userData.triangleRows=surface.triangleRows;mesh.userData.threshold=level;mesh.name=`csv-isosurface-${displayNumber(level)}`;group.add(mesh);
           shells.push({mesh,geometry,material,threshold:level,triangleCount:surface.triangleCount,isSolidLevel});

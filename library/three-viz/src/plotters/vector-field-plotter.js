@@ -1,4 +1,5 @@
 import * as common from './shared/csv-support.js';
+import { createCarPaintMaterial } from './shared/materials.js';
 const { addSceneLights, mapBars, projectedColumn, validRows, selected, categoryValue, valueOf, gridForSurface, scalarGridForVolume, displayNumber, extent, parseNumeric, scaleLinear, PALETTE } = common;
 export function makeVectorPlotter(mapping, vectorScale = 0.55, options = {}) {
   return Object.freeze({
@@ -7,11 +8,15 @@ export function makeVectorPlotter(mapping, vectorScale = 0.55, options = {}) {
       const { THREE, scene, resources } = context;
       const group = new THREE.Group(); group.name = "csv-vector-field"; scene.add(group);
       const helpers = [];
+      const staticResources = [];
       let animatedGlyphs;
       let animatedGeometry;
       let animatedMaterial;
       let animatedRows = [];
-      const clear = () => { for (const arrow of helpers.splice(0)) { group.remove(arrow); for (const resource of arrow.userData.resources) resources.release(resource); } };
+      const clear = () => {
+        for (const arrow of helpers.splice(0)) group.remove(arrow);
+        for (const resource of staticResources.splice(0)) resources.release(resource);
+      };
       const build = rows => {
         clear();
         if (animatedGlyphs) {
@@ -46,8 +51,8 @@ export function makeVectorPlotter(mapping, vectorScale = 0.55, options = {}) {
           if (typeof THREE.ConeGeometry !== "function" || typeof THREE.InstancedMesh !== "function" || typeof THREE.Matrix4 !== "function" || typeof THREE.Quaternion !== "function" || typeof THREE.Vector3 !== "function") {
             throw new Error("Animated vector cones require Three.js cone and instancing support.");
           }
-          animatedGeometry = resources.track(new THREE.ConeGeometry(options.coneRadius ?? 0.12, options.coneLength ?? 0.32, 9));
-          animatedMaterial = resources.track(new THREE.MeshStandardMaterial({ color: options.color ?? 0x45caff, emissive: options.color ?? 0x45caff, emissiveIntensity: 0.36, metalness: 0.08, roughness: 0.36 }));
+          animatedGeometry = resources.track(new THREE.ConeGeometry(options.coneRadius ?? 0.12, options.coneLength ?? 0.32, 16));
+          animatedMaterial = resources.track(createCarPaintMaterial(THREE, options.color ?? 0x45caff));
           animatedGlyphs = resources.track(new THREE.InstancedMesh(animatedGeometry, animatedMaterial, chosen.length));
           animatedGlyphs.name = "animated-field-cones";
           animatedGlyphs.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
@@ -66,15 +71,30 @@ export function makeVectorPlotter(mapping, vectorScale = 0.55, options = {}) {
           updateAnimatedGlyphs(0);
           return { count: chosen.length, sampled: chosen.length < usable.length, maxMagnitude: maxLength };
         }
+        const color = options.color ?? PALETTE[0];
+        const shaftGeometry = resources.track(new THREE.CylinderGeometry(1, 1, 1, 12));
+        const coneGeometry = resources.track(new THREE.ConeGeometry(1, 1, 16));
+        const material = resources.track(createCarPaintMaterial(THREE, color));
+        staticResources.push(shaftGeometry, coneGeometry, material);
         chosen.forEach(({row}, index) => {
-          const p = positions[index], v = components[index], direction = new THREE.Vector3(...v);
+          const v = components[index], direction = new THREE.Vector3(...v);
           if (direction.lengthSq() === 0) return;
-          const origin = new THREE.Vector3(...p.map(mapPosition));
-          const length = .25 + Math.hypot(...v) / maxLength * vectorScale;
-          const arrow = new THREE.ArrowHelper(direction.normalize(), origin, length, options.color ?? PALETTE[index % PALETTE.length], Math.min(.28,length*.28), Math.min(.18,length*.2));
-          const owned = [arrow.line.geometry, arrow.line.material, arrow.cone.geometry, arrow.cone.material];
-          owned.forEach(resource => resources.track(resource));
-          arrow.userData.resources = owned; arrow.userData.sourceRow = row; group.add(arrow); helpers.push(arrow);
+          const magnitude = Math.hypot(...v);
+          const origin = new THREE.Vector3(...positions[index].map(mapPosition));
+          const length = .25 + magnitude / maxLength * vectorScale;
+          const headLength = Math.min(.28,length*.28), headRadius = Math.min(.18,length*.2);
+          const shaftLength = Math.max(.01,length-headLength), shaftRadius = Math.max(.012,headRadius*.2);
+          const arrow = new THREE.Group();
+          arrow.position.copy(origin);
+          arrow.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0), direction.normalize());
+          const shaft = new THREE.Mesh(shaftGeometry, material);
+          shaft.scale.set(shaftRadius,shaftLength,shaftRadius);
+          shaft.position.y=shaftLength/2;
+          const cone = new THREE.Mesh(coneGeometry, material);
+          cone.scale.set(headRadius,headLength,headRadius);
+          cone.position.y=shaftLength+headLength/2;
+          arrow.add(shaft,cone);
+          arrow.userData.sourceRow=row; arrow.name="painted-field-arrow"; group.add(arrow); helpers.push(arrow);
         });
         return { count: chosen.length, sampled: chosen.length < usable.length, maxMagnitude: maxLength };
       };

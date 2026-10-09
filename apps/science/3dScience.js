@@ -2,7 +2,7 @@ import {
   mount,
   makeVectorPlotter,
   makeIsosurfacePlotter,
-} from "../../library/three-viz/src/index.js?v=20261009o";
+} from "../../library/three-viz/src/index.js?v=20261009p";
 
 const $ = selector => document.querySelector(selector);
 const PALETTE = Object.freeze({ electric: 0xed5363, magnetic: 0x529cff });
@@ -361,7 +361,7 @@ function drawLegend(ctx, width, height) {
   });
   ctx.fillStyle = "#9aaaba";
   ctx.font = `${Math.round(10 * scale)}px ui-monospace,monospace`;
-  ctx.fillText(`DIPOLE · PHASE ${state.phase.toFixed(2)} RAD`, x + 14 * scale, y + boxHeight - 7 * scale);
+  ctx.fillText(`PHASE ${state.phase.toFixed(2)} RAD`, x + 14 * scale, y + boxHeight - 7 * scale);
 }
 
 function downloadBlob(blob, filename) {

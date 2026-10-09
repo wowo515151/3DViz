@@ -1,6 +1,6 @@
 3DScience Application Specification
-Version: 1.7
-Status: Implemented, reviewed against this specification, and verified on GitHub Pages in Chrome (2026-10-09).
+Version: 1.8
+Status: Material and source-marker updates implemented; pending GitHub Pages verification.
 
 Purpose
 
@@ -22,7 +22,8 @@ Page layout and controls
 - Isosurface options include a single opaque solid shell, multiple wireframe surfaces, and an adjustable tube radius. The solid shell and wireframes are enabled by default. Multiple surfaces are disabled while the solid shell is enabled; turning the solid shell off makes multiple wireframe surfaces available. A tube radius of zero uses line wireframes. Electric wires are red and magnetic wires are blue.
 - Vector options include static field arrows and animated cones. Vector positions share the dipole's coordinate bounds with its isosurfaces. Animated cones start at their grid-cell centers, point along the normalized local field direction, and move continuously at a velocity magnitude equal to the local field magnitude in normalized scene units. Their centers persist when the wave field refreshes and wrap through the opposite side of the coordinate bounds at grid boundaries. Cone length stays constant, while cone radius is proportional to field strength. Animated mode is a checkbox and is off by default. Animated glyphs have no shaft; retain the library's existing static arrow representation.
 - Provide concise field and view settings only where needed: electric or magnetic component, frequency, amplitude, play/pause, reset time, and reset camera. Keep these independent of plotter-type selection.
-- Display a persistent stage legend identifying visible electric field in red, visible magnetic field in blue, the dipole source, normalized field magnitude, and current time phase. Selection-capable plotters show the selected field record in an accessible readout.
+- Display a persistent stage legend identifying visible electric field in red, visible magnetic field in blue, normalized field magnitude, and current time phase. Selection-capable plotters show the selected field record in an accessible readout.
+- Use one glossy metallic car-paint material treatment for solid isosurfaces, tubular wireframes, static vector arrows, and animated cones. Do not draw an additional dipole source dot or DIPOLE marker on the stage or in exports.
 - Provide a fullscreen button. The stage can be made fullscreen without the control panel.
 
 Dipole and shared field data
