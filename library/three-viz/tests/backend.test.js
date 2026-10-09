@@ -130,13 +130,14 @@ test("bar plotter preserves custom field mappings across partial style updates",
 
 test("viewer initializes, updates, switches camera, forwards capabilities, and disposes", async () => {
   const container = new FakeContainer();
-  const calls = { update: 0, dispose: 0, time: undefined };
+  const calls = { update: 0, dispose: 0, time: undefined, tubeRadius: undefined };
   const plotter = {
-    capabilities: ["time"],
+    capabilities: ["time", "tubeRadius"],
     create() {
       return {
         update() { calls.update += 1; },
         setTime(value) { calls.time = value; },
+        setTubeRadius(value) { calls.tubeRadius = value; },
         dispose() { calls.dispose += 1; },
       };
     },
@@ -146,6 +147,7 @@ test("viewer initializes, updates, switches camera, forwards capabilities, and d
   assert.ok(controller.capabilities.includes("time"));
   await controller.update([], {});
   controller.setTime(12);
+  controller.setTubeRadius(0.02);
   controller.setCameraMode("orthographic");
   assert.equal(controller.cameraMode, "orthographic");
   controller.setOrbitAngle(Math.PI / 2);
@@ -156,6 +158,7 @@ test("viewer initializes, updates, switches camera, forwards capabilities, and d
   assert.deepEqual(controller.getCameraPose(), savedPose);
   assert.equal(calls.update, 1);
   assert.equal(calls.time, 12);
+  assert.equal(calls.tubeRadius, 0.02);
   controller.dispose();
   assert.equal(container.children.length, 0);
   assert.equal(calls.dispose, 1);

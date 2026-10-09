@@ -2,7 +2,7 @@ import {
   mount,
   makeVectorPlotter,
   makeIsosurfacePlotter,
-} from "../../library/three-viz/src/index.js?v=20261009l";
+} from "../../library/three-viz/src/index.js?v=20261009m";
 
 const $ = selector => document.querySelector(selector);
 const PALETTE = Object.freeze({ electric: 0xed5363, magnetic: 0x529cff });
@@ -209,7 +209,7 @@ function compositeDipolePlotter(initialLayers) {
       };
 
       return {
-        capabilities: ["selection", "time", "animation", "layers", "thresholds"],
+        capabilities: ["selection", "time", "animation", "layers", "thresholds", "tubeRadius"],
         update(nextData) {
           currentPhase = nextData.phase ?? currentPhase;
           for (const plotter of plotters) {

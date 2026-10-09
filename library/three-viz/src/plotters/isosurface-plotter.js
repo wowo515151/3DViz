@@ -4,7 +4,7 @@ import { extractIsosurface } from './shared/isosurface.js';
 import { createWireframe } from './shared/wireframe.js';
 export function makeIsosurfacePlotter(mapping, options) {
   return Object.freeze({
-    capabilities:Object.freeze(["selection","thresholds","layers"]),
+    capabilities:Object.freeze(["selection","thresholds","layers","tubeRadius"]),
     create(context,definition,initialRows){
       const {THREE,scene,resources}=context;
       const removeLights=addSceneLights(THREE,scene);
@@ -53,7 +53,7 @@ export function makeIsosurfacePlotter(mapping, options) {
       }
       build();
       return {
-        capabilities:["selection","thresholds","layers"],
+        capabilities:["selection","thresholds","layers","tubeRadius"],
         update(nextRows){rows=nextRows;build();context.requestRender();},
         setThreshold(value){if(!Number.isFinite(value))throw new Error("Isosurface threshold must be numeric.");if(value<=grid.scalarExtent[0]||value>=grid.scalarExtent[1])throw new Error("Choose an isosurface threshold strictly between the minimum and maximum scalar values.");threshold=value;build();},
         setLayerVisible(id,visible){
