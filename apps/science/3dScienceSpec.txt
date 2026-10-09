@@ -1,6 +1,6 @@
 3DScience Application Specification
-Version: 1.2
-Status: Updated cone-flow behavior implemented; pending final local and GitHub Pages verification.
+Version: 1.3
+Status: Solid-surface visibility option implemented; pending final local and GitHub Pages verification.
 
 Purpose
 
@@ -19,7 +19,7 @@ Page layout and controls
 - The left side is a narrow, scrollable control panel. The right side is a large visualization stage. At small widths, stack the panel above the stage and allow normal page scrolling.
 - Use a dark slate scene background and restrained cyan/blue-gray controls, thin separators, compact labels, and high-contrast focus states. Build these styles locally in the app; do not copy EmViz source or load code from outside this repository. The page may load the same pinned Three.js runtime as the Weather app.
 - Keep controls focused: the plotter checkbox list contains exactly Isosurfaces and Vector field, and they can be combined. Start with Isosurfaces enabled and Vector field disabled.
-- Isosurface options include multiple nested surfaces and their wireframes. Both are enabled by default. The library's layers and thresholds capabilities drive their controls.
+- Isosurface options include multiple nested surfaces, their solid fills, and their wireframes. Multiple surfaces, solid fills, and wireframes are enabled by default. Solid fills and wireframes have independent visibility controls, so wireframes can remain visible with fills hidden. The library's layers and thresholds capabilities drive their controls.
 - Vector options include static field arrows and animated cones. Vector positions share the dipole's coordinate bounds with its isosurfaces. Animated cones start at their grid-cell centers, point along the normalized local field direction, and move continuously at a velocity magnitude equal to the local field magnitude in normalized scene units. Their centers persist when the wave field refreshes and wrap through the opposite side of the coordinate bounds at grid boundaries. Cone length stays constant, while cone radius is proportional to field strength. Animated mode is a checkbox and is off by default. Animated glyphs have no shaft; retain the library's existing static arrow representation.
 - Provide concise field and view settings only where needed: electric or magnetic component, frequency, amplitude, play/pause, reset time, and reset camera. Keep these independent of plotter-type selection.
 - Display a persistent stage legend identifying visible electric field in red, visible magnetic field in blue, the dipole source, normalized field magnitude, and current time phase. Selection-capable plotters show the selected field record in an accessible readout.
@@ -34,7 +34,7 @@ Dipole and shared field data
 
 Plotter coverage
 
-- Isosurface: call makeIsosurfacePlotter with field magnitude data, nested levels enabled, wireframe enabled, and a valid midrange threshold. Expose threshold/layer controls through the viewer controller. Multiple nested shells and shell wireframes start on.
+- Isosurface: call makeIsosurfacePlotter with field magnitude data, nested levels enabled, solid fills and wireframe enabled, and a valid midrange threshold. Expose threshold and independent surface, nested-layer, and wireframe controls through the viewer controller. Multiple nested shells, shell fills, and shell wireframes start on. Users can hide shell fills while leaving wireframes visible.
 - Vector field: call makeVectorPlotter on the shared vector records. Expose static ArrowHelpers and animated cone variants. Map vector positions to the same coordinate bounds as the isosurfaces. Animated cones start at rest until selected, travel continuously in the field direction at field-strength speed, wrap at grid boundaries, and scale their radius with field strength. The wave time phase changes no faster than one full cycle per 12 seconds at the default frequency.
 - The two plotter checkboxes add/remove their library plotters in the shared scene. The app composition adapter may route lifecycle calls and controller capabilities but must leave scene-object generation to the imported plotters.
 - If either plotter fails, keep the rest of the scene available and show a readable error for the failed layer.
@@ -55,7 +55,7 @@ Accessibility, reliability, and deployment
 Acceptance criteria
 
 - The plotter choice list contains exactly Isosurfaces and Vector field. Both can be enabled at once.
-- Isosurfaces, nested surfaces, and wireframes are visible at startup.
+- Isosurfaces, nested surfaces, solid fills, and wireframes are visible at startup. Turning off Solid surfaces leaves wireframes visible when Wireframes remains checked.
 - The default wave period is 12 seconds. Static vectors remain available. Vector positions align with the isosurfaces. Animated cones move continuously from their cell centers along the local vector at field-strength speed, persist through field refreshes, wrap at grid boundaries, have no shafts, and scale their radius with field strength.
 - Each visible layer uses its library module; no copy of the library's rendering implementation is introduced under apps/science/.
 - Screenshot and orbit-video downloads contain the view and legend, exclude all controls, and the video completes one full orbit and restores the prior view.
