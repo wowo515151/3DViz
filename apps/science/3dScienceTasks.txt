@@ -13,4 +13,4 @@
 [x] Remove CSV app mentions and links from the main index and update repository documentation.
 [x] Review the finished implementation against every requirement in 3dScienceSpec.txt; align temporal sample refresh and animated/static vector wording.
 [x] Verify locally in Chrome in a separate tab, including layer toggles, field parameter changes, PNG, and 360-degree WebM exports.
-[ ] Publish the reviewed repository to GitHub and verify the GitHub Pages version.
+[x] Publish the reviewed repository to GitHub and verify the GitHub Pages version in Chrome, including the updated landing page and running app.

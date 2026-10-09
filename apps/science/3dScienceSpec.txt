@@ -1,6 +1,6 @@
 3DScience Application Specification
 Version: 1.0
-Status: Implementation and local behavior reviewed against this document; GitHub Pages verification pending.
+Status: Implemented and reviewed against the code and the successful GitHub Pages deployment on 2026-10-09.
 
 Purpose
 
