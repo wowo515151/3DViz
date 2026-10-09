@@ -1,6 +1,6 @@
-import { mount, generateRainbowColors } from "../../library/three-viz/src/index.js?v=forecast-labels-20261009f";
+import { mount, generateRainbowColors } from "../../library/three-viz/src/index.js?v=forecast-labels-20261009g";
 import { canadianCities } from "./canadian-cities.js?v=canada-hourly-20261009f";
-import { cityTemperatureAdapter } from "./city-temperature-adapter.js?v=forecast-labels-20261009f";
+import { cityTemperatureAdapter } from "./city-temperature-adapter.js?v=forecast-labels-20261009g";
 
 const API = "https://api.weather.gc.ca/collections/citypageweather-realtime/items";
 const $ = selector => document.querySelector(selector);
@@ -157,7 +157,7 @@ function formatUtc(value, options = {}) {
 }
 function renderLegend(cities) {
   ui.legend.replaceChildren();
-  const title = document.createElement("strong"); title.textContent = `Temperature scale · °${ui.units.value}`; ui.legend.append(title);
+  const title = document.createElement("strong"); title.textContent = `Forecast temperature · °${ui.units.value}`; ui.legend.append(title);
   const values = cities.flatMap(city => city.forecasts.map(row => row.value).filter(Number.isFinite));
   const format = value => Number.isInteger(value) ? String(value) : value.toFixed(1);
   const scale = document.createElement("div");

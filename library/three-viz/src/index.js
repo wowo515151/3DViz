@@ -1,11 +1,11 @@
-export { mount } from "./core/mount.js?v=forecast-labels-20261009f";
+export { mount } from "./core/mount.js?v=forecast-labels-20261009g";
 export { VisualizationError } from "./core/errors.js";
 export { createResourceRegistry } from "./core/resource-registry.js";
 export { createCoordinateMapper } from "./data/coordinate-mapping.js";
 export { generateRainbowColors } from "./utils/colors.js";
-export { createLabeledBox } from "./objects/labeled-box.js?v=forecast-labels-20261009f";
-export { createGrid2D } from "./objects/grid-2d.js?v=forecast-labels-20261009f";
-export { createGrid3D } from "./objects/grid-3d.js?v=forecast-labels-20261009f";
+export { createLabeledBox } from "./objects/labeled-box.js?v=forecast-labels-20261009g";
+export { createGrid2D } from "./objects/grid-2d.js?v=forecast-labels-20261009g";
+export { createGrid3D } from "./objects/grid-3d.js?v=forecast-labels-20261009g";
 export {
   validatePointRecords,
   validateOrderedSeries,

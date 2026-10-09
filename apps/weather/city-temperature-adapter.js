@@ -1,7 +1,17 @@
-import { createGrid3D, createLabeledBox } from "../../library/three-viz/src/index.js?v=forecast-labels-20261009f";
+import { createGrid3D, createLabeledBox } from "../../library/three-viz/src/index.js?v=forecast-labels-20261009g";
 
 const CUBE_SIZE = 20;
 const HALF = CUBE_SIZE / 2;
+const compactCityCodes = Object.freeze({
+  "Prince George":"PGE", "Greater Sudbury":"GSU", "Kitchener-Waterloo":"KW", "Thunder Bay":"THB",
+  "Trois-Rivières":"TRI", "Saint John":"SAJ", "St. John's":"STJ", Winnipeg:"WPG", Windsor:"WND",
+  Montréal:"MTL", Moncton:"MCT",
+});
+function cityEdgeLabel(city) {
+  const code = compactCityCodes[city.name]
+    ?? city.name.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z]/gi, "").slice(0, 3).toUpperCase();
+  return code;
+}
 
 export const cityTemperatureAdapter = Object.freeze({
   capabilities: Object.freeze(["selection"]),
@@ -42,10 +52,11 @@ export const cityTemperatureAdapter = Object.freeze({
       xLabels:axisLabels(timestamps, 5, value => new Intl.DateTimeFormat("en-CA", { timeZone:"UTC", hour:"numeric" }).format(new Date(value))),
       yLabels:axisLabels(Array.from({ length:5 }, (_, index) => tempMin + (index / 4) * (tempMax - tempMin)), 5, value => `${Number(value.toFixed(1))}°${unit}`),
       zLabels:[...cities].reverse().map((city, index) => ({
-        text:`${city.name}, ${city.province}`,
+        text:laneCount > 15 ? cityEdgeLabel(city) : `${city.name}, ${city.province}`,
         position:laneCount === 1 ? 0 : -HALF + (index / (laneCount - 1)) * CUBE_SIZE,
         key:city.id,
         color:city.color,
+        ...(laneCount > 15 ? { fontSize:16, worldUnitsPerPixel:0.01, paddingX:3, paddingY:2 } : {}),
       })),
       labelColor:0x778b98,
       labelFontSize:18,

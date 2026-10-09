@@ -1,4 +1,4 @@
-import { createGrid2D } from "./grid-2d.js?v=forecast-labels-20261009f";
+import { createGrid2D } from "./grid-2d.js?v=forecast-labels-20261009g";
 
 function sign(value) { return value < 0 ? -1 : 1; }
 
@@ -65,13 +65,22 @@ export function createGrid3D(context, {
       item.axis === axis && item.group.visible && item.box.visible
       && Math.abs(item.box.userData.axisPosition - position) < tolerance
     );
-    const xCornerLabeled = hasVisibleCornerLabel(xy, "x", xSide * half);
-    const yCornerLabeled = hasVisibleCornerLabel(xy, "y", ySide * half);
-    if (xCornerLabeled || yCornerLabeled) {
-      const zCornerLabel = xz.labelBoxes.find(item =>
-        item.axis === "y" && Math.abs(item.box.userData.axisPosition - zSide * half) < tolerance
-      );
-      if (zCornerLabel) zCornerLabel.box.visible = false;
+    const zCornerLabel = xz.labelBoxes.find(item =>
+      item.axis === "y" && item.group.visible && Math.abs(item.box.userData.axisPosition - zSide * half) < tolerance
+    );
+    if (zCornerLabel) {
+      for (const item of xy.labelBoxes) {
+        if (item.axis === "x" && Math.abs(item.box.userData.axisPosition - xSide * half) < tolerance) item.box.visible = false;
+        if (item.axis === "y" && Math.abs(item.box.userData.axisPosition - ySide * half) < tolerance) item.box.visible = false;
+      }
+    } else {
+      // Without a city/depth label at the shared corner, keep only one axis tick.
+      const xCornerLabeled = hasVisibleCornerLabel(xy, "x", xSide * half);
+      if (xCornerLabeled) {
+        const yCorner = xy.labelBoxes.find(item => item.axis === "y"
+          && Math.abs(item.box.userData.axisPosition - ySide * half) < tolerance);
+        if (yCorner) yCorner.box.visible = false;
+      }
     }
   }
   function setAxisLabelsVisible(next = {}) {

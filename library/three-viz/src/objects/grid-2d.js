@@ -1,4 +1,4 @@
-import { createLabeledBox } from "./labeled-box.js?v=forecast-labels-20261009f";
+import { createLabeledBox } from "./labeled-box.js?v=forecast-labels-20261009g";
 
 function finitePositive(value, name) {
   if (!Number.isFinite(value) || value <= 0) throw new RangeError(`${name} must be positive and finite.`);
@@ -14,12 +14,20 @@ function normalizeLabels(labels, extent) {
     position:Number.isFinite(item?.position) ? item.position : 0,
     key:item?.key ?? index,
     color:item?.color,
+    fontSize:item?.fontSize,
+    worldUnitsPerPixel:item?.worldUnitsPerPixel,
+    paddingX:item?.paddingX,
+    paddingY:item?.paddingY,
   }));
   return labels.map((item, index) => ({
     text:String(item?.text ?? item ?? ""),
     position:Number.isFinite(item?.position) ? item.position : -extent / 2 + (index / (labels.length - 1)) * extent,
     key:item?.key ?? index,
     color:item?.color,
+    fontSize:item?.fontSize,
+    worldUnitsPerPixel:item?.worldUnitsPerPixel,
+    paddingX:item?.paddingX,
+    paddingY:item?.paddingY,
   }));
 }
 
@@ -85,8 +93,8 @@ export function createGrid2D(context, {
   const yGroup = new THREE.Group(); yGroup.name = "grid-2d-y-labels"; group.add(yGroup);
   const xBoxes = xValues.map(item => {
     const box = createLabeledBox(context, item.text, item.color ?? labelColor, {
-      fontSize:labelFontSize, worldUnitsPerPixel:labelWorldUnitsPerPixel,
-      paddingX:labelPaddingX, paddingY:labelPaddingY, depth:labelDepth,
+      fontSize:item.fontSize ?? labelFontSize, worldUnitsPerPixel:item.worldUnitsPerPixel ?? labelWorldUnitsPerPixel,
+      paddingX:item.paddingX ?? labelPaddingX, paddingY:item.paddingY ?? labelPaddingY, depth:labelDepth,
     });
     box.name = `grid-x-label-${item.key}`;
     box.userData.axis = "x"; box.userData.axisPosition = item.position;
@@ -94,8 +102,8 @@ export function createGrid2D(context, {
   });
   const yBoxes = yValues.map(item => {
     const box = createLabeledBox(context, item.text, item.color ?? labelColor, {
-      fontSize:labelFontSize, worldUnitsPerPixel:labelWorldUnitsPerPixel,
-      paddingX:labelPaddingX, paddingY:labelPaddingY, depth:labelDepth,
+      fontSize:item.fontSize ?? labelFontSize, worldUnitsPerPixel:item.worldUnitsPerPixel ?? labelWorldUnitsPerPixel,
+      paddingX:item.paddingX ?? labelPaddingX, paddingY:item.paddingY ?? labelPaddingY, depth:labelDepth,
     });
     box.name = `grid-y-label-${item.key}`;
     box.userData.axis = "y"; box.userData.axisPosition = item.position;
