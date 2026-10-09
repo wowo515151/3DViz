@@ -47,7 +47,7 @@ export function makeVectorPlotter(mapping, vectorScale = 0.55, options = {}) {
             throw new Error("Animated vector cones require Three.js cone and instancing support.");
           }
           animatedGeometry = resources.track(new THREE.ConeGeometry(options.coneRadius ?? 0.12, options.coneLength ?? 0.32, 9));
-          animatedMaterial = resources.track(new THREE.MeshStandardMaterial({ color: options.color ?? 0x45caff, emissive: options.color ?? 0x45caff, emissiveIntensity: 0.08, metalness: 0.08, roughness: 0.36 }));
+          animatedMaterial = resources.track(new THREE.MeshStandardMaterial({ color: options.color ?? 0x45caff, emissive: options.color ?? 0x45caff, emissiveIntensity: 0.36, metalness: 0.08, roughness: 0.36 }));
           animatedGlyphs = resources.track(new THREE.InstancedMesh(animatedGeometry, animatedMaterial, chosen.length));
           animatedGlyphs.name = "animated-field-cones";
           animatedGlyphs.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
