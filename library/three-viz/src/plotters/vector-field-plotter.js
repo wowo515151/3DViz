@@ -30,6 +30,16 @@ export function makeVectorPlotter(mapping, vectorScale = 0.55, options = {}) {
         const positions = chosen.map(({row}) => [valueOf(row,mapping.x),valueOf(row,mapping.y),valueOf(row,mapping.z)]);
         const components = chosen.map(({row}) => [valueOf(row,mapping.u),valueOf(row,mapping.v),valueOf(row,mapping.w)]);
         const pExtent = [0,1,2].map(axis => extent(positions.map(p => p[axis])));
+        const positionBounds = options.positionBounds ?? [[-3.5,3.5],[-3.5,3.5],[-3.5,3.5]];
+        if (!Array.isArray(positionBounds) || positionBounds.length !== 3 || positionBounds.some(range => !Array.isArray(range) || range.length !== 2 || !Number.isFinite(range[0]) || !Number.isFinite(range[1]) || range[1] <= range[0])) {
+          throw new Error("Vector position bounds must contain three finite increasing ranges.");
+        }
+        const mapPosition = (value, axis) => {
+          const [minimum, maximum] = positionBounds[axis];
+          const [dataMinimum, dataMaximum] = pExtent[axis];
+          const fraction = dataMaximum === dataMinimum ? 0.5 : (value - dataMinimum) / (dataMaximum - dataMinimum);
+          return minimum + fraction * (maximum - minimum);
+        };
         const magnitudes = components.map(v => Math.hypot(...v));
         const maxLength = Math.max(...magnitudes,1e-9);
         if (options.animated) {
@@ -47,7 +57,7 @@ export function makeVectorPlotter(mapping, vectorScale = 0.55, options = {}) {
             const direction = new THREE.Vector3(...components[index]);
             const magnitude = magnitudes[index];
             const key = row.id ?? row.__rowNumber ?? index;
-            const initialPosition = new THREE.Vector3(...positions[index].map((value, axis) => scaleLinear(value, pExtent[axis][0], pExtent[axis][1])));
+            const initialPosition = new THREE.Vector3(...positions[index].map(mapPosition));
             const position = previousPositions.get(key)?.clone() ?? initialPosition;
             if (magnitude > 0) direction.normalize();
             return { key, direction, position, magnitude, row };
@@ -59,7 +69,7 @@ export function makeVectorPlotter(mapping, vectorScale = 0.55, options = {}) {
         chosen.forEach(({row}, index) => {
           const p = positions[index], v = components[index], direction = new THREE.Vector3(...v);
           if (direction.lengthSq() === 0) return;
-          const origin = new THREE.Vector3(...p.map((value, axis) => scaleLinear(value, pExtent[axis][0], pExtent[axis][1])));
+          const origin = new THREE.Vector3(...p.map(mapPosition));
           const length = .25 + Math.hypot(...v) / maxLength * vectorScale;
           const arrow = new THREE.ArrowHelper(direction.normalize(), origin, length, options.color ?? PALETTE[index % PALETTE.length], Math.min(.28,length*.28), Math.min(.18,length*.2));
           const owned = [arrow.line.geometry, arrow.line.material, arrow.cone.geometry, arrow.cone.material];
@@ -78,11 +88,11 @@ export function makeVectorPlotter(mapping, vectorScale = 0.55, options = {}) {
         animatedRows.forEach((glyph, index) => {
           glyph.position.addScaledVector(glyph.direction, glyph.magnitude * delta);
           // Keep the flow continuous in the finite normalized grid by wrapping at its boundaries.
-          glyph.position.set(
-            ((glyph.position.x % 1) + 1) % 1,
-            ((glyph.position.y % 1) + 1) % 1,
-            ((glyph.position.z % 1) + 1) % 1,
-          );
+          glyph.position.set(...[0,1,2].map(axis => {
+            const [minimum, maximum] = options.positionBounds?.[axis] ?? [-3.5,3.5];
+            const width = maximum - minimum;
+            return minimum + (((glyph.position.getComponent(axis) - minimum) % width) + width) % width;
+          }));
           quaternion.setFromUnitVectors(up, glyph.direction.lengthSq() > 0 ? glyph.direction : up);
           // Cone geometry uses its local Y axis for length; X/Z set radius by field strength.
           scale.set(glyph.magnitude, 1, glyph.magnitude);
