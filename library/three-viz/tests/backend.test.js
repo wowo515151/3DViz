@@ -15,6 +15,8 @@ import { createViewerWithRuntime, mount } from "../src/core/mount.js";
 import { pointCloudPlotter } from "../src/plotters/point-cloud-plotter.js";
 import { barChartPlotter } from "../src/plotters/bar-chart-plotter.js";
 import { VisualizationError } from "../src/core/errors.js";
+import { rgbToHsl } from "../src/utils/colors.js";
+import { generateColorShades } from "../src/utils/shades.js";
 import { FakeContainer, fakeRuntime, Raycaster, WebGLRenderer } from "./fake-three.js";
 
 function errorCode(code) {
@@ -31,6 +33,21 @@ test("validates point, series, mesh, grids, network, and time-frame structures",
   assert.equal(validateRegularVectorGrid({ dimensions: [1, 1, 1], origin: [0, 0, 0], spacing: [1, 1, 1], sampleLocation: "cell", vectors: [0, 1, 0] }).vectors.length, 3);
   assert.equal(validateNetwork({ nodes: [{ id: "a" }, { id: "b" }], edges: [{ source: "a", target: "b" }] }).edges.length, 1);
   assert.equal(validateTimeSeries({ frames: [{ time: 1, data: [1, 2] }, { time: 2, data: [3, 4] }] }).frames.length, 2);
+});
+
+test("generates evenly spaced, hue-preserving shades from light to dark", () => {
+  const redShades = generateColorShades(0xed5363, 5);
+  const blueShades = generateColorShades(0x529cff, 3);
+  assert.equal(redShades.length, 5);
+  assert.equal(blueShades.length, 3);
+  assert.deepEqual(generateColorShades(0xed5363, 0), []);
+  assert.ok(redShades[0] > redShades.at(-1));
+  assert.ok(blueShades[0] > blueShades.at(-1));
+  assert.notEqual(redShades[0], redShades.at(-1));
+  const redLightness = redShades.map(color => rgbToHsl(color).lightness);
+  assert.ok(redLightness.slice(1).every((value, index) => Math.abs((value - redLightness[index]) + 0.145) < 0.01));
+  assert.throws(() => generateColorShades(-1, 3), RangeError);
+  assert.throws(() => generateColorShades(0xed5363, -1), RangeError);
 });
 
 test("rejects malformed samples, duplicate identifiers, mesh indices, and incompatible grids", () => {
@@ -130,14 +147,15 @@ test("bar plotter preserves custom field mappings across partial style updates",
 
 test("viewer initializes, updates, switches camera, forwards capabilities, and disposes", async () => {
   const container = new FakeContainer();
-  const calls = { update: 0, dispose: 0, time: undefined, tubeRadius: undefined };
+  const calls = { update: 0, dispose: 0, time: undefined, tubeRadius: undefined, surfaceCount: undefined };
   const plotter = {
-    capabilities: ["time", "tubeRadius"],
+    capabilities: ["time", "tubeRadius", "surfaceCount"],
     create() {
       return {
         update() { calls.update += 1; },
         setTime(value) { calls.time = value; },
         setTubeRadius(value) { calls.tubeRadius = value; },
+        setSurfaceCount(value) { calls.surfaceCount = value; },
         dispose() { calls.dispose += 1; },
       };
     },
@@ -148,6 +166,7 @@ test("viewer initializes, updates, switches camera, forwards capabilities, and d
   await controller.update([], {});
   controller.setTime(12);
   controller.setTubeRadius(0.02);
+  controller.setSurfaceCount(6);
   controller.setCameraMode("orthographic");
   assert.equal(controller.cameraMode, "orthographic");
   controller.setOrbitAngle(Math.PI / 2);
@@ -159,6 +178,7 @@ test("viewer initializes, updates, switches camera, forwards capabilities, and d
   assert.equal(calls.update, 1);
   assert.equal(calls.time, 12);
   assert.equal(calls.tubeRadius, 0.02);
+  assert.equal(calls.surfaceCount, 6);
   controller.dispose();
   assert.equal(container.children.length, 0);
   assert.equal(calls.dispose, 1);

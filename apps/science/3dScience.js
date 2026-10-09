@@ -2,7 +2,7 @@ import {
   mount,
   makeVectorPlotter,
   makeIsosurfacePlotter,
-} from "../../library/three-viz/src/index.js?v=20261009q";
+} from "../../library/three-viz/src/index.js?v=20261009r";
 
 const $ = selector => document.querySelector(selector);
 const PALETTE = Object.freeze({ electric: 0xed5363, magnetic: 0x529cff });
@@ -113,7 +113,7 @@ function compositeDipolePlotter(initialLayers) {
   let animationTime = 0;
 
   return {
-    capabilities: ["selection", "time", "animation", "layers", "thresholds", "tubeRadius"],
+    capabilities: ["selection", "time", "animation", "layers", "thresholds", "tubeRadius", "surfaceCount"],
     create(context, definition, initialData) {
       const { THREE } = context;
       const makeGroup = (name, parent) => {
@@ -156,8 +156,8 @@ function compositeDipolePlotter(initialLayers) {
         }
       };
 
-      add({ id: "electric-iso", component: "electric", plotter: makeIsosurfacePlotter({ x: "x", y: "y", z: "z", value: "value" }, { threshold: state.threshold, nested: false, wireframe: true, color: PALETTE.electric, wireframeColor: PALETTE.electric }), groupKey: "isosurfaces" });
-      add({ id: "magnetic-iso", component: "magnetic", plotter: makeIsosurfacePlotter({ x: "x", y: "y", z: "z", value: "value" }, { threshold: state.threshold, nested: false, wireframe: true, color: PALETTE.magnetic, wireframeColor: PALETTE.magnetic }), groupKey: "isosurfaces" });
+      add({ id: "electric-iso", component: "electric", plotter: makeIsosurfacePlotter({ x: "x", y: "y", z: "z", value: "value" }, { threshold: state.threshold, nested: false, surfaceCount: Number($("#iso-surface-count").value), wireframe: true, color: PALETTE.electric, wireframeColor: PALETTE.electric }), groupKey: "isosurfaces" });
+      add({ id: "magnetic-iso", component: "magnetic", plotter: makeIsosurfacePlotter({ x: "x", y: "y", z: "z", value: "value" }, { threshold: state.threshold, nested: false, surfaceCount: Number($("#iso-surface-count").value), wireframe: true, color: PALETTE.magnetic, wireframeColor: PALETTE.magnetic }), groupKey: "isosurfaces" });
       add({ id: "electric-vector", component: "electric", plotter: makeVectorPlotter({ x: "x", y: "y", z: "z", u: "u", v: "v", w: "w" }, 0.62, { color: PALETTE.electric, positionBounds: VECTOR_POSITION_BOUNDS }), groupKey: "vectors", mode: "static" });
       add({ id: "magnetic-vector", component: "magnetic", plotter: makeVectorPlotter({ x: "x", y: "y", z: "z", u: "u", v: "v", w: "w" }, 0.62, { color: PALETTE.magnetic, positionBounds: VECTOR_POSITION_BOUNDS }), groupKey: "vectors", mode: "static" });
       add({ id: "electric-cones", component: "electric", plotter: makeVectorPlotter({ x: "x", y: "y", z: "z", u: "u", v: "v", w: "w" }, 0.62, { animated: true, color: PALETTE.electric, positionBounds: VECTOR_POSITION_BOUNDS }), groupKey: "vectors", mode: "animated" });
@@ -209,7 +209,7 @@ function compositeDipolePlotter(initialLayers) {
       };
 
       return {
-        capabilities: ["selection", "time", "animation", "layers", "thresholds", "tubeRadius"],
+        capabilities: ["selection", "time", "animation", "layers", "thresholds", "tubeRadius", "surfaceCount"],
         update(nextData) {
           currentPhase = nextData.phase ?? currentPhase;
           for (const plotter of plotters) {
@@ -242,6 +242,9 @@ function compositeDipolePlotter(initialLayers) {
         },
         setTubeRadius(value) {
           plotters.filter(plotter => plotter.groupKey === "isosurfaces").forEach(plotter => plotter.instance.setTubeRadius?.(value));
+        },
+        setSurfaceCount(value) {
+          plotters.filter(plotter => plotter.groupKey === "isosurfaces").forEach(plotter => plotter.instance.setSurfaceCount?.(value));
         },
         setLayerVisible: toggleLayer,
         describeSelection(hit) {
@@ -313,10 +316,12 @@ function updatePlotterControls() {
     const solidVisible = $("#iso-solids").checked;
     if (solidVisible) $("#multiple-surfaces").checked = false;
     $("#multiple-surfaces").disabled = solidVisible;
+    $("#iso-surface-count").disabled = solidVisible || !$("#multiple-surfaces").checked;
     state.controller.setLayerVisible("multiple", $("#multiple-surfaces").checked);
     state.controller.setLayerVisible("surface", solidVisible);
     state.controller.setLayerVisible("wireframe", $("#iso-wireframes").checked);
     state.controller.setTubeRadius(Number($("#iso-tube-radius").value));
+    state.controller.setSurfaceCount(Number($("#iso-surface-count").value));
     state.controller.setLayerVisible("vector-mode", state.animatedVectors);
   }
 }
@@ -530,19 +535,25 @@ async function start() {
     $("#show-electric").addEventListener("change", updatePlotterControls);
     $("#show-magnetic").addEventListener("change", updatePlotterControls);
     $("#animated-cones").addEventListener("change", event => state.controller.setLayerVisible("vector-mode", event.target.checked));
-    $("#multiple-surfaces").addEventListener("change", event => state.controller.setLayerVisible("multiple", event.target.checked));
+    $("#multiple-surfaces").addEventListener("change", () => updatePlotterControls());
     $("#iso-solids").addEventListener("change", event => {
       const solidVisible = event.target.checked;
       if (solidVisible) $("#multiple-surfaces").checked = false;
       $("#multiple-surfaces").disabled = solidVisible;
       state.controller.setLayerVisible("surface", solidVisible);
       state.controller.setLayerVisible("multiple", $("#multiple-surfaces").checked);
+      $("#iso-surface-count").disabled = solidVisible || !$("#multiple-surfaces").checked;
     });
     $("#iso-wireframes").addEventListener("change", event => state.controller.setLayerVisible("wireframe", event.target.checked));
     $("#iso-tube-radius").addEventListener("input", event => {
       const radius = Number(event.target.value);
       $("#tube-radius-value").textContent = radius.toFixed(3);
       state.controller.setTubeRadius(radius);
+    });
+    $("#iso-surface-count").addEventListener("input", event => {
+      const count = Number(event.target.value);
+      $("#surface-count-value").textContent = String(count);
+      state.controller.setSurfaceCount(count);
     });
   } catch (error) {
     loading.hidden = true;

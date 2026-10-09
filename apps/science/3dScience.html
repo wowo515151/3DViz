@@ -26,6 +26,9 @@
           <div class="nested-options">
             <label><input id="multiple-surfaces" type="checkbox" aria-describedby="multiple-surfaces-note"> Multiple surfaces</label>
             <p id="multiple-surfaces-note" class="field-note">Turn off Solid surfaces to show multiple wireframe levels.</p>
+            <label class="range-label" for="iso-surface-count">number of surfaces <output id="surface-count-value">5</output></label>
+            <input id="iso-surface-count" type="range" min="2" max="12" step="1" value="5" disabled aria-describedby="surface-count-note" />
+            <p id="surface-count-note" class="field-note">Surface shades run from light at low field values to dark at high values.</p>
             <label><input id="iso-solids" type="checkbox" checked> Solid surfaces</label>
             <label><input id="iso-wireframes" type="checkbox" checked> Wireframes</label>
             <label class="range-label" for="iso-tube-radius">tube radius <output id="tube-radius-value">0.000</output></label>
@@ -108,6 +111,6 @@
   </div>
 
   <script type="importmap">{ "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.186.0/build/three.module.js", "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.186.0/examples/jsm/" } }</script>
-  <script type="module" src="./3dScience.js?v=20261009q"></script>
+  <script type="module" src="./3dScience.js?v=20261009r"></script>
 </body>
 </html>

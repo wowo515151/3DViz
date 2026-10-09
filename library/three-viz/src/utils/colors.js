@@ -5,7 +5,7 @@ function clampUnit(value, label) {
   return value;
 }
 
-function hslToHex(hue, saturation, lightness) {
+export function hslToHex(hue, saturation, lightness) {
   const chroma = (1 - Math.abs(2 * lightness - 1)) * saturation;
   const section = ((hue % 1) + 1) % 1 * 6;
   const secondary = chroma * (1 - Math.abs(section % 2 - 1));
@@ -17,6 +17,27 @@ function hslToHex(hue, saturation, lightness) {
           : section < 5 ? [secondary, 0, chroma]
             : [chroma, 0, secondary];
   return [red, green, blue].reduce((hex, channel) => (hex << 8) | Math.round((channel + offset) * 255), 0);
+}
+
+export function rgbToHsl(color) {
+  const red = ((color >> 16) & 0xff) / 255;
+  const green = ((color >> 8) & 0xff) / 255;
+  const blue = (color & 0xff) / 255;
+  const maximum = Math.max(red, green, blue);
+  const minimum = Math.min(red, green, blue);
+  const difference = maximum - minimum;
+  const lightness = (maximum + minimum) / 2;
+  let hue = 0;
+  let saturation = 0;
+
+  if (difference !== 0) {
+    saturation = difference / (1 - Math.abs(2 * lightness - 1));
+    if (maximum === red) hue = ((green - blue) / difference) % 6;
+    else if (maximum === green) hue = (blue - red) / difference + 2;
+    else hue = (red - green) / difference + 4;
+    hue /= 6;
+  }
+  return { hue, saturation, lightness };
 }
 
 /** Return a rainbow palette of evenly spaced 24-bit RGB colors. */

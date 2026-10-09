@@ -7,6 +7,7 @@ This directory is the reusable browser library in this repository. Apps in this 
 Modules
 
 - src/index.js: public exports, including mount, plotters, validation, mapping, and resource tools.
+- src/utils/: reusable color helpers, including evenly spaced rainbow palettes and single-hue light-to-dark shades.
 - src/core/: viewer lifecycle, errors, and resource ownership.
 - src/data/: input validation and coordinate mapping.
 - src/plotters/: bar-chart, point-cloud, CSV bars, scatter, histogram, surface, trajectory, vector-field, time-slice, isosurface, and weather-tube plotters; each implementation has its own JavaScript module.

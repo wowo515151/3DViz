@@ -505,9 +505,10 @@ export async function createViewerWithRuntime(container, definition, runtime) {
     const setSlice = capabilityMethod("slices", "setSlice");
     const setThreshold = capabilityMethod("thresholds", "setThreshold");
     const setTubeRadius = capabilityMethod("tubeRadius", "setTubeRadius");
+    const setSurfaceCount = capabilityMethod("surfaceCount", "setSurfaceCount");
     const setFilter = capabilityMethod("filters", "setFilter");
     const setHighlight = capabilityMethod("highlights", "setHighlight");
-    for (const [key, method] of Object.entries({ setTime, setLayerVisible, setSlice, setThreshold, setTubeRadius, setFilter, setHighlight })) {
+    for (const [key, method] of Object.entries({ setTime, setLayerVisible, setSlice, setThreshold, setTubeRadius, setSurfaceCount, setFilter, setHighlight })) {
       if (method) controller[key] = method;
     }
     if (cameraModeEnabled) {
