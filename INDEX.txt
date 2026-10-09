@@ -1,0 +1,30 @@
+3DViz Repository Index
+
+Purpose
+
+This folder is the local, reviewable content for the public wowo515151/3DViz repository. It bundles the shared Three.js library source and the Weather preview app in one self-contained repository. The existing CSV development tool is intentionally not copied or changed.
+
+Tree
+
+- README.md: status, repository description, run instructions, app list, dependency notes, and license reference.
+- LICENSE: repository MIT license.
+- index.html: animated GitHub Pages landing page with links to apps.
+- style.css: responsive landing page styling and reduced-motion handling.
+- apps/weather/: runnable 3D Weather UI and its local application modules.
+- library/three-viz/src/: bundled browser library modules.
+- library/three-viz/tests/: library development tests; not loaded by the site.
+- library/three-viz/package.json: native ES module metadata for local test execution.
+
+Paths
+
+- Landing page: /
+- Weather app: /apps/weather/3dWeather.html
+- Weather app imports the shared library from ../../library/three-viz/src/index.js.
+
+Release notes
+
+- Only repository contents belong here; workspace planning, review, and traffic records remain outside the repository.
+- The Weather source is copied from Tools/3dWeather; library source is copied from Library/three-viz. The canonical workspace library remains under Library/three-viz.
+- Three.js 0.186.0 loads from pinned jsDelivr runtime URLs; its source is not bundled.
+- CSV is a planned card on the landing page only. Its files and current development tool remain unchanged.
+- Human visual review and explicit approval are required before public upload.

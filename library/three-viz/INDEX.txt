@@ -1,0 +1,23 @@
+Bundled Three.js Visualization Library
+
+Purpose
+
+This is a repository copy of the reusable browser library in the workspace's Library/three-viz/src/. It is included so apps in this repository can import their runtime dependencies using relative paths.
+
+Modules
+
+- src/index.js: public exports, including mount, adapters, validation, mapping, and resource tools.
+- src/core/: viewer lifecycle, errors, and resource ownership.
+- src/data/: input validation and coordinate mapping.
+- src/adapters/: point-cloud and categorical bar-chart visualization adapters.
+- tests/: local development tests; the website does not import these files.
+
+Runtime
+
+The Weather app imports ../../library/three-viz/src/index.js. Its HTML import map pins Three.js and OrbitControls to 0.186.0 on jsDelivr. The library runtime itself is native JavaScript ES modules and does not require a build step or package installation.
+
+Source and license
+
+Workspace source: Library/three-viz/ in the Sites workspace.
+Snapshot date: 2026-10-09.
+License: MIT; see the repository root LICENSE.

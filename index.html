@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="A collection of interactive 3D visualizations for science, technology, and data.">
+  <meta name="theme-color" content="#071018">
+  <title>3DViz — See data in depth</title>
+  <link rel="stylesheet" href="./style.css">
+</head>
+<body>
+  <header class="topbar">
+    <a class="wordmark" href="./" aria-label="3DViz home"><span class="wordmark-icon" aria-hidden="true">◈</span>3D<span>VIZ</span></a>
+    <nav aria-label="Main navigation">
+      <a href="#apps">Explore</a>
+      <a href="https://www.linkedin.com/in/warren-harding-29a0a673/" target="_blank" rel="noopener noreferrer">Contact the Developer</a>
+    </nav>
+  </header>
+
+  <main>
+    <section class="hero" aria-labelledby="hero-title">
+      <div class="hero-copy">
+        <p class="eyebrow"><span class="pulse-dot" aria-hidden="true"></span> AN INTERACTIVE VISUALIZATION LAB</p>
+        <h1 id="hero-title">See the shape<br>inside the data.</h1>
+        <p class="hero-description">Explore scientific and technical ideas through clear, interactive 3D scenes. Each visualization connects its shapes, color, and motion to the data it represents.</p>
+        <a class="primary-link" href="./apps/weather/3dWeather.html">Explore the weather app <span aria-hidden="true">↗</span></a>
+      </div>
+      <div class="hero-art" role="img" aria-label="An animated set of nested, glowing wireframe forms">
+        <div class="orbit-scene" aria-hidden="true">
+          <div class="orbit-halo halo-one"></div>
+          <div class="orbit-halo halo-two"></div>
+          <div class="wire-sphere sphere-outer"><i></i><i></i><i></i></div>
+          <div class="wire-sphere sphere-middle"><i></i><i></i><i></i></div>
+          <div class="wire-sphere sphere-inner"><i></i><i></i><i></i></div>
+          <div class="sphere-core"></div>
+          <span class="orbit-node node-one"></span>
+          <span class="orbit-node node-two"></span>
+          <span class="orbit-node node-three"></span>
+        </div>
+        <p class="art-caption">FIELDS · STRUCTURES · CHANGE</p>
+      </div>
+      <div class="hero-grid" aria-hidden="true"></div>
+    </section>
+
+    <section class="apps-section" id="apps" aria-labelledby="apps-title">
+      <div class="section-heading">
+        <div><p class="eyebrow">THE COLLECTION</p><h2 id="apps-title">Choose a view</h2></div>
+        <p class="section-note">Small, focused tools built around one clear way to explore.</p>
+      </div>
+      <div class="app-grid">
+        <article class="app-card app-card--active">
+          <div class="card-topline"><span class="app-number">01</span><span class="status status-live"><i></i> PREVIEW</span></div>
+          <div class="card-glyph weather-glyph" aria-hidden="true"><span></span><span></span><span></span><span></span></div>
+          <h3>Weather in 3D</h3>
+          <p>Explore Canadian forecasts as colored signals, markers, and temperature bars.</p>
+          <a class="card-link" href="./apps/weather/3dWeather.html">Open weather <span aria-hidden="true">→</span></a>
+        </article>
+        <article class="app-card app-card--planned" id="csv">
+          <div class="card-topline"><span class="app-number">02</span><span class="status">PLANNED</span></div>
+          <div class="card-glyph csv-glyph" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span><span></span></div>
+          <h3>CSV explorer</h3>
+          <p>Explore uploaded tables with 3D charts and surfaces. This app is not included in this release.</p>
+          <span class="card-link card-link--disabled" aria-disabled="true">Not available yet</span>
+        </article>
+        <article class="app-card app-card--planned">
+          <div class="card-topline"><span class="app-number">03</span><span class="status">OPEN FOR IDEAS</span></div>
+          <div class="card-glyph field-glyph" aria-hidden="true"><span></span><span></span><span></span></div>
+          <h3>More visualizations</h3>
+          <p>Future pages will explore scientific fields, structures, and other multidimensional data.</p>
+          <a class="card-link" href="https://www.linkedin.com/in/warren-harding-29a0a673/" target="_blank" rel="noopener noreferrer">Suggest a topic <span aria-hidden="true">↗</span></a>
+        </article>
+      </div>
+    </section>
+
+    <section class="about-strip" aria-label="About this project">
+      <p><span class="about-mark" aria-hidden="true">✳</span> Made for curious minds. Built to make complex patterns easier to see.</p>
+      <a href="./README.md">About this project <span aria-hidden="true">↗</span></a>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <a class="wordmark" href="./"><span class="wordmark-icon" aria-hidden="true">◈</span>3D<span>VIZ</span></a>
+    <p>Interactive 3D visualizations for science and technology.</p>
+    <a href="https://www.linkedin.com/in/warren-harding-29a0a673/" target="_blank" rel="noopener noreferrer">Contact the Developer</a>
+  </footer>
+</body>
+</html>
