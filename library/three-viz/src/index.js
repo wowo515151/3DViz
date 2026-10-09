@@ -23,7 +23,7 @@ export { makeScatterPlotter } from './plotters/scatter-plotter.js';
 export { makeSurfacePlotter } from './plotters/surface-plotter.js';
 export { makeHistogramPlotter } from './plotters/histogram-plotter.js';
 export { makeTrajectoryPlotter } from './plotters/trajectory-plotter.js';
-export { makeVectorPlotter } from './plotters/vector-field-plotter.js';
+export { makeVectorPlotter } from './plotters/vector-field-plotter.js?v=constant-cone-size-20261009';
 export { makeTimeSlicePlotter } from './plotters/time-slice-plotter.js';
 export { makeIsosurfacePlotter } from './plotters/isosurface-plotter.js';
 export { weatherTubesPlotter } from './plotters/weather-tubes-plotter.js';
