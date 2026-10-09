@@ -1,4 +1,4 @@
-import { createGrid3D, createLabeledBox } from "../../library/three-viz/src/index.js?v=grid-components-20261009d";
+import { createGrid3D, createLabeledBox } from "../../library/three-viz/src/index.js?v=forecast-labels-20261009e";
 
 const CUBE_SIZE = 20;
 const HALF = CUBE_SIZE / 2;
@@ -41,7 +41,12 @@ export const cityTemperatureAdapter = Object.freeze({
       divisions:20,
       xLabels:axisLabels(timestamps, 5, value => new Intl.DateTimeFormat("en-CA", { timeZone:"UTC", hour:"numeric" }).format(new Date(value))),
       yLabels:axisLabels(Array.from({ length:5 }, (_, index) => tempMin + (index / 4) * (tempMax - tempMin)), 5, value => `${Number(value.toFixed(1))}°${unit}`),
-      zLabels:axisLabels([...cities].reverse(), 5, city => city.name),
+      zLabels:[...cities].reverse().map((city, index) => ({
+        text:`${city.name}, ${city.province}`,
+        position:laneCount === 1 ? 0 : -HALF + (index / (laneCount - 1)) * CUBE_SIZE,
+        key:city.id,
+        color:city.color,
+      })),
       labelColor:0x778b98,
       labelFontSize:18,
       labelWorldUnitsPerPixel:0.014,
@@ -79,18 +84,6 @@ export const cityTemperatureAdapter = Object.freeze({
         tube.name = `temperature-line-${city.id}`; tube.raycast = () => {}; root.add(tube);
       }
 
-      // Matching city tabs bracket the line at its first and last forecast hour.
-      const cityColor = city.color ?? 0x9bdcff;
-      for (const [hour, side] of [[0, "start"], [hourCount - 1, "end"]]) {
-        const label = createLabeledBox(context, `${city.name}, ${city.province}`, cityColor, { fontSize:22, worldUnitsPerPixel:0.02, paddingX:7, paddingY:4 });
-        const labelWidth = label.userData.labeledBoxSize.width;
-        const endpoint = city.forecasts.findLast(forecast => Number.isFinite(forecast.value));
-        const endpointForecast = side === "start" ? city.forecasts.find(forecast => Number.isFinite(forecast.value)) : endpoint;
-        const endpointY = endpointForecast ? y(endpointForecast.value) : -HALF;
-        const labelY = endpointY + (endpointY > HALF - 1 ? -0.65 : 0.65);
-        label.position.set(x(hour) + (side === "start" ? -labelWidth / 2 - 0.18 : labelWidth / 2 + 0.18), labelY, z(lane));
-        label.name = `city-label-${side}-${city.id}`; label.raycast = () => {}; root.add(label);
-      }
     });
 
     // A compact color-backed label sits by each black node and remains camera-facing.

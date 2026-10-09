@@ -3,18 +3,18 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <meta name="description" content="Compare hourly Environment and Climate Change Canada temperatures across major Canadian cities in 3D." />
-  <title>3dWeather — Canada by the hour</title>
-  <link rel="stylesheet" href="./3dWeather.css?v=cube-box-20261009a" />
+  <meta name="description" content="Explore hourly Canadian weather forecasts and compare temperatures across major cities in 3D." />
+  <title>Canada Weather Forecast | 3DWeather</title>
+  <link rel="stylesheet" href="./3dWeather.css?v=forecast-labels-20261009b" />
 </head>
 <body>
 <div class="app-shell">
   <aside class="control-panel" aria-label="3dWeather controls">
     <div class="brand"><div class="brand-mark" aria-hidden="true">3D</div><div class="brand-wordmark">3DWEATHER</div></div>
     <header class="intro-block">
-      <p class="eyebrow">canada forecast atlas / 01</p>
-      <h1>One country.<br />24 hours ahead.</h1>
-      <p class="intro">Compare hourly temperatures across 39 major Canadian cities. Every city uses the same vertical temperature scale.</p>
+      <p class="eyebrow">canada weather forecast atlas / 01</p>
+      <h1>Canadian weather forecast.<br />Next 24 hours.</h1>
+      <p class="intro">Compare hourly temperature forecasts across 39 major Canadian cities on one shared scale.</p>
     </header>
 
     <section>
@@ -24,7 +24,7 @@
     </section>
 
     <section>
-      <div class="section-label"><span>forecast view</span><span>hourly temperatures</span></div>
+      <div class="section-label"><span>weather forecast</span><span>hourly temperatures</span></div>
       <label class="parameter-title" for="units-select">temperature units</label>
       <select id="units-select"><option value="C">Celsius</option><option value="F">Fahrenheit</option></select>
       <div class="control-group"><label for="horizon-select">forecast horizon</label><select id="horizon-select"><option value="12">Next 12 hours</option><option value="24" selected>Next 24 hours</option></select></div>
@@ -48,22 +48,22 @@
     </section>
 
     <section>
-      <div class="section-label"><span>selection</span><span>exact values</span></div>
-      <p id="selection-readout" class="field-note">Select a city marker to inspect its forecast temperature and time.</p>
+      <div class="section-label"><span>forecast details</span><span>exact values</span></div>
+      <p id="selection-readout" class="field-note">Select a city marker to inspect the forecast temperature and valid time.</p>
     </section>
 
     <footer class="panel-footer"><b>DATA AND ATTRIBUTION</b><br />Environment and Climate Change Canada · MSC GeoMet<br /><a href="https://eccc-msc.github.io/open-data/licence/readme_en/" target="_blank" rel="noopener noreferrer">Open data licence</a><br /><a href="https://www.linkedin.com/in/warren-harding-29a0a673/" class="dev-contact" target="_blank" rel="noopener noreferrer">Contact the Developer</a></footer>
   </aside>
 
   <main class="stage">
-    <div class="stage-header"><div><div class="stage-heading" id="stage-heading">CANADIAN HOURLY TEMPERATURES</div><div class="stage-subheading" id="stage-subheading">LOADING 39 ECCC CITY FORECASTS</div></div><div class="status-pill"><span class="status-dot"></span><span id="status-text">CONNECTING</span></div></div>
-    <div id="viewport" aria-label="Interactive 3D hourly temperature forecasts for Canadian cities" role="img"><div class="loading" id="loading">CONNECTING TO ECCC…</div></div>
-    <div class="stage-legend" id="stage-legend" aria-label="Temperature scale and graphed cities legend"></div>
+    <div class="stage-header"><div><div class="stage-heading" id="stage-heading">CANADIAN WEATHER FORECAST</div><div class="stage-subheading" id="stage-subheading">LOADING 39 ECCC CITY FORECASTS</div></div><div class="status-pill"><span class="status-dot"></span><span id="status-text">CONNECTING</span></div></div>
+    <div id="viewport" aria-label="Interactive 3D hourly Canadian weather forecast by city" role="img"><div class="loading" id="loading">LOADING CANADIAN WEATHER FORECAST…</div></div>
+    <div class="stage-legend" id="stage-legend" aria-label="Forecast temperature scale and graphed cities legend"></div>
     <div class="stage-actions"><button id="screenshot-download" type="button">DOWNLOAD PNG</button><button id="fullscreen-toggle" type="button" aria-label="Enter fullscreen" aria-pressed="false">FULLSCREEN</button></div>
     <div class="viewport-hint">DRAG TO ORBIT · SCROLL TO ZOOM · CLICK A CITY MARKER</div>
   </main>
 </div>
 <script type="importmap">{ "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.186.0/build/three.module.js", "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.186.0/examples/jsm/" } }</script>
-<script type="module" src="./3dWeather.js?v=grid-components-20261009d"></script>
+<script type="module" src="./3dWeather.js?v=forecast-labels-20261009e"></script>
 </body>
 </html>

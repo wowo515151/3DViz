@@ -1,4 +1,4 @@
-import { createLabeledBox } from "./labeled-box.js?v=grid-components-20261009d";
+import { createLabeledBox } from "./labeled-box.js?v=forecast-labels-20261009e";
 
 function finitePositive(value, name) {
   if (!Number.isFinite(value) || value <= 0) throw new RangeError(`${name} must be positive and finite.`);
@@ -13,11 +13,13 @@ function normalizeLabels(labels, extent) {
     text:String(item?.text ?? item ?? ""),
     position:Number.isFinite(item?.position) ? item.position : 0,
     key:item?.key ?? index,
+    color:item?.color,
   }));
   return labels.map((item, index) => ({
     text:String(item?.text ?? item ?? ""),
     position:Number.isFinite(item?.position) ? item.position : -extent / 2 + (index / (labels.length - 1)) * extent,
     key:item?.key ?? index,
+    color:item?.color,
   }));
 }
 
@@ -80,7 +82,7 @@ export function createGrid2D(context, {
   const xGroup = new THREE.Group(); xGroup.name = "grid-2d-x-labels"; group.add(xGroup);
   const yGroup = new THREE.Group(); yGroup.name = "grid-2d-y-labels"; group.add(yGroup);
   const xBoxes = xValues.map(item => {
-    const box = createLabeledBox(context, item.text, labelColor, {
+    const box = createLabeledBox(context, item.text, item.color ?? labelColor, {
       fontSize:labelFontSize, worldUnitsPerPixel:labelWorldUnitsPerPixel,
       paddingX:labelPaddingX, paddingY:labelPaddingY, depth:labelDepth,
     });
@@ -89,7 +91,7 @@ export function createGrid2D(context, {
     xGroup.add(box); return box;
   });
   const yBoxes = yValues.map(item => {
-    const box = createLabeledBox(context, item.text, labelColor, {
+    const box = createLabeledBox(context, item.text, item.color ?? labelColor, {
       fontSize:labelFontSize, worldUnitsPerPixel:labelWorldUnitsPerPixel,
       paddingX:labelPaddingX, paddingY:labelPaddingY, depth:labelDepth,
     });
@@ -116,8 +118,23 @@ export function createGrid2D(context, {
     const xEdge = sign(localCamera.x) * (width / 2 + labelGap);
     const yEdge = sign(localCamera.y) * (height / 2 + labelGap);
     const frontZ = sign(localCamera.z) * (labelDepth / 2 + 0.008);
-    for (const box of xBoxes) box.position.set(box.userData.axisPosition, yEdge, frontZ);
-    for (const box of yBoxes) box.position.set(xEdge, box.userData.axisPosition, frontZ);
+    for (const box of xBoxes) {
+      box.visible = true;
+      box.position.set(box.userData.axisPosition, yEdge, frontZ);
+    }
+    for (const box of yBoxes) {
+      box.visible = true;
+      box.position.set(xEdge, box.userData.axisPosition, frontZ);
+    }
+    // Both label rows share the same physical cube corner at the nearest ends.
+    // Keep the X-axis label there and hide the coincident Y-axis label.
+    const cornerTolerance = 1e-5;
+    const xCorner = sign(localCamera.x) * width / 2;
+    const yCorner = sign(localCamera.y) * height / 2;
+    if (xBoxes.some(box => Math.abs(box.userData.axisPosition - xCorner) < cornerTolerance)) {
+      const coincidentY = yBoxes.find(box => Math.abs(box.userData.axisPosition - yCorner) < cornerTolerance);
+      if (coincidentY) coincidentY.visible = false;
+    }
     xGroup.updateMatrixWorld(true); yGroup.updateMatrixWorld(true);
   }
   function dispose() {

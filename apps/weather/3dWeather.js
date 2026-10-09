@@ -1,6 +1,6 @@
-import { mount, generateRainbowColors } from "../../library/three-viz/src/index.js?v=grid-components-20261009d";
+import { mount, generateRainbowColors } from "../../library/three-viz/src/index.js?v=forecast-labels-20261009e";
 import { canadianCities } from "./canadian-cities.js?v=canada-hourly-20261009f";
-import { cityTemperatureAdapter } from "./city-temperature-adapter.js?v=grid-components-20261009d";
+import { cityTemperatureAdapter } from "./city-temperature-adapter.js?v=forecast-labels-20261009e";
 
 const API = "https://api.weather.gc.ca/collections/citypageweather-realtime/items";
 const $ = selector => document.querySelector(selector);
@@ -181,7 +181,7 @@ async function renderVisualization() {
   const minimumTemperature = temperatures.length ? Math.min(...temperatures) : -40;
   const maximumTemperature = temperatures.length ? Math.max(...temperatures) : 40;
   ui.cityCount.textContent = String(cities.length); ui.pointCount.textContent = String(pointCount);
-  ui.heading.textContent = "CANADIAN HOURLY TEMPERATURES";
+  ui.heading.textContent = "CANADIAN WEATHER FORECAST";
   renderLegend(cities);
   controller?.dispose(); controller = undefined; ui.viewport.querySelector("canvas")?.remove();
   ui.loading.hidden = false; ui.loading.textContent = "BUILDING CANADA TEMPERATURE MAP…";
@@ -209,7 +209,7 @@ async function renderVisualization() {
     controller = nextController;
     ui.camera.disabled = !controller.capabilities.includes("cameraModes");
     ui.camera.value="perspective";
-    ui.subheading.textContent=`${cities.length} CITIES · ${ui.horizon.value} HOURS · CITY LANES WEST TO EAST`;
+    ui.subheading.textContent=`${cities.length} CITY FORECASTS · ${ui.horizon.value} UTC HOURS · WEST TO EAST`;
     ui.status.textContent="ECCC · READY"; ui.loading.hidden=true;
     ui.selection.textContent="Select a black temperature node or its label to inspect the forecast value and UTC time.";
   } catch (error) {
@@ -224,7 +224,7 @@ function exportFrame() {
   const canvas=document.createElement("canvas"); canvas.width=Math.max(1280,source.width); canvas.height=Math.round(canvas.width*source.height/source.width);
   const ctx=canvas.getContext("2d"); ctx.fillStyle="#202832"; ctx.fillRect(0,0,canvas.width,canvas.height); ctx.drawImage(source,0,0,canvas.width,canvas.height);
   const scale=canvas.width/source.width; ctx.fillStyle="rgba(8,13,19,.78)"; ctx.fillRect(22*scale,20*scale,460*scale,47*scale);
-  ctx.fillStyle="#e8edf4"; ctx.font=`600 ${Math.max(12,Math.round(15*scale))}px system-ui`; ctx.fillText(`Canada hourly temperatures · ${ui.cityCount.textContent} cities`,36*scale,44*scale);
+  ctx.fillStyle="#e8edf4"; ctx.font=`600 ${Math.max(12,Math.round(15*scale))}px system-ui`; ctx.fillText(`Canada weather forecast · ${ui.cityCount.textContent} cities`,36*scale,44*scale);
   ctx.fillStyle="#9eb2c5"; ctx.font=`${Math.max(10,Math.round(11*scale))}px ui-monospace,monospace`; ctx.fillText(`Shared °${ui.units.value} scale · Environment and Climate Change Canada`,36*scale,60*scale);
   return canvas;
 }
@@ -242,7 +242,7 @@ ui.units.addEventListener("change", renderVisualization); ui.horizon.addEventLis
 ui.camera.addEventListener("change", () => { try { controller?.setCameraMode(ui.camera.value); } catch (error) { showError(error.message); } });
 ui.reset.addEventListener("click", () => controller?.resetView());
 ui.screenshot.addEventListener("click", () => {
-  try { exportFrame().toBlob(blob => { if (!blob) { showError("Chrome could not encode the screenshot."); return; } downloadBlob(blob,"canada-hourly-temperatures.png"); ui.status.textContent="PNG READY"; },"image/png"); }
+  try { exportFrame().toBlob(blob => { if (!blob) { showError("Chrome could not encode the forecast image."); return; } downloadBlob(blob,"canada-weather-forecast.png"); ui.status.textContent="PNG READY"; },"image/png"); }
   catch (error) { showError(error.message); }
 });
 ui.fullscreen.addEventListener("click", async () => { if (!document.fullscreenElement) await $(".stage").requestFullscreen(); else await document.exitFullscreen(); });
