@@ -1,4 +1,4 @@
-import { createLabeledBox } from "./labeled-box.js?v=forecast-labels-20261009i";
+import { createLabeledBox } from "./labeled-box.js?v=forecast-labels-20261009k";
 
 function finitePositive(value, name) {
   if (!Number.isFinite(value) || value <= 0) throw new RangeError(`${name} must be positive and finite.`);
@@ -18,7 +18,6 @@ function normalizeLabels(labels, extent) {
     worldUnitsPerPixel:item?.worldUnitsPerPixel,
     paddingX:item?.paddingX,
     paddingY:item?.paddingY,
-    normalPosition:Number.isFinite(item?.normalPosition) ? item.normalPosition : undefined,
   }));
   return labels.map((item, index) => ({
     text:String(item?.text ?? item ?? ""),
@@ -29,7 +28,6 @@ function normalizeLabels(labels, extent) {
     worldUnitsPerPixel:item?.worldUnitsPerPixel,
     paddingX:item?.paddingX,
     paddingY:item?.paddingY,
-    normalPosition:Number.isFinite(item?.normalPosition) ? item.normalPosition : undefined,
   }));
 }
 
@@ -47,6 +45,8 @@ export function createGrid2D(context, {
   labelPaddingX = 5,
   labelPaddingY = 3,
   labelGap = 0.025,
+  xLabelGap = labelGap,
+  yLabelGap = labelGap,
   labelDepth = 0.045,
   labelNormalOffset = 0,
   gridColor = 0x526678,
@@ -109,7 +109,6 @@ export function createGrid2D(context, {
     });
     box.name = `grid-y-label-${item.key}`;
     box.userData.axis = "y"; box.userData.axisPosition = item.position;
-    if (Number.isFinite(item.normalPosition)) box.userData.normalPosition = item.normalPosition;
     yGroup.add(box); return box;
   });
   const labelBoxes = Object.freeze([
@@ -132,8 +131,8 @@ export function createGrid2D(context, {
     camera.updateMatrixWorld?.(true);
     const cameraPosition = camera.getWorldPosition(new THREE.Vector3());
     const localCamera = group.worldToLocal(cameraPosition);
-    const xEdge = sign(localCamera.x) * (width / 2 + labelGap);
-    const yEdge = sign(localCamera.y) * (height / 2 + labelGap);
+    const xEdge = sign(localCamera.x) * (width / 2 + yLabelGap);
+    const yEdge = sign(localCamera.y) * (height / 2 + xLabelGap);
     const frontZ = sign(localCamera.z) * (labelDepth / 2 + 0.008 + labelNormalOffset);
     for (const box of xBoxes) {
       box.visible = true;

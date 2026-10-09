@@ -1,4 +1,4 @@
-import { createGrid3D, createLabeledBox } from "../../library/three-viz/src/index.js?v=forecast-labels-20261009i";
+import { createGrid3D, createLabeledBox } from "../../library/three-viz/src/index.js?v=forecast-labels-20261009k";
 
 const CUBE_SIZE = 20;
 const HALF = CUBE_SIZE / 2;
@@ -51,25 +51,22 @@ export const cityTemperaturePlotter = Object.freeze({
       divisions:20,
       xLabels:axisLabels(timestamps, 5, value => new Intl.DateTimeFormat("en-CA", { timeZone:"UTC", hour:"numeric" }).format(new Date(value))),
       yLabels:axisLabels(Array.from({ length:5 }, (_, index) => tempMin + (index / 4) * (tempMax - tempMin)), 5, value => `${Number(value.toFixed(1))}°${unit}`),
-      zLabels:[...cities].reverse().map((city, index) => {
-        const latest = [...city.forecasts].reverse().find(forecast => Number.isFinite(forecast.value));
-        const latestY = latest ? y(latest.value) : 0;
-        const cityLabelY = Math.max(-HALF + 0.35, Math.min(HALF - 0.35, latestY + (latestY > HALF - 0.75 ? -0.65 : 0.65)));
-        return {
-          text:laneCount > 15 ? cityEdgeLabel(city) : city.name,
-          position:laneCount === 1 ? 0 : -HALF + (index / (laneCount - 1)) * CUBE_SIZE,
-          normalPosition:cityLabelY,
-          key:city.id,
-          color:city.color,
-          ...(laneCount > 15 ? { fontSize:16, worldUnitsPerPixel:0.01, paddingX:3, paddingY:2 } : {}),
-        };
-      }),
+      zLabels:[...cities].reverse().map((city, index) => ({
+        text:laneCount > 15 ? cityEdgeLabel(city) : `${city.name}, ${city.province}`,
+        position:laneCount === 1 ? 0 : -HALF + (index / (laneCount - 1)) * CUBE_SIZE,
+        key:city.id,
+        color:city.color,
+        ...(laneCount > 15 ? { fontSize:16, worldUnitsPerPixel:0.01, paddingX:3, paddingY:2 } : {}),
+      })),
       labelColor:0x778b98,
       labelFontSize:18,
       labelWorldUnitsPerPixel:0.014,
       labelPaddingX:5,
       labelPaddingY:3,
       labelGap:0.04,
+      xLabelGap:0,
+      yLabelGap:0,
+      zLabelGap:0.04,
       gridColor:0x354351,
       majorGridColor:0x526678,
       opacity:0.2,

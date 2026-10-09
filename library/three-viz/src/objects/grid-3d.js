@@ -1,4 +1,4 @@
-import { createGrid2D } from "./grid-2d.js?v=forecast-labels-20261009i";
+import { createGrid2D } from "./grid-2d.js?v=forecast-labels-20261009k";
 
 function sign(value) { return value < 0 ? -1 : 1; }
 
@@ -15,6 +15,9 @@ export function createGrid3D(context, {
   labelPaddingX = 5,
   labelPaddingY = 3,
   labelGap = 0.025,
+  xLabelGap = labelGap,
+  yLabelGap = labelGap,
+  zLabelGap = labelGap,
   gridColor = 0x526678,
   majorGridColor = 0x8198aa,
   opacity = 0.22,
@@ -28,9 +31,9 @@ export function createGrid3D(context, {
   const half = size / 2;
   const group = new THREE.Group(); group.name = "grid-3d";
   // Keep the boxes just in front of each grid surface; a full-cube offset makes them float.
-  const shared = { width:size, height:size, divisionsX:divisions, divisionsY:divisions, labelColor, labelWorldUnitsPerPixel, labelFontSize, labelPaddingX, labelPaddingY, labelGap, gridColor, majorGridColor, opacity };
+  const shared = { width:size, height:size, divisionsX:divisions, divisionsY:divisions, labelColor, labelWorldUnitsPerPixel, labelFontSize, labelPaddingX, labelPaddingY, labelGap, xLabelGap, yLabelGap, gridColor, majorGridColor, opacity };
   const xy = createGrid2D(context, { ...shared, xLabels, yLabels });
-  const xz = createGrid2D(context, { ...shared, xLabels:[], yLabels:zLabels });
+  const xz = createGrid2D(context, { ...shared, xLabels:[], yLabels:zLabels, yLabelGap:zLabelGap });
   const yz = createGrid2D(context, { ...shared, xLabels:[], yLabels:[] });
   xy.object3D.name = "grid-3d-xy-plane";
   xz.object3D.name = "grid-3d-xz-plane"; xz.object3D.rotation.x = Math.PI / 2;
@@ -59,14 +62,6 @@ export function createGrid3D(context, {
     yz.object3D.position.set(-xSide * half, 0, 0);
     group.updateMatrixWorld(true);
     xy.update(camera); xz.update(camera); yz.update(camera);
-    // Weather city labels can follow their latest temperature along the
-    // xz plane's normal while remaining on its camera-facing edge.
-    for (const item of xz.labelBoxes) {
-      const temperaturePosition = item.box.userData.normalPosition;
-      if (Number.isFinite(temperaturePosition)) {
-        item.box.position.z = xz.object3D.position.y - temperaturePosition;
-      }
-    }
     // Keep each shared cube corner to one box even when labels come from
     // different axis rows on different grid planes.
     const tolerance = 1e-5;
