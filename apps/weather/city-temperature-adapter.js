@@ -1,4 +1,4 @@
-import { createLabeledBox } from "../../library/three-viz/src/index.js?v=cube-box-20261009b";
+import { createGrid3D, createLabeledBox } from "../../library/three-viz/src/index.js?v=grid-components-20261009b";
 
 const CUBE_SIZE = 20;
 const HALF = CUBE_SIZE / 2;
@@ -27,17 +27,36 @@ export const cityTemperatureAdapter = Object.freeze({
     const rimLight = new THREE.DirectionalLight(0x6b9dff, 0.5); rimLight.position.set(8, 4, -9);
     scene.add(hemi, keyLight, rimLight);
 
-    // Three square grids and an outline make the shared x/time, y/temperature, z/city cube explicit.
-    const addGrid = (rotation, position) => {
-      const grid = new THREE.GridHelper(CUBE_SIZE, 20, 0x8198aa, 0x526678);
-      grid.rotation.set(...rotation); grid.position.set(...position); grid.material.transparent = true; grid.material.opacity = 0.2;
-      grid.raycast = () => {}; scene.add(grid);
-      resources.track(grid.geometry);
-      if (Array.isArray(grid.material)) grid.material.forEach(resources.track); else resources.track(grid.material);
+    const axisLabels = (values, count, format) => {
+      if (!values.length) return [];
+      const labelCount = Math.min(values.length, count);
+      return Array.from({ length:labelCount }, (_, slot) => {
+        const index = labelCount === 1 ? 0 : Math.round(slot * (values.length - 1) / (labelCount - 1));
+        const position = values.length === 1 ? 0 : -HALF + (index / (values.length - 1)) * CUBE_SIZE;
+        return { text:format(values[index], index), position, key:index };
+      });
     };
-    addGrid([0, 0, 0], [0, -HALF, 0]);
-    addGrid([Math.PI / 2, 0, 0], [0, 0, -HALF]);
-    addGrid([0, 0, Math.PI / 2], [-HALF, 0, 0]);
+    const axisGrid = createGrid3D(context, {
+      size:CUBE_SIZE,
+      divisions:20,
+      xLabels:axisLabels(timestamps, 5, value => new Intl.DateTimeFormat("en-CA", { timeZone:"UTC", hour:"numeric" }).format(new Date(value))),
+      yLabels:axisLabels(Array.from({ length:5 }, (_, index) => tempMin + (index / 4) * (tempMax - tempMin)), 5, value => `${Number(value.toFixed(1))}°${unit}`),
+      zLabels:[...cities].reverse().map((city, index, reversed) => ({
+        text:city.name,
+        position:reversed.length === 1 ? 0 : -HALF + (index / (reversed.length - 1)) * CUBE_SIZE,
+        key:city.id,
+      })),
+      labelColor:0x566d7c,
+      labelFontSize:14,
+      labelWorldUnitsPerPixel:0.007,
+      labelPaddingX:5,
+      labelPaddingY:3,
+      labelGap:0.04,
+      gridColor:0x354351,
+      majorGridColor:0x526678,
+      opacity:0.2,
+    });
+    root.add(axisGrid.object3D);
     const pointRecords = [];
     cities.forEach((city, lane) => city.forecasts.forEach((forecast, hour) => {
       if (!Number.isFinite(forecast.value)) return;
@@ -79,7 +98,6 @@ export const cityTemperatureAdapter = Object.freeze({
     });
 
     // A compact color-backed label sits by each black node and remains camera-facing.
-    const pointLabels = [];
     pointRecords.forEach(point => {
       const value = `${Number(point.forecast.value.toFixed(1))}°`;
       const label = createLabeledBox(context, value, point.city.color ?? 0x9bdcff, {
@@ -88,7 +106,7 @@ export const cityTemperatureAdapter = Object.freeze({
       label.position.set(point.x, point.y + (point.y > HALF - 0.75 ? -0.3 : 0.3), point.z);
       label.userData.temperaturePoint = point;
       label.name = `temperature-label-${point.city.id}-${point.hour}`;
-      root.add(label); pointLabels.push(label);
+      root.add(label);
     });
 
     return {
@@ -101,6 +119,7 @@ export const cityTemperatureAdapter = Object.freeze({
         return { label:`${point.city.name}, ${point.city.province}`, values:{ forecast:time, temperature:`${Number(point.forecast.value.toFixed(1))} °${unit}`, region:point.city.region } };
       },
       dispose() {
+        axisGrid.dispose();
         scene.remove(root, hemi, keyLight, rimLight);
         hemi.dispose?.(); keyLight.dispose?.(); rimLight.dispose?.();
       },

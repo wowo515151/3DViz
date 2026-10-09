@@ -1,0 +1,129 @@
+import { createLabeledBox } from "./labeled-box.js?v=grid-components-20261009b";
+
+function finitePositive(value, name) {
+  if (!Number.isFinite(value) || value <= 0) throw new RangeError(`${name} must be positive and finite.`);
+  return value;
+}
+
+function sign(value) { return value < 0 ? -1 : 1; }
+
+function normalizeLabels(labels, extent) {
+  if (!Array.isArray(labels)) throw new TypeError("Grid axis labels must be arrays.");
+  if (labels.length < 2) return labels.map((item, index) => ({
+    text:String(item?.text ?? item ?? ""),
+    position:Number.isFinite(item?.position) ? item.position : 0,
+    key:item?.key ?? index,
+  }));
+  return labels.map((item, index) => ({
+    text:String(item?.text ?? item ?? ""),
+    position:Number.isFinite(item?.position) ? item.position : -extent / 2 + (index / (labels.length - 1)) * extent,
+    key:item?.key ?? index,
+  }));
+}
+
+/** A two-axis grid plane in 3D space, with optional camera-facing box labels. */
+export function createGrid2D(context, {
+  width = 10,
+  height = width,
+  divisionsX = 10,
+  divisionsY = divisionsX,
+  xLabels = [],
+  yLabels = [],
+  labelColor = 0x8397a8,
+  labelWorldUnitsPerPixel = 0.01,
+  labelFontSize = 18,
+  labelPaddingX = 5,
+  labelPaddingY = 3,
+  labelGap = 0.025,
+  labelDepth = 0.045,
+  gridColor = 0x526678,
+  majorGridColor = 0x8198aa,
+  opacity = 0.22,
+} = {}) {
+  const { THREE, resources } = context ?? {};
+  if (!THREE?.BufferGeometry || !THREE?.LineSegments || !resources?.track) {
+    throw new TypeError("createGrid2D() needs the Three.js runtime and a resource owner.");
+  }
+  finitePositive(width, "width"); finitePositive(height, "height");
+  if (!Number.isInteger(divisionsX) || divisionsX < 1 || !Number.isInteger(divisionsY) || divisionsY < 1) {
+    throw new RangeError("Grid divisions must be positive integers.");
+  }
+
+  const group = new THREE.Group();
+  group.name = "grid-2d";
+  const vertices = [];
+  const majorVertices = [];
+  for (let index = 0; index <= divisionsX; index += 1) {
+    const x = -width / 2 + (index / divisionsX) * width;
+    const target = index === 0 || index === divisionsX || index % 5 === 0 ? majorVertices : vertices;
+    target.push(x, -height / 2, 0, x, height / 2, 0);
+  }
+  for (let index = 0; index <= divisionsY; index += 1) {
+    const y = -height / 2 + (index / divisionsY) * height;
+    const target = index === 0 || index === divisionsY || index % 5 === 0 ? majorVertices : vertices;
+    target.push(-width / 2, y, 0, width / 2, y, 0);
+  }
+  const addLines = (positions, color, name, lineOpacity) => {
+    if (!positions.length) return;
+    const geometry = resources.track(new THREE.BufferGeometry());
+    geometry.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
+    const material = resources.track(new THREE.LineBasicMaterial({ color, transparent:true, opacity:lineOpacity, depthTest:true, depthWrite:false }));
+    const lines = new THREE.LineSegments(geometry, material);
+    lines.name = name; lines.frustumCulled = false; lines.raycast = () => {};
+    group.add(lines);
+  };
+  addLines(vertices, gridColor, "grid-2d-minor-lines", opacity * 0.78);
+  addLines(majorVertices, majorGridColor, "grid-2d-major-lines", opacity);
+
+  const xValues = normalizeLabels(xLabels, width).filter(item => item.text);
+  const yValues = normalizeLabels(yLabels, height).filter(item => item.text);
+  const xGroup = new THREE.Group(); xGroup.name = "grid-2d-x-labels"; group.add(xGroup);
+  const yGroup = new THREE.Group(); yGroup.name = "grid-2d-y-labels"; group.add(yGroup);
+  const xBoxes = xValues.map(item => {
+    const box = createLabeledBox(context, item.text, labelColor, {
+      fontSize:labelFontSize, worldUnitsPerPixel:labelWorldUnitsPerPixel,
+      paddingX:labelPaddingX, paddingY:labelPaddingY, depth:labelDepth,
+    });
+    box.name = `grid-x-label-${item.key}`;
+    box.userData.axis = "x"; box.userData.axisPosition = item.position;
+    xGroup.add(box); return box;
+  });
+  const yBoxes = yValues.map(item => {
+    const box = createLabeledBox(context, item.text, labelColor, {
+      fontSize:labelFontSize, worldUnitsPerPixel:labelWorldUnitsPerPixel,
+      paddingX:labelPaddingX, paddingY:labelPaddingY, depth:labelDepth,
+    });
+    box.name = `grid-y-label-${item.key}`;
+    box.userData.axis = "y"; box.userData.axisPosition = item.position;
+    yGroup.add(box); return box;
+  });
+
+  let xVisible = xBoxes.length > 0;
+  let yVisible = yBoxes.length > 0;
+  let disposed = false;
+  function setLabelVisibility({ x = xVisible, y = yVisible } = {}) {
+    if (disposed) return;
+    xVisible = Boolean(x); yVisible = Boolean(y);
+    xGroup.visible = xVisible; yGroup.visible = yVisible;
+  }
+  function update(camera) {
+    if (disposed || !camera) return;
+    group.updateMatrixWorld(true);
+    camera.updateMatrixWorld?.(true);
+    const cameraPosition = camera.getWorldPosition(new THREE.Vector3());
+    const localCamera = group.worldToLocal(cameraPosition);
+    const xEdge = sign(localCamera.x) * (width / 2 + labelGap);
+    const yEdge = sign(localCamera.y) * (height / 2 + labelGap);
+    const frontZ = sign(localCamera.z) * (labelDepth / 2 + 0.008);
+    for (const box of xBoxes) box.position.set(box.userData.axisPosition, yEdge, frontZ);
+    for (const box of yBoxes) box.position.set(xEdge, box.userData.axisPosition, frontZ);
+    xGroup.updateMatrixWorld(true); yGroup.updateMatrixWorld(true);
+  }
+  function dispose() {
+    if (disposed) return;
+    disposed = true;
+    group.removeFromParent();
+  }
+
+  return Object.freeze({ object3D:group, setLabelVisibility, update, dispose });
+}

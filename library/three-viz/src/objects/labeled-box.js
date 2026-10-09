@@ -9,7 +9,7 @@ function contrastingText(color) {
   return (red * 0.299 + green * 0.587 + blue * 0.114) > 155 ? "#111820" : "#ffffff";
 }
 
-/** Create a compact, color-backed 3D label that billboards toward the active camera. */
+/** Create a thin, texture-mapped 3D box that billboards toward the active camera. */
 export function createLabeledBox({ THREE, resources }, text, color, {
   fontSize = 24,
   worldUnitsPerPixel = 0.01,
@@ -46,14 +46,22 @@ export function createLabeledBox({ THREE, resources }, text, color, {
 
   const texture = resources.track(new THREE.CanvasTexture(canvas));
   if (THREE.SRGBColorSpace) texture.colorSpace = THREE.SRGBColorSpace;
-  const frontMaterial = resources.track(new THREE.MeshBasicMaterial({ map:texture, side:THREE.DoubleSide, toneMapped:false, depthWrite:false }));
+  const frontMaterial = resources.track(new THREE.MeshBasicMaterial({ map:texture, toneMapped:false, transparent:false, depthTest:true, depthWrite:true }));
   const sideMaterial = resources.track(new THREE.MeshBasicMaterial({ color:backgroundColor, toneMapped:false }));
   const geometry = resources.track(new THREE.BoxGeometry(canvasWidth * worldUnitsPerPixel, canvasHeight * worldUnitsPerPixel, depth));
   const box = new THREE.Mesh(geometry, [sideMaterial, sideMaterial, sideMaterial, sideMaterial, frontMaterial, sideMaterial]);
+  const cameraWorldQuaternion = new THREE.Quaternion();
+  const parentWorldQuaternion = new THREE.Quaternion();
   box.name = "labeled-box";
   box.userData.labelText = text;
   box.userData.labeledBoxSize = Object.freeze({ width:canvasWidth * worldUnitsPerPixel, height:canvasHeight * worldUnitsPerPixel, depth });
   box.frustumCulled = false;
-  box.onBeforeRender = (_renderer, _scene, camera) => box.quaternion.copy(camera.quaternion);
+  box.onBeforeRender = (_renderer, _scene, camera) => {
+    camera.getWorldQuaternion(cameraWorldQuaternion);
+    if (box.parent) {
+      box.parent.getWorldQuaternion(parentWorldQuaternion);
+      box.quaternion.copy(parentWorldQuaternion.invert().multiply(cameraWorldQuaternion));
+    } else box.quaternion.copy(cameraWorldQuaternion);
+  };
   return box;
 }

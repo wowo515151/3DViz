@@ -155,6 +155,7 @@ export async function createViewerWithRuntime(container, definition, runtime) {
   const targets = new Map();
   const resetStates = new Map();
   const errors = [];
+  const cameraChangeListeners = new Set();
 
   function addListener(target, type, callback, options) {
     if (!target?.addEventListener) return;
@@ -176,6 +177,7 @@ export async function createViewerWithRuntime(container, definition, runtime) {
       try { remove(); } catch (error) { errors.push(error); }
     }
     try { activeControls?.dispose?.(); } catch (error) { errors.push(error); }
+    cameraChangeListeners.clear();
     if (adapterCreated) {
       try { adapterInstance?.dispose?.(); } catch (error) { errors.push(error); }
     }
@@ -227,21 +229,29 @@ export async function createViewerWithRuntime(container, definition, runtime) {
       resetStates.set(mode, { position: camera.position.clone(), up: camera.up.clone(), target: targets.get(mode).clone() });
     }
 
+    function notifyCameraChange() {
+      for (const listener of [...cameraChangeListeners]) {
+        try { listener(activeCamera); } catch (error) { report(error); }
+      }
+    }
+
     function render() {
       if (disposed) return;
       try {
         activeControls?.update?.();
+        notifyCameraChange();
         renderer.render(scene, activeCamera);
       } catch (error) { report(error); }
     }
 
     function renderWithoutUpdatingControls() {
       if (disposed) return;
-      try { renderer.render(scene, activeCamera); } catch (error) { report(error); }
+      try { notifyCameraChange(); renderer.render(scene, activeCamera); } catch (error) { report(error); }
     }
 
     function renderInitialFrame() {
       activeControls?.update?.();
+      notifyCameraChange();
       renderer.render(scene, activeCamera);
     }
 
@@ -284,6 +294,12 @@ export async function createViewerWithRuntime(container, definition, runtime) {
       resourceRegistry: registry,
       resources: adapterResources,
       getActiveCamera: () => activeCamera,
+      onCameraChange(listener) {
+        if (typeof listener !== "function") throw new VisualizationError("INVALID_CAMERA_LISTENER", "onCameraChange() requires a function.");
+        cameraChangeListeners.add(listener);
+        try { listener(activeCamera); } catch (error) { report(error); }
+        return () => cameraChangeListeners.delete(listener);
+      },
       requestRender: render,
       callbacks: Object.freeze({ onError: report, onSelection: callbacks.onSelection }),
     });

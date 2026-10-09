@@ -1,4 +1,4 @@
-import { mount, generateRainbowColors } from "../../library/three-viz/src/index.js?v=cube-box-20261009c";
+import { mount, generateRainbowColors } from "../../library/three-viz/src/index.js?v=grid-components-20261009b";
 import { canadianCities } from "./canadian-cities.js?v=canada-hourly-20261009f";
 import { cityTemperatureAdapter } from "./city-temperature-adapter.js?v=cube-box-20261009c";
 
