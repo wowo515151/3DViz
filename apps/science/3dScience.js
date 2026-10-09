@@ -2,7 +2,7 @@ import {
   mount,
   makeVectorPlotter,
   makeIsosurfacePlotter,
-} from "../../library/three-viz/src/index.js?v=20261009d";
+} from "../../library/three-viz/src/index.js?v=20261009e";
 
 const $ = selector => document.querySelector(selector);
 const PALETTE = Object.freeze({ electric: 0xed5363, magnetic: 0x529cff });
@@ -159,8 +159,8 @@ function compositeDipolePlotter(initialLayers) {
       add({ id: "magnetic-iso", component: "magnetic", plotter: makeIsosurfacePlotter({ x: "x", y: "y", z: "z", value: "value" }, { threshold: state.threshold, nested: true, wireframe: true, color: PALETTE.magnetic, wireframeColor: 0xb5d4ff }), groupKey: "isosurfaces" });
       add({ id: "electric-vector", component: "electric", plotter: makeVectorPlotter({ x: "x", y: "y", z: "z", u: "u", v: "v", w: "w" }, 0.62, { color: PALETTE.electric }), groupKey: "vectors", mode: "static" });
       add({ id: "magnetic-vector", component: "magnetic", plotter: makeVectorPlotter({ x: "x", y: "y", z: "z", u: "u", v: "v", w: "w" }, 0.62, { color: PALETTE.magnetic }), groupKey: "vectors", mode: "static" });
-      add({ id: "electric-cones", component: "electric", plotter: makeVectorPlotter({ x: "x", y: "y", z: "z", u: "u", v: "v", w: "w" }, 0.62, { animated: true, color: PALETTE.electric, maxTravel: 1.2 }), groupKey: "vectors", mode: "animated" });
-      add({ id: "magnetic-cones", component: "magnetic", plotter: makeVectorPlotter({ x: "x", y: "y", z: "z", u: "u", v: "v", w: "w" }, 0.62, { animated: true, color: PALETTE.magnetic, maxTravel: 1.2 }), groupKey: "vectors", mode: "animated" });
+      add({ id: "electric-cones", component: "electric", plotter: makeVectorPlotter({ x: "x", y: "y", z: "z", u: "u", v: "v", w: "w" }, 0.62, { animated: true, color: PALETTE.electric }), groupKey: "vectors", mode: "animated" });
+      add({ id: "magnetic-cones", component: "magnetic", plotter: makeVectorPlotter({ x: "x", y: "y", z: "z", u: "u", v: "v", w: "w" }, 0.62, { animated: true, color: PALETTE.magnetic }), groupKey: "vectors", mode: "animated" });
 
       const vectorOn = initialLayers.has("vectors");
       vectorModes.static.forEach(group => { group.visible = vectorOn && !state.animatedVectors; });

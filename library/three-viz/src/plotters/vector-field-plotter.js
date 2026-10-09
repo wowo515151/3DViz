@@ -42,12 +42,15 @@ export function makeVectorPlotter(mapping, vectorScale = 0.55, options = {}) {
           animatedGlyphs.name = "animated-field-cones";
           animatedGlyphs.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
           animatedGlyphs.frustumCulled = false;
+          const previousPositions = new Map(animatedRows.map(glyph => [glyph.key, glyph.position]));
           animatedRows = chosen.map(({row}, index) => {
             const direction = new THREE.Vector3(...components[index]);
             const magnitude = magnitudes[index];
-            const center = new THREE.Vector3(...positions[index].map((value, axis) => scaleLinear(value, pExtent[axis][0], pExtent[axis][1])));
+            const key = row.id ?? row.__rowNumber ?? index;
+            const initialPosition = new THREE.Vector3(...positions[index].map((value, axis) => scaleLinear(value, pExtent[axis][0], pExtent[axis][1])));
+            const position = previousPositions.get(key)?.clone() ?? initialPosition;
             if (magnitude > 0) direction.normalize();
-            return { direction, center, magnitude, row };
+            return { key, direction, position, magnitude, row };
           });
           group.add(animatedGlyphs);
           updateAnimatedGlyphs(0);
@@ -65,22 +68,25 @@ export function makeVectorPlotter(mapping, vectorScale = 0.55, options = {}) {
         });
         return { count: chosen.length, sampled: chosen.length < usable.length, maxMagnitude: maxLength };
       };
-      const updateAnimatedGlyphs = elapsedSeconds => {
+      const updateAnimatedGlyphs = deltaSeconds => {
         if (!animatedGlyphs) return;
-        const maxTravel = Math.max(0, options.maxTravel ?? 0.45);
+        const delta = Number.isFinite(deltaSeconds) ? Math.max(0, deltaSeconds) : 0;
         const matrix = new THREE.Matrix4();
-        const position = new THREE.Vector3();
         const scale = new THREE.Vector3();
         const quaternion = new THREE.Quaternion();
         const up = new THREE.Vector3(0, 1, 0);
         animatedRows.forEach((glyph, index) => {
-          const travelPeriod = glyph.magnitude > 0 ? Math.max(0.1, maxTravel / glyph.magnitude) : 1;
-          const localTime = ((elapsedSeconds % travelPeriod) + travelPeriod) % travelPeriod;
-          const travel = glyph.magnitude * localTime;
-          position.copy(glyph.center).addScaledVector(glyph.direction, travel);
+          glyph.position.addScaledVector(glyph.direction, glyph.magnitude * delta);
+          // Keep the flow continuous in the finite normalized grid by wrapping at its boundaries.
+          glyph.position.set(
+            ((glyph.position.x % 1) + 1) % 1,
+            ((glyph.position.y % 1) + 1) % 1,
+            ((glyph.position.z % 1) + 1) % 1,
+          );
           quaternion.setFromUnitVectors(up, glyph.direction.lengthSq() > 0 ? glyph.direction : up);
-          scale.setScalar(1);
-          matrix.compose(position, quaternion, scale);
+          // Cone geometry uses its local Y axis for length; X/Z set radius by field strength.
+          scale.set(glyph.magnitude, 1, glyph.magnitude);
+          matrix.compose(glyph.position, quaternion, scale);
           animatedGlyphs.setMatrixAt(index, matrix);
         });
         animatedGlyphs.instanceMatrix.needsUpdate = true;
@@ -89,7 +95,7 @@ export function makeVectorPlotter(mapping, vectorScale = 0.55, options = {}) {
       return {
         capabilities: options.animated ? ["animation"] : [],
         update(rows) { report = build(rows); context.requestRender(); },
-        ...(options.animated ? { updateFrame({ elapsedSeconds }) { updateAnimatedGlyphs(elapsedSeconds); } } : {}),
+        ...(options.animated ? { updateFrame({ deltaSeconds }) { updateAnimatedGlyphs(deltaSeconds); } } : {}),
         dispose() {
           clear();
           if (animatedGlyphs) resources.release(animatedGlyphs);
