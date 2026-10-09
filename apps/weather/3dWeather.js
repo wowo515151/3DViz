@@ -153,12 +153,18 @@ async function renderVisualization() {
   if (!data.length) { ui.loading.hidden = true; ui.status.textContent = "NO NUMERIC FORECAST DATA"; showError("ECCC returned forecast records, but no numeric high or low temperatures for this visualization."); return; }
   const adapter = mode === "bars" ? barChartAdapter : weatherSignalAdapter;
   const config = mode === "bars" ? { barChart: { color: metricDefinition("temperature").color, material: { type: "standard", metalness: 0.12, roughness: 0.3 } } } : { weather: { mode, keys } };
-  const cameraTargetY = mode === "bars" ? 1.0 : 1.7;
+  const barMinimum = mode === "bars" ? Math.min(0, ...data.map(record => record.value)) : 0;
+  const barMaximum = mode === "bars" ? Math.max(0, ...data.map(record => record.value)) : 0;
+  const barSpan = Math.max(1, barMaximum - barMinimum);
+  const cameraTargetY = mode === "bars" ? (barMinimum + barMaximum) / 2 : 1.7;
+  const cameraDistance = mode === "bars" ? Math.max(18, barSpan * 1.9) : 0;
+  const cameraPosition = mode === "bars" ? [cameraDistance * 0.55, cameraTargetY + cameraDistance * 0.35, cameraDistance * 0.75] : [8.5, 7.5, 10.5];
+  const orthographicHeight = mode === "bars" ? Math.max(14, barSpan * 1.5) : 12;
   try {
     controller = await mount(ui.viewport, {
       adapter, data: mode === "bars" ? data : { rows, keys, records: data }, configuration: { ...config, backgroundColor: 0x202832 },
       renderer: { antialias: true, maxPixelRatio: 1.5, preserveDrawingBuffer: true, powerPreference: "high-performance", toneMapping: "ACESFilmicToneMapping", toneMappingExposure: 1.1 },
-      camera: { type: "perspective", modes: ["perspective", "orthographic"], position: [8.5, 7.5, 10.5], target: [0, cameraTargetY, 0], fov: 42, orthographicHeight: 12 },
+      camera: { type: "perspective", modes: ["perspective", "orthographic"], position: cameraPosition, target: [0, cameraTargetY, 0], fov: 42, orthographicHeight },
       controls: { enabled: true, enableDamping: true, dampingFactor: 0.065, minDistance: 2.4, maxDistance: 90 },
       callbacks: {
         onError: error => { ui.status.textContent = "RENDER ERROR"; showError(error.message); },
