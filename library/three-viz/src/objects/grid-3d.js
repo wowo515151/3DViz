@@ -27,7 +27,8 @@ export function createGrid3D(context, {
   if (!Number.isInteger(divisions) || divisions < 1) throw new RangeError("divisions must be a positive integer.");
   const half = size / 2;
   const group = new THREE.Group(); group.name = "grid-3d";
-  const shared = { width:size, height:size, divisionsX:divisions, divisionsY:divisions, labelColor, labelWorldUnitsPerPixel, labelFontSize, labelPaddingX, labelPaddingY, labelGap, labelNormalOffset:size, gridColor, majorGridColor, opacity };
+  // Keep the boxes just in front of each grid surface; a full-cube offset makes them float.
+  const shared = { width:size, height:size, divisionsX:divisions, divisionsY:divisions, labelColor, labelWorldUnitsPerPixel, labelFontSize, labelPaddingX, labelPaddingY, labelGap, gridColor, majorGridColor, opacity };
   const xy = createGrid2D(context, { ...shared, xLabels, yLabels });
   const xz = createGrid2D(context, { ...shared, xLabels:[], yLabels:zLabels });
   const yz = createGrid2D(context, { ...shared, xLabels:[], yLabels:[] });

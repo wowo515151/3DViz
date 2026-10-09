@@ -1,10 +1,11 @@
-import { metricDefinition } from "./weather-data.js";
 
-export const weatherSignalAdapter = Object.freeze({
+
+export const weatherTubesPlotter = Object.freeze({
   capabilities: Object.freeze(["selection", "time", "animation"]),
   create(context, definition, input) {
     const { THREE, scene, resources } = context;
     const rows = input.rows ?? [];
+    const metricDefinition = key => input.metricDefinitions?.[key] ?? { label: key, unit: "", color: 0xb5c5d8 };
     const keys = input.keys ?? [];
     const keyExtents = new Map(keys.map(key => {
       const values = rows.map(row => row.metrics[key]).filter(Number.isFinite);
@@ -115,7 +116,7 @@ export const weatherSignalAdapter = Object.freeze({
       },
       dispose() {
         scene.remove(root, cursor, grid, hemi, keyLight, rimLight);
-        root.traverse(object => { if (object.isMesh) { object.geometry?.dispose?.(); object.material?.dispose?.(); } });
+        root.traverse(object => { if (object.isMesh && object !== rayTarget) { object.geometry?.dispose?.(); object.material?.dispose?.(); } });
         cursor.traverse(object => { object.geometry?.dispose?.(); object.material?.dispose?.(); });
         grid.geometry.dispose();
         if (Array.isArray(grid.material)) grid.material.forEach(material => material.dispose()); else grid.material.dispose();

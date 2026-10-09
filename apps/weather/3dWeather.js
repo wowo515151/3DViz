@@ -1,6 +1,6 @@
-import { mount, generateRainbowColors } from "../../library/three-viz/src/index.js?v=forecast-labels-20261009g";
+import { mount, generateRainbowColors } from "../../library/three-viz/src/index.js?v=forecast-labels-20261009h";
 import { canadianCities } from "./canadian-cities.js?v=canada-hourly-20261009f";
-import { cityTemperatureAdapter } from "./city-temperature-adapter.js?v=forecast-labels-20261009g";
+import { cityTemperaturePlotter } from "./city-temperature-plotter.js?v=forecast-labels-20261009h";
 
 const API = "https://api.weather.gc.ca/collections/citypageweather-realtime/items";
 const $ = selector => document.querySelector(selector);
@@ -193,7 +193,7 @@ async function renderVisualization() {
     const cameraPosition = [32, 24, 36];
     const orthographicHeight = 32;
     const nextController = await mount(ui.viewport, {
-      adapter:cityTemperatureAdapter, data:{ cities, timestamps:commonTimes.slice(0, Number(ui.horizon.value)), unit:ui.units.value, temperatureRange:[minimumTemperature, maximumTemperature] }, configuration:{ backgroundColor:0x202832 },
+      plotter:cityTemperaturePlotter, data:{ cities, timestamps:commonTimes.slice(0, Number(ui.horizon.value)), unit:ui.units.value, temperatureRange:[minimumTemperature, maximumTemperature] }, configuration:{ backgroundColor:0x202832 },
       renderer:{ antialias:true, maxPixelRatio:1.5, preserveDrawingBuffer:true, powerPreference:"high-performance", toneMapping:"ACESFilmicToneMapping", toneMappingExposure:1.08 },
       camera:{ type:"perspective", modes:["perspective","orthographic"], position:cameraPosition, target:[0,0,0], fov:40, orthographicHeight },
       controls:{ enabled:true, enableDamping:true, dampingFactor:0.065, minDistance:4, maxDistance:140 },

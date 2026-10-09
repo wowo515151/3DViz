@@ -12,8 +12,8 @@ import {
 import { createCoordinateMapper } from "../src/data/coordinate-mapping.js";
 import { createResourceRegistry } from "../src/core/resource-registry.js";
 import { createViewerWithRuntime, mount } from "../src/core/mount.js";
-import { pointCloudAdapter } from "../src/adapters/point-cloud.js";
-import { barChartAdapter } from "../src/adapters/bar-chart.js";
+import { pointCloudPlotter } from "../src/plotters/point-cloud-plotter.js";
+import { barChartPlotter } from "../src/plotters/bar-chart-plotter.js";
 import { VisualizationError } from "../src/core/errors.js";
 import { FakeContainer, fakeRuntime, Raycaster, WebGLRenderer } from "./fake-three.js";
 
@@ -77,23 +77,23 @@ test("resource registry disposes shared resources only after the last owner rele
   assert.equal(registry.stats.resources, 0);
 });
 
-test("point-cloud adapter updates geometry and describes a stable selected record", () => {
+test("point-cloud plotter updates geometry and describes a stable selected record", () => {
   const runtime = fakeRuntime().THREE;
   const scene = { children: [], add(object) { this.children.push(object); }, remove(object) { this.children = this.children.filter(item => item !== object); } };
   const registry = createResourceRegistry();
   const resources = registry.createOwner("points");
-  const adapter = pointCloudAdapter.create({ THREE: runtime, scene, resources, requestRender() {} }, { configuration: { pointCloud: {} } }, [{ id: "a", x: 0, y: 1, z: 2 }, { id: "b", x: 3, y: 4, z: 5 }]);
+  const plotter = pointCloudPlotter.create({ THREE: runtime, scene, resources, requestRender() {} }, { configuration: { pointCloud: {} } }, [{ id: "a", x: 0, y: 1, z: 2 }, { id: "b", x: 3, y: 4, z: 5 }]);
   const previous = scene.children[0].geometry;
-  assert.equal(adapter.describeSelection({ index: 1 }).id, "b");
-  adapter.update([{ id: "c", x: 6, y: 7, z: 8 }]);
+  assert.equal(plotter.describeSelection({ index: 1 }).id, "b");
+  plotter.update([{ id: "c", x: 6, y: 7, z: 8 }]);
   assert.equal(previous.disposeCalls, 1);
-  assert.equal(adapter.describeSelection({ index: 0 }).id, "c");
-  adapter.dispose();
+  assert.equal(plotter.describeSelection({ index: 0 }).id, "c");
+  plotter.dispose();
   resources.dispose();
   assert.equal(scene.children.length, 0);
 });
 
-test("bar adapter maps category pairs to instances and preserves selection values", () => {
+test("bar plotter maps category pairs to instances and preserves selection values", () => {
   const runtime = fakeRuntime().THREE;
   const scene = { children: [], add(object) { this.children.push(object); }, remove(object) { this.children = this.children.filter(item => item !== object); } };
   const registry = createResourceRegistry();
@@ -102,36 +102,36 @@ test("bar adapter maps category pairs to instances and preserves selection value
     { id: "one", categoryX: "A", categoryZ: "north", value: 4 },
     { id: "two", categoryX: "B", categoryZ: "south", value: -2 },
   ];
-  const adapter = barChartAdapter.create({ THREE: runtime, scene, resources, requestRender() {} }, { configuration: { barChart: {} } }, records);
+  const plotter = barChartPlotter.create({ THREE: runtime, scene, resources, requestRender() {} }, { configuration: { barChart: {} } }, records);
   const bars = scene.children[0];
   assert.equal(bars.count, 2);
   assert.equal(bars.matrices[0].position.y, 2);
-  assert.equal(adapter.describeSelection({ instanceId: 1 }).values.value, -2);
-  assert.throws(() => adapter.update([{ ...records[0], id: "duplicate" }, { ...records[0], id: "other" }]), errorCode("DUPLICATE_BAR_CATEGORY"));
-  adapter.update([{ id: "three", categoryX: "C", categoryZ: "east", value: 1 }]);
-  assert.equal(adapter.describeSelection({ instanceId: 0 }).id, "three");
-  adapter.dispose();
+  assert.equal(plotter.describeSelection({ instanceId: 1 }).values.value, -2);
+  assert.throws(() => plotter.update([{ ...records[0], id: "duplicate" }, { ...records[0], id: "other" }]), errorCode("DUPLICATE_BAR_CATEGORY"));
+  plotter.update([{ id: "three", categoryX: "C", categoryZ: "east", value: 1 }]);
+  assert.equal(plotter.describeSelection({ instanceId: 0 }).id, "three");
+  plotter.dispose();
   resources.dispose();
   assert.equal(scene.children.length, 0);
 });
 
-test("bar adapter preserves custom field mappings across partial style updates", () => {
+test("bar plotter preserves custom field mappings across partial style updates", () => {
   const runtime = fakeRuntime().THREE;
   const scene = { children: [], add(object) { this.children.push(object); }, remove(object) { this.children = this.children.filter(item => item !== object); } };
   const resources = createResourceRegistry().createOwner("mapped-bars");
-  const adapter = barChartAdapter.create({ THREE: runtime, scene, resources, requestRender() {} }, {
+  const plotter = barChartPlotter.create({ THREE: runtime, scene, resources, requestRender() {} }, {
     configuration: { barChart: { mappings: { categoryX: "xcat", categoryZ: "zcat", value: "amount" } } },
   }, [{ id: "initial", xcat: "A", zcat: "North", amount: 7 }]);
-  adapter.update([{ id: "next", xcat: "B", zcat: "South", amount: 9 }], { barChart: { color: "red" } });
-  assert.deepEqual(adapter.describeSelection({ instanceId: 0 }).values, { categoryX: "B", categoryZ: "South", value: 9 });
-  adapter.dispose();
+  plotter.update([{ id: "next", xcat: "B", zcat: "South", amount: 9 }], { barChart: { color: "red" } });
+  assert.deepEqual(plotter.describeSelection({ instanceId: 0 }).values, { categoryX: "B", categoryZ: "South", value: 9 });
+  plotter.dispose();
   resources.dispose();
 });
 
 test("viewer initializes, updates, switches camera, forwards capabilities, and disposes", async () => {
   const container = new FakeContainer();
   const calls = { update: 0, dispose: 0, time: undefined };
-  const adapter = {
+  const plotter = {
     capabilities: ["time"],
     create() {
       return {
@@ -141,7 +141,7 @@ test("viewer initializes, updates, switches camera, forwards capabilities, and d
       };
     },
   };
-  const controller = await createViewerWithRuntime(container, { adapter, data: [], configuration: {}, camera: { modes: ["perspective", "orthographic"] } }, fakeRuntime());
+  const controller = await createViewerWithRuntime(container, { plotter, data: [], configuration: {}, camera: { modes: ["perspective", "orthographic"] } }, fakeRuntime());
   assert.equal(container.children.length, 1);
   assert.ok(controller.capabilities.includes("time"));
   await controller.update([], {});
@@ -163,27 +163,27 @@ test("viewer initializes, updates, switches camera, forwards capabilities, and d
   await assert.rejects(controller.update([], {}), errorCode("VIEWER_DISPOSED"));
 });
 
-test("viewer reports adapter update errors and preserves the rejected update", async () => {
+test("viewer reports plotter update errors and preserves the rejected update", async () => {
   const container = new FakeContainer();
   const errors = [];
   const updateError = new Error("invalid update");
-  const adapter = {
+  const plotter = {
     create() { return { update() { throw updateError; }, dispose() {} }; },
   };
-  const controller = await createViewerWithRuntime(container, { adapter, data: [], configuration: {}, callbacks: { onError: error => errors.push(error) } }, fakeRuntime());
+  const controller = await createViewerWithRuntime(container, { plotter, data: [], configuration: {}, callbacks: { onError: error => errors.push(error) } }, fakeRuntime());
   await assert.rejects(controller.update([], {}), error => error === updateError);
   assert.deepEqual(errors, [updateError]);
   controller.dispose();
 });
 
-test("viewer selection callback reports adapter identifiers", async () => {
+test("viewer selection callback reports plotter identifiers", async () => {
   const container = new FakeContainer();
   let selected;
-  const adapter = {
+  const plotter = {
     capabilities: ["selection"],
     create() { return { update() {}, dispose() {}, describeSelection: hit => ({ id: hit.id }) }; },
   };
-  const controller = await createViewerWithRuntime(container, { adapter, data: [], configuration: {}, callbacks: { onSelection: value => { selected = value; } } }, fakeRuntime());
+  const controller = await createViewerWithRuntime(container, { plotter, data: [], configuration: {}, callbacks: { onSelection: value => { selected = value; } } }, fakeRuntime());
   Raycaster.hits = [{ id: "stable-id", index: 0 }];
   container.children[0].dispatch("pointerup", { clientX: 20, clientY: 30 });
   assert.deepEqual(selected, { id: "stable-id" });
@@ -191,14 +191,14 @@ test("viewer selection callback reports adapter identifiers", async () => {
   Raycaster.hits = [];
 });
 
-test("viewer reports selection adapter errors through onError", async () => {
+test("viewer reports selection plotter errors through onError", async () => {
   const container = new FakeContainer();
   const errors = [];
-  const adapter = {
+  const plotter = {
     capabilities: ["selection"],
     create() { return { update() {}, dispose() {}, describeSelection() { throw new Error("selection failure"); } }; },
   };
-  const controller = await createViewerWithRuntime(container, { adapter, data: [], configuration: {}, callbacks: { onError: error => errors.push(error.message) } }, fakeRuntime());
+  const controller = await createViewerWithRuntime(container, { plotter, data: [], configuration: {}, callbacks: { onError: error => errors.push(error.message) } }, fakeRuntime());
   Raycaster.hits = [{ id: "x" }];
   container.children[0].dispatch("pointerup", { clientX: 20, clientY: 30 });
   assert.deepEqual(errors, ["selection failure"]);
@@ -209,11 +209,11 @@ test("viewer reports selection adapter errors through onError", async () => {
 test("animation advances through the renderer loop and stops when hidden", async () => {
   const container = new FakeContainer();
   const frames = [];
-  const adapter = {
+  const plotter = {
     capabilities: ["animation"],
     create() { return { update() {}, updateFrame(frame) { frames.push(frame); }, dispose() {} }; },
   };
-  const controller = await createViewerWithRuntime(container, { adapter, data: [], configuration: {} }, fakeRuntime());
+  const controller = await createViewerWithRuntime(container, { plotter, data: [], configuration: {} }, fakeRuntime());
   const renderer = WebGLRenderer.instances[0];
   controller.play();
   renderer.tick(1000);
@@ -231,11 +231,11 @@ test("animation advances through the renderer loop and stops when hidden", async
   controller.dispose();
 });
 
-test("viewer rolls back canvas and GPU resources when adapter construction fails", async () => {
+test("viewer rolls back canvas and GPU resources when plotter construction fails", async () => {
   const container = new FakeContainer();
-  const adapter = { create() { throw new Error("adapter build failure"); } };
+  const plotter = { create() { throw new Error("plotter build failure"); } };
   await assert.rejects(
-    createViewerWithRuntime(container, { adapter, data: [], configuration: {} }, fakeRuntime()),
+    createViewerWithRuntime(container, { plotter, data: [], configuration: {} }, fakeRuntime()),
     error => error instanceof VisualizationError && error.code === "MOUNT_FAILED",
   );
   assert.equal(container.children.length, 0);
@@ -244,11 +244,11 @@ test("viewer rolls back canvas and GPU resources when adapter construction fails
 
 test("viewer rejects and rolls back when the first render fails", async () => {
   const container = new FakeContainer();
-  const adapter = { create() { return { update() {}, dispose() {} }; } };
+  const plotter = { create() { return { update() {}, dispose() {} }; } };
   const runtime = fakeRuntime();
   WebGLRenderer.failRender = true;
   await assert.rejects(
-    createViewerWithRuntime(container, { adapter, data: [], configuration: {} }, runtime),
+    createViewerWithRuntime(container, { plotter, data: [], configuration: {} }, runtime),
     error => error instanceof VisualizationError && error.code === "MOUNT_FAILED",
   );
   assert.equal(container.children.length, 0);
@@ -258,9 +258,9 @@ test("viewer rejects and rolls back when the first render fails", async () => {
 
 test("invalid camera settings fail before renderer or canvas allocation", async () => {
   const container = new FakeContainer();
-  const adapter = { create() { return { update() {}, dispose() {} }; } };
+  const plotter = { create() { return { update() {}, dispose() {} }; } };
   await assert.rejects(
-    createViewerWithRuntime(container, { adapter, data: [], configuration: {}, camera: { fov: 180 } }, fakeRuntime()),
+    createViewerWithRuntime(container, { plotter, data: [], configuration: {}, camera: { fov: 180 } }, fakeRuntime()),
     errorCode("INVALID_CAMERA_FOV"),
   );
   assert.equal(WebGLRenderer.instances.length, 0);
@@ -269,7 +269,7 @@ test("invalid camera settings fail before renderer or canvas allocation", async 
 
 test("public mount reports an unavailable local Three.js runtime without leaving UI", async () => {
   const container = new FakeContainer();
-  const adapter = { create() { throw new Error("must not run"); } };
-  await assert.rejects(mount(container, { adapter, data: [], configuration: {} }), errorCode("THREE_LOAD_FAILED"));
+  const plotter = { create() { throw new Error("must not run"); } };
+  await assert.rejects(mount(container, { plotter, data: [], configuration: {} }), errorCode("THREE_LOAD_FAILED"));
   assert.equal(container.children.length, 0);
 });

@@ -14,8 +14,8 @@ function buildGeometry(THREE, records) {
   return geometry;
 }
 
-/** Basic selectable point-cloud adapter. It creates scene objects only; it creates no DOM/UI. */
-export const pointCloudAdapter = Object.freeze({
+/** Basic selectable point-cloud plotter. It creates scene objects only; it creates no DOM/UI. */
+export const pointCloudPlotter = Object.freeze({
   capabilities: Object.freeze(["selection"]),
   create(context, definition, initialData) {
     const { THREE, scene, resources } = context;

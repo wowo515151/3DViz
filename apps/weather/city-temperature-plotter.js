@@ -1,4 +1,4 @@
-import { createGrid3D, createLabeledBox } from "../../library/three-viz/src/index.js?v=forecast-labels-20261009g";
+import { createGrid3D, createLabeledBox } from "../../library/three-viz/src/index.js?v=forecast-labels-20261009h";
 
 const CUBE_SIZE = 20;
 const HALF = CUBE_SIZE / 2;
@@ -13,7 +13,7 @@ function cityEdgeLabel(city) {
   return code;
 }
 
-export const cityTemperatureAdapter = Object.freeze({
+export const cityTemperaturePlotter = Object.freeze({
   capabilities: Object.freeze(["selection"]),
   create(context, _definition, input) {
     const { THREE, scene, resources } = context;

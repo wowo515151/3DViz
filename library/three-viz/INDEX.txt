@@ -2,14 +2,16 @@ Bundled Three.js Visualization Library
 
 Purpose
 
-This is a repository copy of the reusable browser library in the workspace's Library/three-viz/src/. It is included so apps in this repository can import their runtime dependencies using relative paths.
+This directory is the reusable browser library in this repository. Apps in this repository and local development tools in the sibling `Tools/` folder import it through relative paths.
 
 Modules
 
-- src/index.js: public exports, including mount, adapters, validation, mapping, and resource tools.
+- src/index.js: public exports, including mount, plotters, validation, mapping, and resource tools.
 - src/core/: viewer lifecycle, errors, and resource ownership.
 - src/data/: input validation and coordinate mapping.
-- src/adapters/: point-cloud and categorical bar-chart visualization adapters.
+- src/plotters/: bar-chart, point-cloud, CSV bars, scatter, histogram, surface, trajectory, vector-field, time-slice, isosurface, and weather-tube plotters; each implementation has its own JavaScript module.
+- src/plotters/shared/: CSV mapping support plus reusable wireframe and marching-tetrahedra isosurface geometry helpers.
+- src/objects/: reusable labeled boxes and 2D/3D grids. Grid components remain separate from plotter implementations.
 - tests/: local development tests; the website does not import these files.
 
 Runtime
@@ -18,6 +20,6 @@ The Weather app imports ../../library/three-viz/src/index.js. Its HTML import ma
 
 Source and license
 
-Workspace source: Library/three-viz/ in the Sites workspace.
+Canonical source: this repository's library/three-viz/ directory.
 Snapshot date: 2026-10-09.
 License: MIT; see the repository root LICENSE.

@@ -7,11 +7,11 @@ function assertDefinition(container, definition) {
   if (!container || typeof container.appendChild !== "function" || typeof container.removeChild !== "function") {
     throw new VisualizationError("INVALID_CONTAINER", "mount() requires a DOM element that can contain a canvas.");
   }
-  if (!definition || typeof definition !== "object" || !definition.adapter || typeof definition.adapter.create !== "function") {
-    throw new VisualizationError("INVALID_DEFINITION", "mount() definition must include an adapter with a create(context, definition, data) method.");
+  if (!definition || typeof definition !== "object" || !definition.plotter || typeof definition.plotter.create !== "function") {
+    throw new VisualizationError("INVALID_DEFINITION", "mount() definition must include a plotter with a create(context, definition, data) method.");
   }
-  if (typeof definition.adapter.capabilities !== "undefined" && !Array.isArray(definition.adapter.capabilities)) {
-    throw new VisualizationError("INVALID_CAPABILITIES", "adapter.capabilities must be an array of capability names.");
+  if (typeof definition.plotter.capabilities !== "undefined" && !Array.isArray(definition.plotter.capabilities)) {
+    throw new VisualizationError("INVALID_CAPABILITIES", "plotter.capabilities must be an array of capability names.");
   }
   if (!definition.configuration || typeof definition.configuration !== "object") {
     throw new VisualizationError("INVALID_CONFIGURATION", "mount() definition must include a configuration object.");
@@ -87,17 +87,17 @@ export async function createViewerWithRuntime(container, definition, runtime) {
   if (definition.camera?.modes?.includes("orthographic") && typeof THREE.OrthographicCamera !== "function") {
     throw new VisualizationError("ORTHOGRAPHIC_UNAVAILABLE", "Orthographic camera mode was requested but is not available in the runtime.");
   }
-  if (definition.adapter.capabilities?.includes("selection") && (!THREE.Raycaster || !THREE.Vector2)) {
+  if (definition.plotter.capabilities?.includes("selection") && (!THREE.Raycaster || !THREE.Vector2)) {
     throw new VisualizationError("SELECTION_UNAVAILABLE", "Selection was requested but the runtime does not provide raycasting classes.");
   }
 
   const size = containerSize(container);
   const registry = createResourceRegistry();
   const coreResources = registry.createOwner("viewer-core");
-  const adapterResources = registry.createOwner("scene-adapter");
+  const plotterResources = registry.createOwner("scene-plotter");
   const callbacks = definition.callbacks ?? {};
-  const adapterDefinition = definition.adapter;
-  const sceneCapabilities = new Set(adapterDefinition.capabilities ?? []);
+  const plotterDefinition = definition.plotter;
+  const sceneCapabilities = new Set(plotterDefinition.capabilities ?? []);
   if ([...sceneCapabilities].some(capability => typeof capability !== "string" || capability.length === 0)) {
     throw new VisualizationError("INVALID_CAPABILITIES", "Capability names must be non-empty strings.");
   }
@@ -139,8 +139,8 @@ export async function createViewerWithRuntime(container, definition, runtime) {
 
   let renderer;
   let scene;
-  let adapterInstance;
-  let adapterCreated = false;
+  let plotterInstance;
+  let plotterCreated = false;
   let canvasAttached = false;
   let activeControls;
   let resizeObserver;
@@ -178,10 +178,10 @@ export async function createViewerWithRuntime(container, definition, runtime) {
     }
     try { activeControls?.dispose?.(); } catch (error) { errors.push(error); }
     cameraChangeListeners.clear();
-    if (adapterCreated) {
-      try { adapterInstance?.dispose?.(); } catch (error) { errors.push(error); }
+    if (plotterCreated) {
+      try { plotterInstance?.dispose?.(); } catch (error) { errors.push(error); }
     }
-    try { adapterResources.dispose(); } catch (error) { errors.push(error); }
+    try { plotterResources.dispose(); } catch (error) { errors.push(error); }
     if (canvasAttached && renderer?.domElement?.parentNode === container) {
       try { container.removeChild(renderer.domElement); } catch (error) { errors.push(error); }
     }
@@ -287,12 +287,12 @@ export async function createViewerWithRuntime(container, definition, runtime) {
       render();
     }
 
-    const adapterContext = Object.freeze({
+    const plotterContext = Object.freeze({
       THREE,
       scene,
       renderer,
       resourceRegistry: registry,
-      resources: adapterResources,
+      resources: plotterResources,
       getActiveCamera: () => activeCamera,
       onCameraChange(listener) {
         if (typeof listener !== "function") throw new VisualizationError("INVALID_CAMERA_LISTENER", "onCameraChange() requires a function.");
@@ -303,17 +303,17 @@ export async function createViewerWithRuntime(container, definition, runtime) {
       requestRender: render,
       callbacks: Object.freeze({ onError: report, onSelection: callbacks.onSelection }),
     });
-    adapterInstance = await adapterDefinition.create(adapterContext, definition, definition.data);
-    adapterCreated = true;
-    if (!adapterInstance || typeof adapterInstance.update !== "function" || typeof adapterInstance.dispose !== "function") {
-      throw new VisualizationError("INVALID_ADAPTER_INSTANCE", "adapter.create() must return an object with update() and dispose() methods.");
+    plotterInstance = await plotterDefinition.create(plotterContext, definition, definition.data);
+    plotterCreated = true;
+    if (!plotterInstance || typeof plotterInstance.update !== "function" || typeof plotterInstance.dispose !== "function") {
+      throw new VisualizationError("INVALID_PLOTTER_INSTANCE", "plotter.create() must return an object with update() and dispose() methods.");
     }
-    if (adapterInstance.capabilities) {
-      if (!Array.isArray(adapterInstance.capabilities)) throw new VisualizationError("INVALID_CAPABILITIES", "The adapter instance capabilities must be an array.");
-      for (const capability of adapterInstance.capabilities) sceneCapabilities.add(capability);
+    if (plotterInstance.capabilities) {
+      if (!Array.isArray(plotterInstance.capabilities)) throw new VisualizationError("INVALID_CAPABILITIES", "The plotter instance capabilities must be an array.");
+      for (const capability of plotterInstance.capabilities) sceneCapabilities.add(capability);
     }
-    if (sceneCapabilities.has("selection") && typeof adapterInstance.describeSelection !== "function") {
-      throw new VisualizationError("INVALID_SELECTION_ADAPTER", "A selection-capable adapter must implement describeSelection(hit).");
+    if (sceneCapabilities.has("selection") && typeof plotterInstance.describeSelection !== "function") {
+      throw new VisualizationError("INVALID_SELECTION_PLOTTER", "A selection-capable plotter must implement describeSelection(hit).");
     }
 
     function animationFrame(timestamp) {
@@ -323,7 +323,7 @@ export async function createViewerWithRuntime(container, definition, runtime) {
       lastFrameTime = now;
       if (playing) {
         elapsedSeconds += delta;
-        try { adapterInstance.updateFrame?.({ elapsedSeconds, deltaSeconds: delta }); } catch (error) { pause(); report(error); }
+        try { plotterInstance.updateFrame?.({ elapsedSeconds, deltaSeconds: delta }); } catch (error) { pause(); report(error); }
       }
       render();
     }
@@ -357,10 +357,10 @@ export async function createViewerWithRuntime(container, definition, runtime) {
 
     function capabilityMethod(capability, method) {
       if (!sceneCapabilities.has(capability)) return undefined;
-      if (typeof adapterInstance[method] !== "function") throw new VisualizationError("MISSING_ADAPTER_METHOD", `The adapter declares '${capability}' but does not implement ${method}().`);
+      if (typeof plotterInstance[method] !== "function") throw new VisualizationError("MISSING_PLOTTER_METHOD", `The plotter declares '${capability}' but does not implement ${method}().`);
       return (...args) => {
         ensureAlive();
-        const result = adapterInstance[method](...args);
+        const result = plotterInstance[method](...args);
         if (result && typeof result.then === "function") return result.then(value => { render(); return value; }, error => { report(error); throw error; });
         render();
         return result;
@@ -386,7 +386,7 @@ export async function createViewerWithRuntime(container, definition, runtime) {
         const hit = raycaster.intersectObjects(scene.children, true)[0];
         if (!hit) return;
         let selection;
-        try { selection = adapterInstance.describeSelection(hit); } catch (error) { report(error); return; }
+        try { selection = plotterInstance.describeSelection(hit); } catch (error) { report(error); return; }
         if (selection !== undefined && selection !== null) {
           try { callbacks.onSelection?.(selection); } catch (error) { report(error); }
         }
@@ -422,7 +422,7 @@ export async function createViewerWithRuntime(container, definition, runtime) {
       async update(data, configuration = {}) {
         ensureAlive();
         try {
-          await adapterInstance.update(data, configuration);
+          await plotterInstance.update(data, configuration);
         } catch (error) {
           report(error);
           throw error;
@@ -537,14 +537,14 @@ export async function createViewerWithRuntime(container, definition, runtime) {
       };
     }
     if (sceneCapabilities.has("animation")) {
-      if (typeof adapterInstance.updateFrame !== "function") throw new VisualizationError("INVALID_ANIMATION_ADAPTER", "An animation-capable adapter must implement updateFrame(frame).");
+      if (typeof plotterInstance.updateFrame !== "function") throw new VisualizationError("INVALID_ANIMATION_PLOTTER", "An animation-capable plotter must implement updateFrame(frame).");
       controller.play = () => { ensureAlive(); play(); };
       controller.pause = () => { ensureAlive(); pause(); };
     }
 
     if (activeControls?.enableDamping) startLoop();
     if (definition.configuration.autoplay === true) {
-      if (!sceneCapabilities.has("animation")) throw new VisualizationError("AUTOPLAY_UNSUPPORTED", "configuration.autoplay requires an animation-capable scene adapter.");
+      if (!sceneCapabilities.has("animation")) throw new VisualizationError("AUTOPLAY_UNSUPPORTED", "configuration.autoplay requires an animation-capable scene plotter.");
       controller.play();
     }
     return controller;

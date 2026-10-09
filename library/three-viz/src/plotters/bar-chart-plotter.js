@@ -66,7 +66,7 @@ function createInstances(THREE, geometry, material, bars, barWidth) {
 }
 
 /** Instanced 3D bar chart with two categorical horizontal axes. It creates no DOM/UI. */
-export const barChartAdapter = Object.freeze({
+export const barChartPlotter = Object.freeze({
   capabilities: Object.freeze(["selection"]),
   create(context, definition, initialData) {
     const { THREE, scene, resources } = context;
