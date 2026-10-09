@@ -1,6 +1,6 @@
 import { mount } from "../../library/three-viz/src/index.js";
-import { canadianCities, regionColors } from "./canadian-cities.js?v=canada-hourly-20261009c";
-import { cityTemperatureAdapter } from "./city-temperature-adapter.js?v=canada-hourly-20261009c";
+import { canadianCities, regionColors } from "./canadian-cities.js?v=canada-hourly-20261009d";
+import { cityTemperatureAdapter } from "./city-temperature-adapter.js?v=canada-hourly-20261009d";
 
 const API = "https://api.weather.gc.ca/collections/citypageweather-realtime/items";
 const $ = selector => document.querySelector(selector);

@@ -24,7 +24,7 @@ select option { background:#141b23; color:#e8edf4; }
 .readout { margin-top:8px; color:#9db0c3; font:9px ui-monospace,monospace; }
 .readout strong { color:#d8e8f4; font-weight:400; }
 .city-section { min-height:120px; flex:1 1 auto; display:flex; flex-direction:column; }
-.city-list { max-height:230px; overflow:auto; margin-top:6px; display:grid; grid-template-columns:1fr 1fr; gap:2px 6px; scrollbar-color:#47586a #141a22; }
+.city-list { max-height:230px; overflow:auto; margin-top:6px; display:grid; grid-template-columns:1fr; gap:2px 6px; scrollbar-color:#47586a #141a22; }
 .city-choice { display:flex; align-items:center; min-width:0; gap:6px; padding:4px 2px; color:#aebdcb; font-size:9px; cursor:pointer; }
 .city-choice input { accent-color:#76c8f3; margin:0; }
 .city-choice i { width:7px; height:7px; flex:0 0 7px; border-radius:50%; }
