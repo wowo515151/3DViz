@@ -60,7 +60,7 @@ export const cityTemperatureAdapter = Object.freeze({
       if (THREE.SRGBColorSpace) texture.colorSpace = THREE.SRGBColorSpace;
       const material = resources.track(new THREE.SpriteMaterial({ map:texture, transparent:true, depthTest:false, sizeAttenuation:true }));
       const sprite = new THREE.Sprite(material); sprite.name = `city-label-${city.id}`;
-      sprite.scale.set(3.7, 0.52, 1); sprite.position.set(x(0) - 1.8, 0.65, z(lane));
+      sprite.scale.set(4.6, 0.62, 1); sprite.position.set(x(0) - 4.0, 0.65, z(lane));
       root.add(sprite);
     });
 

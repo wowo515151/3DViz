@@ -1,6 +1,6 @@
 import { mount } from "../../library/three-viz/src/index.js";
-import { canadianCities, regionColors } from "./canadian-cities.js?v=canada-hourly-20261009b";
-import { cityTemperatureAdapter } from "./city-temperature-adapter.js?v=canada-hourly-20261009b";
+import { canadianCities, regionColors } from "./canadian-cities.js?v=canada-hourly-20261009c";
+import { cityTemperatureAdapter } from "./city-temperature-adapter.js?v=canada-hourly-20261009c";
 
 const API = "https://api.weather.gc.ca/collections/citypageweather-realtime/items";
 const $ = selector => document.querySelector(selector);
@@ -114,7 +114,7 @@ function visibleCities() {
 function renderCityChoices() {
   const filter = ui.cityFilter.value.trim().toLocaleLowerCase();
   ui.cityList.replaceChildren();
-  canadianCities.filter(city => `${city.name} ${city.province}`.toLocaleLowerCase().includes(filter)).forEach(city => {
+  [...canadianCities].sort((a,b) => (longitudes.get(a.id) ?? 0) - (longitudes.get(b.id) ?? 0)).filter(city => `${city.name} ${city.province}`.toLocaleLowerCase().includes(filter)).forEach(city => {
     const label = document.createElement("label"); label.className = "city-choice";
     const input = document.createElement("input"); input.type = "checkbox"; input.checked = selected.has(city.id); input.disabled = !forecasts.has(city.id); input.dataset.city = city.id;
     const dot = document.createElement("i"); dot.style.backgroundColor = `#${(regionColors[city.region] ?? 0x9bdcff).toString(16).padStart(6,"0")}`;
