@@ -56,7 +56,7 @@ export const cityTemperaturePlotter = Object.freeze({
         const latestY = latest ? y(latest.value) : 0;
         const cityLabelY = Math.max(-HALF + 0.35, Math.min(HALF - 0.35, latestY + (latestY > HALF - 0.75 ? -0.65 : 0.65)));
         return {
-          text:laneCount > 15 ? cityEdgeLabel(city) : `${city.name}, ${city.province}`,
+          text:laneCount > 15 ? cityEdgeLabel(city) : city.name,
           position:laneCount === 1 ? 0 : -HALF + (index / (laneCount - 1)) * CUBE_SIZE,
           normalPosition:cityLabelY,
           key:city.id,

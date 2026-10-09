@@ -1,6 +1,6 @@
 import { mount, generateRainbowColors } from "../../library/three-viz/src/index.js?v=forecast-labels-20261009i";
 import { canadianCities } from "./canadian-cities.js?v=canada-hourly-20261009f";
-import { cityTemperaturePlotter } from "./city-temperature-plotter.js?v=forecast-labels-20261009i";
+import { cityTemperaturePlotter } from "./city-temperature-plotter.js?v=forecast-labels-20261009j";
 
 const API = "https://api.weather.gc.ca/collections/citypageweather-realtime/items";
 const $ = selector => document.querySelector(selector);
