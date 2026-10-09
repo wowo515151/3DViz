@@ -29,4 +29,4 @@
 [x] Apply the shared glossy car-paint material to isosurfaces, tubular wires, static arrows, and animated cones.
 [x] Remove the visible dipole source dot and DIPOLE label from the stage and exports.
 [x] Review the updated spec and verify glossy materials and marker removal in Chrome on GitHub Pages, including PNG and WebM export messages.
-[ ] Keep vector arrows and cones lit when the Isosurfaces plotter is hidden, and verify both electric and magnetic field colors in Chrome.
+[x] Keep vector arrows and cones lit when the Isosurfaces plotter is hidden, and verify both electric and magnetic field colors in Chrome.
