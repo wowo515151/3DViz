@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="description" content="Compare hourly Environment and Climate Change Canada temperatures across major Canadian cities in 3D." />
   <title>3dWeather — Canada by the hour</title>
-  <link rel="stylesheet" href="./3dWeather.css" />
+  <link rel="stylesheet" href="./3dWeather.css?v=city-rainbow-20261009f" />
 </head>
 <body>
 <div class="app-shell">
@@ -59,12 +59,12 @@
   <main class="stage">
     <div class="stage-header"><div><div class="stage-heading" id="stage-heading">CANADIAN HOURLY TEMPERATURES</div><div class="stage-subheading" id="stage-subheading">LOADING 39 ECCC CITY FORECASTS</div></div><div class="status-pill"><span class="status-dot"></span><span id="status-text">CONNECTING</span></div></div>
     <div id="viewport" aria-label="Interactive 3D hourly temperature forecasts for Canadian cities" role="img"><div class="loading" id="loading">CONNECTING TO ECCC…</div></div>
-    <div class="stage-legend" id="stage-legend" aria-label="Temperature scale legend"></div>
+    <div class="stage-legend" id="stage-legend" aria-label="Temperature scale and graphed cities legend"></div>
     <div class="stage-actions"><button id="screenshot-download" type="button">DOWNLOAD PNG</button><button id="fullscreen-toggle" type="button" aria-label="Enter fullscreen" aria-pressed="false">FULLSCREEN</button></div>
     <div class="viewport-hint">DRAG TO ORBIT · SCROLL TO ZOOM · CLICK A CITY MARKER</div>
   </main>
 </div>
 <script type="importmap">{ "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.186.0/build/three.module.js", "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.186.0/examples/jsm/" } }</script>
-<script type="module" src="./3dWeather.js?v=canada-hourly-20261009d"></script>
+<script type="module" src="./3dWeather.js?v=canada-hourly-20261009f"></script>
 </body>
 </html>

@@ -2,6 +2,7 @@ export { mount } from "./core/mount.js";
 export { VisualizationError } from "./core/errors.js";
 export { createResourceRegistry } from "./core/resource-registry.js";
 export { createCoordinateMapper } from "./data/coordinate-mapping.js";
+export { generateRainbowColors } from "./utils/colors.js";
 export {
   validatePointRecords,
   validateOrderedSeries,

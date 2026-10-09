@@ -1,5 +1,3 @@
-import { regionColors } from "./canadian-cities.js";
-
 export const cityTemperatureAdapter = Object.freeze({
   capabilities: Object.freeze(["selection", "time", "animation"]),
   create(context, definition, input) {
@@ -25,13 +23,13 @@ export const cityTemperatureAdapter = Object.freeze({
       if (!Number.isFinite(forecast.value)) return;
       pointRecords.push({ city, forecast, hour, lane, x:x(hour), y:y(forecast.value), z:z(lane) });
     }));
-    const markers = new THREE.InstancedMesh(markerGeometry, resources.track(new THREE.MeshStandardMaterial({ vertexColors:true, metalness:0.08, roughness:0.32, emissive:0x16202b })), pointRecords.length);
+    const markers = new THREE.InstancedMesh(markerGeometry, resources.track(new THREE.MeshStandardMaterial({ metalness:0.08, roughness:0.32, emissive:0x16202b })), pointRecords.length);
     markers.name = "city-temperature-markers";
     const markerTransform = new THREE.Object3D();
     pointRecords.forEach((point, index) => {
       markerTransform.position.set(point.x, point.y, point.z); markerTransform.scale.setScalar(1); markerTransform.updateMatrix();
       markers.setMatrixAt(index, markerTransform.matrix);
-      markers.setColorAt(index, new THREE.Color(regionColors[point.city.region] ?? 0x9bdcff));
+      markers.setColorAt(index, new THREE.Color(point.city.color ?? 0x9bdcff));
     });
     markers.instanceMatrix.needsUpdate = true; markers.instanceColor.needsUpdate = true; markers.computeBoundingSphere(); root.add(markers);
 
@@ -39,7 +37,7 @@ export const cityTemperatureAdapter = Object.freeze({
       const valid = city.forecasts.flatMap((forecast, hour) => Number.isFinite(forecast.value) ? [new THREE.Vector3(x(hour), y(forecast.value), z(lane))] : []);
       if (valid.length < 2) return;
       const curve = new THREE.CatmullRomCurve3(valid);
-      const material = resources.track(new THREE.MeshStandardMaterial({ color:regionColors[city.region] ?? 0x9bdcff, metalness:0.08, roughness:0.32, emissive:regionColors[city.region] ?? 0x9bdcff, emissiveIntensity:0.07 }));
+      const material = resources.track(new THREE.MeshStandardMaterial({ color:city.color ?? 0x9bdcff, metalness:0.08, roughness:0.32, emissive:city.color ?? 0x9bdcff, emissiveIntensity:0.07 }));
       const tube = new THREE.Mesh(resources.track(new THREE.TubeGeometry(curve, Math.max(30, valid.length * 6), 0.025, 7, false)), material);
       tube.name = `temperature-line-${city.id}`; tube.raycast = () => {}; root.add(tube);
     });

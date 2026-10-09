@@ -1,6 +1,6 @@
-import { mount } from "../../library/three-viz/src/index.js";
-import { canadianCities, regionColors } from "./canadian-cities.js?v=canada-hourly-20261009d";
-import { cityTemperatureAdapter } from "./city-temperature-adapter.js?v=canada-hourly-20261009d";
+import { mount, generateRainbowColors } from "../../library/three-viz/src/index.js?v=city-rainbow-20261009";
+import { canadianCities } from "./canadian-cities.js?v=canada-hourly-20261009f";
+import { cityTemperatureAdapter } from "./city-temperature-adapter.js?v=canada-hourly-20261009f";
 
 const API = "https://api.weather.gc.ca/collections/citypageweather-realtime/items";
 const $ = selector => document.querySelector(selector);
@@ -11,10 +11,10 @@ const ui = {
   subheading:$("#stage-subheading"), legend:$("#stage-legend"), selection:$("#selection-readout"), camera:$("#camera-mode"), reset:$("#reset-view"),
   play:$("#play-toggle"), slider:$("#time-slider"), timeValue:$("#time-value"), screenshot:$("#screenshot-download"), fullscreen:$("#fullscreen-toggle"),
 };
-const regions = ["West", "Prairies", "Central", "Atlantic", "North"];
 const forecasts = new Map();
 const longitudes = new Map();
-const selected = new Set(canadianCities.map(city => city.id));
+const defaultCityIds = ["bc-74", "ab-52", "ab-50", "mb-38", "on-143", "on-118", "qc-147", "qc-133", "ns-19", "nl-24"];
+const selected = new Set(defaultCityIds);
 let controller;
 let commonTimes = [];
 let ready = false;
@@ -117,9 +117,8 @@ function renderCityChoices() {
   [...canadianCities].sort((a,b) => (longitudes.get(a.id) ?? 0) - (longitudes.get(b.id) ?? 0)).filter(city => `${city.name} ${city.province}`.toLocaleLowerCase().includes(filter)).forEach(city => {
     const label = document.createElement("label"); label.className = "city-choice";
     const input = document.createElement("input"); input.type = "checkbox"; input.checked = selected.has(city.id); input.disabled = !forecasts.has(city.id); input.dataset.city = city.id;
-    const dot = document.createElement("i"); dot.style.backgroundColor = `#${(regionColors[city.region] ?? 0x9bdcff).toString(16).padStart(6,"0")}`;
     const name = document.createElement("span"); name.textContent = `${city.name}, ${city.province}`;
-    label.append(input, dot, name); ui.cityList.append(label);
+    label.append(input, name); ui.cityList.append(label);
   });
 }
 function formatUtc(value, options = {}) {
@@ -131,18 +130,19 @@ function renderLegend(cities) {
   ui.legend.replaceChildren();
   const title = document.createElement("strong"); title.textContent = `Temperature scale · °${ui.units.value}`; ui.legend.append(title);
   const scale = document.createElement("div"); scale.textContent = ui.units.value === "F" ? "−40°F to 104°F · shared across cities" : "−40°C to 40°C · shared across cities"; ui.legend.append(scale);
-  regions.forEach(region => {
-    if (!cities.some(city => city.region === region)) return;
+  cities.forEach(city => {
     const row = document.createElement("div"); row.className = "legend-row";
-    const chip = document.createElement("i"); chip.className = "legend-chip"; chip.style.backgroundColor = `#${regionColors[region].toString(16).padStart(6,"0")}`;
-    const label = document.createElement("span"); label.textContent = region;
+    const chip = document.createElement("i"); chip.className = "legend-chip"; chip.style.backgroundColor = `#${city.color.toString(16).padStart(6,"0")}`;
+    const label = document.createElement("span"); label.textContent = `${city.name}, ${city.province}`;
     row.append(chip, label); ui.legend.append(row);
   });
 }
 async function renderVisualization() {
   if (!ready) return;
   const revision = ++renderRevision;
-  const cities = visibleCities().map(city => ({ ...city, forecasts:displayRows(city, Number(ui.horizon.value)) }));
+  const orderedCities = visibleCities();
+  const palette = generateRainbowColors(orderedCities.length, { saturation:0.82, lightness:0.59 });
+  const cities = orderedCities.map((city, index) => ({ ...city, color:palette[index], forecasts:displayRows(city, Number(ui.horizon.value)) }));
   const pointCount = cities.reduce((sum, city) => sum + city.forecasts.length, 0);
   ui.cityCount.textContent = String(cities.length); ui.pointCount.textContent = String(pointCount);
   ui.heading.textContent = "CANADIAN HOURLY TEMPERATURES";
