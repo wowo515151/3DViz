@@ -18,5 +18,6 @@
 [x] Keep animated cone centers in continuous field-direction motion across field refreshes; set velocity and radius from field strength, with no shafts.
 [x] Align Science vector position bounds with the dipole isosurface coordinate range.
 [x] Add an independent solid-surface visibility control so wireframes can remain visible alone.
+[x] Increase dipole field sampling to a 21³ grid for smoother isosurface tessellation.
 [x] Review the updated specification against the implementation and run local library checks.
 [ ] Publish the aligned cone-motion refinement and verify it in Chrome on GitHub Pages.

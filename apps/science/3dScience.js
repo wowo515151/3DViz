@@ -2,11 +2,11 @@ import {
   mount,
   makeVectorPlotter,
   makeIsosurfacePlotter,
-} from "../../library/three-viz/src/index.js?v=20261009i";
+} from "../../library/three-viz/src/index.js?v=20261009j";
 
 const $ = selector => document.querySelector(selector);
 const PALETTE = Object.freeze({ electric: 0xed5363, magnetic: 0x529cff });
-const GRID = 11;
+const GRID = 21;
 const HALF_EXTENT = 2.7;
 const VECTOR_POSITION_BOUNDS = Object.freeze([[-HALF_EXTENT, HALF_EXTENT], [-HALF_EXTENT, HALF_EXTENT], [-HALF_EXTENT, HALF_EXTENT]]);
 const FIELD_EPSILON = 0.38;
@@ -226,7 +226,7 @@ function compositeDipolePlotter(initialLayers) {
           for (const plotter of plotters) {
             if (isLayerVisible(plotter) && (!plotter.mode || plotter.mode === "animated")) plotter.instance.updateFrame?.({ elapsedSeconds, deltaSeconds });
           }
-          if (updateClock > 0.18 && Math.abs(nextPhase - lastUpdatePhase) > 0.06) {
+          if (updateClock > 0.24 && Math.abs(nextPhase - lastUpdatePhase) > 0.06) {
             currentPhase = nextPhase;
             state.phase = currentPhase;
             lastUpdatePhase = nextPhase;

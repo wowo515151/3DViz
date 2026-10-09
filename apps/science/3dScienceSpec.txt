@@ -1,6 +1,6 @@
 3DScience Application Specification
-Version: 1.3
-Status: Solid-surface visibility option implemented; pending final local and GitHub Pages verification.
+Version: 1.4
+Status: Higher-resolution dipole grid and independent solid-surface visibility implemented; pending GitHub Pages verification.
 
 Purpose
 
@@ -29,7 +29,7 @@ Dipole and shared field data
 
 - Model an idealized z-directed oscillating dipole at the origin with a finite excluded source core. Use normalized units and explicitly label them; this visualization is explanatory and is not a calibrated engineering solver.
 - Compute electric and magnetic vectors from the same time-dependent dipole model. Electric values map to red and magnetic values to blue. Keep the source origin visible and prevent singular values at the dipole.
-- Generate one complete, regularly spaced 3D sample grid for each field update. Maintain stable x/y/z coordinates and numeric E/B vector components and magnitudes. Derive field-specific records from this shared data rather than recalculating the model separately in each plotter adapter. Frequency or amplitude changes refresh the spatial samples from the same model.
+- Generate one complete, regularly spaced 21³ 3D sample grid for each field update to provide smooth isosurfaces. Maintain stable x/y/z coordinates and numeric E/B vector components and magnitudes. Derive field-specific records from this shared data rather than recalculating the model separately in each plotter adapter. Frequency or amplitude changes refresh the spatial samples from the same model.
 - Run the default wave at one cycle every 12 seconds. The frequency multiplier adjusts that rate. Regenerate the visible plotters on time changes through their update APIs; animate only plots that declare animation support, using the viewer's play/pause lifecycle.
 
 Plotter coverage
@@ -55,6 +55,7 @@ Accessibility, reliability, and deployment
 Acceptance criteria
 
 - The plotter choice list contains exactly Isosurfaces and Vector field. Both can be enabled at once.
+- The electromagnetic field uses a 21³ regularly spaced sample grid.
 - Isosurfaces, nested surfaces, solid fills, and wireframes are visible at startup. Turning off Solid surfaces leaves wireframes visible when Wireframes remains checked.
 - The default wave period is 12 seconds. Static vectors remain available. Vector positions align with the isosurfaces. Animated cones move continuously from their cell centers along the local vector at field-strength speed, persist through field refreshes, wrap at grid boundaries, have no shafts, and scale their radius with field strength.
 - Each visible layer uses its library module; no copy of the library's rendering implementation is introduced under apps/science/.
