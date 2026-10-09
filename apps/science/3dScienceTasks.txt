@@ -14,4 +14,4 @@
 [x] Restrict the Science app's available plotter choices and composition to Isosurfaces and Vector field.
 [x] Slow the default wave cycle and keep animated cone size constant while retaining field-strength movement speed.
 [x] Review this narrowed implementation against 3dScienceSpec.txt and verify two choices, running status, slowed wave, and animated cones in local Chrome.
-[ ] Publish and verify the narrowed app, slower wave, and fixed-size animated cones on GitHub Pages.
+[x] Publish and verify the narrowed app, slower wave, and fixed-size animated cones on GitHub Pages.

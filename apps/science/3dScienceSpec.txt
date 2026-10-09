@@ -1,6 +1,6 @@
 3DScience Application Specification
 Version: 1.1
-Status: Fixed-size vector cone revision implemented; GitHub Pages verification pending.
+Status: Fixed-size cone and two-plotter revision verified locally and on GitHub Pages (2026-10-09).
 
 Purpose
 
