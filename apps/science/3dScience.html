@@ -24,10 +24,13 @@
           <legend class="sr-only">Choose field views</legend>
           <label class="plot-choice"><input id="layer-isosurfaces" type="checkbox" checked><span>Isosurfaces</span><small>nested field shells</small></label>
           <div class="nested-options">
-            <label><input id="multiple-surfaces" type="checkbox" checked> Multiple surfaces</label>
+            <label><input id="multiple-surfaces" type="checkbox" aria-describedby="multiple-surfaces-note"> Multiple surfaces</label>
+            <p id="multiple-surfaces-note" class="field-note">Turn off Solid surfaces to show multiple wireframe levels.</p>
             <label><input id="iso-solids" type="checkbox" checked> Solid surfaces</label>
             <label><input id="iso-wireframes" type="checkbox" checked> Wireframes</label>
-            <label><input id="iso-tubular" type="checkbox"> Tubular wires</label>
+            <label class="range-label" for="iso-tube-radius">tube radius <output id="tube-radius-value">0.000</output></label>
+            <input id="iso-tube-radius" type="range" min="0" max="0.05" step="0.002" value="0" aria-describedby="tube-radius-note" />
+            <p id="tube-radius-note" class="field-note">0 uses line wireframes; increase the radius for tubular wires.</p>
           </div>
           <label class="plot-choice"><input id="layer-vectors" type="checkbox"><span>Vector field</span><small>local direction + strength</small></label>
           <div class="nested-options" id="vector-options" hidden>
@@ -106,6 +109,6 @@
   </div>
 
   <script type="importmap">{ "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.186.0/build/three.module.js", "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.186.0/examples/jsm/" } }</script>
-  <script type="module" src="./3dScience.js?v=20261009k"></script>
+  <script type="module" src="./3dScience.js?v=20261009l"></script>
 </body>
 </html>

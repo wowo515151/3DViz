@@ -1,8 +1,9 @@
 /** Build a disposable line or tubular wireframe layer around an existing Three.js geometry. */
-export function createWireframe(THREE, geometry, { color = 0xd6f4ff, opacity = 0.64, threshold = 1, full = false, tubular = false, tubeRadius = 0.012 } = {}) {
+export function createWireframe(THREE, geometry, { color = 0xd6f4ff, opacity = 0.64, threshold = 1, full = false, tubeRadius = 0 } = {}) {
   const WireGeometry = full ? THREE.WireframeGeometry : THREE.EdgesGeometry;
   if (typeof WireGeometry !== "function") throw new Error("Wireframe display needs Three.js edge geometry support.");
   const wireGeometry = full ? new WireGeometry(geometry) : new WireGeometry(geometry, threshold);
+  const tubular = Number.isFinite(tubeRadius) && tubeRadius > 0;
   if (tubular) {
     if (typeof THREE.CylinderGeometry !== "function" || typeof THREE.MeshBasicMaterial !== "function" || typeof THREE.InstancedMesh !== "function" || typeof THREE.Matrix4 !== "function" || typeof THREE.Quaternion !== "function" || typeof THREE.Vector3 !== "function") {
       wireGeometry.dispose();
@@ -34,6 +35,7 @@ export function createWireframe(THREE, geometry, { color = 0xd6f4ff, opacity = 0
       matrix.compose(length > 1e-9 ? midpoint : start, quaternion, scale);
       object.setMatrixAt(index, matrix);
     }
+    object.instanceMatrix.needsUpdate = true;
     object.name = "tubular-wireframe";
     wireGeometry.dispose();
     return { object, geometry: tubeGeometry, material };

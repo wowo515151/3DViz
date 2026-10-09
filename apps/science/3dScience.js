@@ -2,7 +2,7 @@ import {
   mount,
   makeVectorPlotter,
   makeIsosurfacePlotter,
-} from "../../library/three-viz/src/index.js?v=20261009k";
+} from "../../library/three-viz/src/index.js?v=20261009l";
 
 const $ = selector => document.querySelector(selector);
 const PALETTE = Object.freeze({ electric: 0xed5363, magnetic: 0x529cff });
@@ -156,8 +156,8 @@ function compositeDipolePlotter(initialLayers) {
         }
       };
 
-      add({ id: "electric-iso", component: "electric", plotter: makeIsosurfacePlotter({ x: "x", y: "y", z: "z", value: "value" }, { threshold: state.threshold, nested: true, wireframe: true, color: PALETTE.electric, wireframeColor: 0xffb5bc }), groupKey: "isosurfaces" });
-      add({ id: "magnetic-iso", component: "magnetic", plotter: makeIsosurfacePlotter({ x: "x", y: "y", z: "z", value: "value" }, { threshold: state.threshold, nested: true, wireframe: true, color: PALETTE.magnetic, wireframeColor: 0xb5d4ff }), groupKey: "isosurfaces" });
+      add({ id: "electric-iso", component: "electric", plotter: makeIsosurfacePlotter({ x: "x", y: "y", z: "z", value: "value" }, { threshold: state.threshold, nested: false, wireframe: true, color: PALETTE.electric, wireframeColor: PALETTE.electric }), groupKey: "isosurfaces" });
+      add({ id: "magnetic-iso", component: "magnetic", plotter: makeIsosurfacePlotter({ x: "x", y: "y", z: "z", value: "value" }, { threshold: state.threshold, nested: false, wireframe: true, color: PALETTE.magnetic, wireframeColor: PALETTE.magnetic }), groupKey: "isosurfaces" });
       add({ id: "electric-vector", component: "electric", plotter: makeVectorPlotter({ x: "x", y: "y", z: "z", u: "u", v: "v", w: "w" }, 0.62, { color: PALETTE.electric, positionBounds: VECTOR_POSITION_BOUNDS }), groupKey: "vectors", mode: "static" });
       add({ id: "magnetic-vector", component: "magnetic", plotter: makeVectorPlotter({ x: "x", y: "y", z: "z", u: "u", v: "v", w: "w" }, 0.62, { color: PALETTE.magnetic, positionBounds: VECTOR_POSITION_BOUNDS }), groupKey: "vectors", mode: "static" });
       add({ id: "electric-cones", component: "electric", plotter: makeVectorPlotter({ x: "x", y: "y", z: "z", u: "u", v: "v", w: "w" }, 0.62, { animated: true, color: PALETTE.electric, positionBounds: VECTOR_POSITION_BOUNDS }), groupKey: "vectors", mode: "animated" });
@@ -195,7 +195,7 @@ function compositeDipolePlotter(initialLayers) {
       const toggleLayer = (id, visible) => {
         if (id === "electric" || id === "magnetic") {
           componentGroups.get(id).visible = Boolean(visible);
-        } else if (id === "multiple" || id === "surface" || id === "wireframe" || id === "tubular") {
+        } else if (id === "multiple" || id === "surface" || id === "wireframe") {
           for (const plotter of plotters.filter(item => item.groupKey === "isosurfaces")) plotter.instance.setLayerVisible?.(id, Boolean(visible));
         } else if (id === "vector-mode") {
           state.animatedVectors = Boolean(visible);
@@ -239,6 +239,9 @@ function compositeDipolePlotter(initialLayers) {
         setThreshold(value) {
           state.threshold = Number(value);
           plotters.filter(plotter => plotter.groupKey === "isosurfaces").forEach(plotter => plotter.instance.setThreshold?.(state.threshold));
+        },
+        setTubeRadius(value) {
+          plotters.filter(plotter => plotter.groupKey === "isosurfaces").forEach(plotter => plotter.instance.setTubeRadius?.(value));
         },
         setLayerVisible: toggleLayer,
         describeSelection(hit) {
@@ -307,10 +310,13 @@ function updatePlotterControls() {
     state.controller.setLayerVisible("electric", state.electricVisible);
     state.controller.setLayerVisible("magnetic", state.magneticVisible);
     for (const [key, selector] of Object.entries(SELECTORS)) state.controller.setLayerVisible(key, $(selector).checked);
+    const solidVisible = $("#iso-solids").checked;
+    if (solidVisible) $("#multiple-surfaces").checked = false;
+    $("#multiple-surfaces").disabled = solidVisible;
     state.controller.setLayerVisible("multiple", $("#multiple-surfaces").checked);
-    state.controller.setLayerVisible("surface", $("#iso-solids").checked);
+    state.controller.setLayerVisible("surface", solidVisible);
     state.controller.setLayerVisible("wireframe", $("#iso-wireframes").checked);
-    state.controller.setLayerVisible("tubular", $("#iso-tubular").checked);
+    state.controller.setTubeRadius(Number($("#iso-tube-radius").value));
     state.controller.setLayerVisible("vector-mode", state.animatedVectors);
   }
 }
@@ -525,9 +531,19 @@ async function start() {
     $("#show-magnetic").addEventListener("change", updatePlotterControls);
     $("#animated-cones").addEventListener("change", event => state.controller.setLayerVisible("vector-mode", event.target.checked));
     $("#multiple-surfaces").addEventListener("change", event => state.controller.setLayerVisible("multiple", event.target.checked));
-    $("#iso-solids").addEventListener("change", event => state.controller.setLayerVisible("surface", event.target.checked));
+    $("#iso-solids").addEventListener("change", event => {
+      const solidVisible = event.target.checked;
+      if (solidVisible) $("#multiple-surfaces").checked = false;
+      $("#multiple-surfaces").disabled = solidVisible;
+      state.controller.setLayerVisible("surface", solidVisible);
+      state.controller.setLayerVisible("multiple", $("#multiple-surfaces").checked);
+    });
     $("#iso-wireframes").addEventListener("change", event => state.controller.setLayerVisible("wireframe", event.target.checked));
-    $("#iso-tubular").addEventListener("change", event => state.controller.setLayerVisible("tubular", event.target.checked));
+    $("#iso-tube-radius").addEventListener("input", event => {
+      const radius = Number(event.target.value);
+      $("#tube-radius-value").textContent = radius.toFixed(3);
+      state.controller.setTubeRadius(radius);
+    });
   } catch (error) {
     loading.hidden = true;
     status.textContent = "VIEW FAILED";

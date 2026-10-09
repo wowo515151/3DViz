@@ -10,7 +10,7 @@ export function makeIsosurfacePlotter(mapping, options) {
       const removeLights=addSceneLights(THREE,scene);
       const group=new THREE.Group();group.name="csv-isosurfaces";scene.add(group);
       let rows=initialRows, grid, threshold=options.threshold, shells=[], wireframes=[];
-      let nested=Boolean(options.nested), surfaceVisible=options.surfaceVisible !== false, wireframeVisible=Boolean(options.wireframe), tubularWires=Boolean(options.tubular);
+      let nested=Boolean(options.nested), surfaceVisible=options.surfaceVisible !== false, wireframeVisible=Boolean(options.wireframe), tubeRadius=Math.max(0,Number(options.tubeRadius??0));
       function clear(){
         for(const shell of shells){group.remove(shell.mesh);resources.release(shell.geometry);resources.release(shell.material);}
         shells=[];clearWireframes();
@@ -22,7 +22,7 @@ export function makeIsosurfacePlotter(mapping, options) {
       function buildWireframes(){
         clearWireframes();
         for(const shell of shells){
-          const wire=createWireframe(THREE,shell.geometry,{color:options.wireframeColor ?? options.color ?? PALETTE[0],opacity:1,full:true,tubular:tubularWires,tubeRadius:options.tubeRadius});
+          const wire=createWireframe(THREE,shell.geometry,{color:options.wireframeColor ?? options.color ?? PALETTE[0],opacity:1,full:true,tubeRadius});
           resources.track(wire.geometry);resources.track(wire.material);
           wire.object.visible=wireframeVisible;wire.object.name=`csv-isosurface-wire-${displayNumber(shell.threshold)}`;group.add(wire.object);
           wireframes.push({object:wire.object,geometry:wire.geometry,material:wire.material});
@@ -57,12 +57,16 @@ export function makeIsosurfacePlotter(mapping, options) {
         update(nextRows){rows=nextRows;build();context.requestRender();},
         setThreshold(value){if(!Number.isFinite(value))throw new Error("Isosurface threshold must be numeric.");if(value<=grid.scalarExtent[0]||value>=grid.scalarExtent[1])throw new Error("Choose an isosurface threshold strictly between the minimum and maximum scalar values.");threshold=value;build();},
         setLayerVisible(id,visible){
-          if(id==="surface"){surfaceVisible=Boolean(visible);shells.forEach(shell=>{shell.mesh.visible=surfaceVisible&&shell.isSolidLevel;});context.requestRender();return;}
+          if(id==="surface"){
+            surfaceVisible=Boolean(visible);
+            if(surfaceVisible&&nested){nested=false;build();}else shells.forEach(shell=>{shell.mesh.visible=surfaceVisible&&shell.isSolidLevel;});
+            context.requestRender();return;
+          }
           if(id==="wireframe"){wireframeVisible=Boolean(visible);wireframes.forEach(wire=>{wire.object.visible=wireframeVisible;});context.requestRender();return;}
-          if(id==="tubular"){tubularWires=Boolean(visible);buildWireframes();context.requestRender();return;}
-          if(id==="multiple"){nested=Boolean(visible);build();context.requestRender();return;}
+          if(id==="multiple"){nested=Boolean(visible)&&!surfaceVisible;build();context.requestRender();return;}
           throw new Error(`Unknown isosurface layer: ${id}`);
         },
+        setTubeRadius(value){const next=Number(value);if(!Number.isFinite(next)||next<0)throw new Error("Tube radius must be zero or a positive number.");if(next===tubeRadius)return;tubeRadius=next;buildWireframes();context.requestRender();},
         describeSelection(hit){const row=hit.object?.userData?.triangleRows?.[hit.faceIndex];return row?{id:`row-${row.__rowNumber}`,label:`Isosurface cell near row ${row.__rowNumber}`,values:{...row}}:undefined;},
         dispose(){clear();scene.remove(group);removeLights();},
         get thresholds(){return shells.map(shell=>shell.threshold);},
