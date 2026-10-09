@@ -1,4 +1,4 @@
-import { hslToHex, rgbToHsl } from "./colors.js";
+import { hslToHex, rgbToHsl } from "./colors.js?v=shades-20261009";
 
 function clampUnit(value, label) {
   if (!Number.isFinite(value) || value < 0 || value > 1) {
