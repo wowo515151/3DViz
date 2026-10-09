@@ -1,17 +1,8 @@
 import {
   mount,
-  pointCloudPlotter,
-  barChartPlotter,
-  makeBarPlotter,
-  makeScatterPlotter,
-  makeSurfacePlotter,
-  makeHistogramPlotter,
-  makeTrajectoryPlotter,
   makeVectorPlotter,
-  makeTimeSlicePlotter,
   makeIsosurfacePlotter,
-  weatherTubesPlotter,
-} from "../../library/three-viz/src/index.js?v=20261009a";
+} from "../../library/three-viz/src/index.js?v=20261009b";
 
 const $ = selector => document.querySelector(selector);
 const PALETTE = Object.freeze({ electric: 0xed5363, magnetic: 0x529cff });
@@ -19,11 +10,9 @@ const GRID = 11;
 const HALF_EXTENT = 2.7;
 const FIELD_EPSILON = 0.38;
 const SIMULATION_CYCLE = Math.PI * 2;
+const BASE_WAVE_PERIOD_SECONDS = 12;
 const SELECTORS = Object.freeze({
-  isosurfaces: "#layer-isosurfaces", vectors: "#layer-vectors", surface: "#layer-surface",
-  scatter: "#layer-scatter", points: "#layer-points", histogram: "#layer-histogram",
-  bars: "#layer-bars", csvBars: "#layer-csv-bars", trajectories: "#layer-trajectories",
-  timeSlice: "#layer-time-slice", weatherTubes: "#layer-weather-tubes",
+  isosurfaces: "#layer-isosurfaces", vectors: "#layer-vectors",
 });
 
 const state = {
@@ -36,9 +25,7 @@ const state = {
   animatedVectors: false,
   electricVisible: true,
   magneticVisible: true,
-  lastDataUpdate: 0,
   controller: undefined,
-  currentField: undefined,
 };
 
 function numericField(record, component) {
@@ -105,113 +92,35 @@ function generateField(phase = state.phase, frequency = state.frequency, amplitu
   }));
 }
 
-function makeProbePaths(frames) {
-  const paths = [];
-  for (let index = 0; index < 8; index += 1) {
-    const seedIndex = Math.floor((index + 1) * (frames[0].length - 1) / 9);
-    const seed = frames[0][seedIndex];
-    for (let sampleIndex = 0; sampleIndex < frames.length; sampleIndex += 1) {
-      const time = sampleIndex / Math.max(1, frames.length - 1);
-      const record = frames[sampleIndex][seedIndex];
-      paths.push({
-        __rowNumber: paths.length + 1,
-        x: seed.x + record.ex * 0.48,
-        y: seed.y + record.ey * 0.48,
-        z: seed.z + record.ez * 0.48,
-        time,
-        series: `Probe ${index + 1}`,
-      });
-    }
-  }
-  return paths;
-}
-
-function makeTimeSeries() {
-  const frames = [];
-  const timeCount = 8;
-  for (let index = 0; index < timeCount; index += 1) {
-    const phase = (index / (timeCount - 1)) * SIMULATION_CYCLE;
-    frames.push(generateField(phase, state.frequency, state.amplitude));
-  }
-  const timeRows = frames.flatMap((frame, time) => frame.filter((_, index) => index % 4 === 0).map(row => ({ ...row, value: row.electricMagnitude, time })));
-  const weatherRows = frames.map((frame, index) => {
-    let electric = 0, magnetic = 0;
-    for (let sample = 0; sample < frame.length; sample += 1) {
-      electric += frame[sample].electricMagnitude;
-      magnetic += frame[sample].magneticMagnitude;
-    }
-    const phase = (index / (timeCount - 1)) * SIMULATION_CYCLE;
-    return {
-      label: `Phase ${phase.toFixed(2)} rad`,
-      description: "Dipole field magnitude averaged across the normalized sample volume.",
-      metrics: { electric: electric / frame.length, magnetic: magnetic / frame.length },
-    };
-  });
-  return { frames, timeRows, weatherRows, paths: makeProbePaths(frames) };
-}
-
-function fieldSlice(records, component = "electric") {
-  const centerIndex = Math.floor(GRID / 2);
-  return records.filter(record => Math.abs(record.y) < 1e-8).map(record => ({
-    ...record,
-    categoryX: `X${String(Math.round((record.x + HALF_EXTENT) / (HALF_EXTENT * 2) * (GRID - 1))).padStart(2, "0")}`,
-    categoryZ: `Z${String(Math.round((record.z + HALF_EXTENT) / (HALF_EXTENT * 2) * (GRID - 1))).padStart(2, "0")}`,
-    regionX: `X${Math.floor((record.x + HALF_EXTENT) / (HALF_EXTENT * 2) * 4)}`,
-    regionZ: `Z${Math.floor((record.z + HALF_EXTENT) / (HALF_EXTENT * 2) * 4)}`,
-    value: numericField(record, component),
-    height: numericField(record, component),
-    component,
-    __rowNumber: record.__rowNumber ?? centerIndex,
-  }));
-}
-
-function layerData(id, component, currentRecords, timeRows, paths, weatherRows) {
-  const componentKey = component === "electric" ? "electric" : "magnetic";
+function layerData(component, currentRecords) {
   const suffix = component === "electric" ? "e" : "b";
-  const field = currentRecords.map(record => ({
+  return currentRecords.map(record => ({
     ...record,
     u: record[`${suffix}x`], v: record[`${suffix}y`], w: record[`${suffix}z`],
     value: numericField(record, component),
   }));
-  const probes = field.filter((_, index) => index % 4 === 0);
-  const slice = fieldSlice(field, component);
-  if (id === "surface") return slice;
-  if (id === "scatter") return probes;
-  if (id === "points") return probes;
-  if (id === "histogram") return field;
-  if (id === "bars" || id === "csvBars") return slice;
-  if (id === "trajectories") return paths;
-  if (id === "timeSlice") return timeRows;
-  if (id === "weatherTubes") return { rows: weatherRows, keys: ["electric", "magnetic"], metricDefinitions: {
-    electric: { label: "Electric field", unit: " norm", color: PALETTE.electric },
-    magnetic: { label: "Magnetic field", unit: " norm", color: PALETTE.magnetic },
-  } };
-  if (id === "isosurfaces") return field;
-  if (id === "vectors" || id === "animatedVectors") return field;
-  return field;
 }
 
 function compositeDipolePlotter(initialLayers) {
   const plotters = [];
-  const layerGroups = new Map();
   const componentGroups = new Map();
+  const typeGroups = new Map([['isosurfaces', []], ['vectors', []]]);
   const vectorModes = { static: [], animated: [] };
   let currentPhase = 0;
   let updateClock = 0;
   let lastUpdatePhase = -1;
+  let animationTime = 0;
 
   return {
     capabilities: ["selection", "time", "animation", "layers", "thresholds"],
     create(context, definition, initialData) {
       const { THREE } = context;
-      let dataset = initialData;
       const makeGroup = (name, parent) => {
         const group = new THREE.Group();
         group.name = name;
         parent.add(group);
         return group;
       };
-      const getTypeGroups = id => [...layerGroups.entries()].filter(([key]) => key.startsWith(`${id}:`)).map(([, group]) => group);
       const createComponent = name => {
         const group = makeGroup(`science-component-${name}`, context.scene);
         group.visible = name === "electric" ? state.electricVisible : state.magneticVisible;
@@ -221,20 +130,23 @@ function compositeDipolePlotter(initialLayers) {
       createComponent("electric");
       createComponent("magnetic");
 
-      const add = ({ id, component, plotter, groupKey, dataId = id, configuration = {}, dataMap, enabled = false, mode }) => {
-        const componentGroup = component ? componentGroups.get(component) : context.scene;
-        const layerGroupKey = `${groupKey}:${component ?? "global"}`;
-        const layerGroup = layerGroups.get(layerGroupKey) ?? makeGroup(`science-layer-${layerGroupKey}`, componentGroup);
-        layerGroups.set(layerGroupKey, layerGroup);
+      for (const [key, components] of [["isosurfaces", ["electric", "magnetic"]], ["vectors", ["electric", "magnetic"]]]) {
+        for (const component of components) {
+          const group = makeGroup(`science-layer-${key}-${component}`, componentGroups.get(component));
+          group.visible = initialLayers.has(key);
+          typeGroups.get(key).push(group);
+        }
+      }
+
+      const add = ({ id, component, plotter, groupKey, mode, configuration = {} }) => {
+        const layerGroup = typeGroups.get(groupKey)[component === "electric" ? 0 : 1];
         const sceneLayer = makeGroup(`science-plotter-${id}`, layerGroup);
-        const plotterData = dataMap ? dataMap(initialData, component) : layerData(dataId, component, initialData.field, initialData.timeRows, initialData.paths, initialData.weatherRows);
         try {
           const instance = plotter.create({ ...context, scene: sceneLayer }, {
             ...definition,
             configuration: { ...definition.configuration, ...configuration },
-          }, plotterData);
-          plotters.push({ id, component, groupKey, sceneLayer, instance, dataId, dataMap, configuration, mode });
-          sceneLayer.visible = true;
+          }, layerData(component, initialData.field));
+          plotters.push({ id, component, groupKey, sceneLayer, instance, mode });
           if (mode) vectorModes[mode].push(sceneLayer);
         } catch (error) {
           layerGroup.remove(sceneLayer);
@@ -243,58 +155,32 @@ function compositeDipolePlotter(initialLayers) {
         }
       };
 
-      add({ id: "electric-iso", component: "electric", dataId: "isosurfaces", plotter: makeIsosurfacePlotter({ x: "x", y: "y", z: "z", value: "value" }, { threshold: state.threshold, nested: true, wireframe: true, color: PALETTE.electric, wireframeColor: 0xffb5bc }), groupKey: "isosurfaces", enabled: initialLayers.has("isosurfaces") });
-      add({ id: "magnetic-iso", component: "magnetic", dataId: "isosurfaces", plotter: makeIsosurfacePlotter({ x: "x", y: "y", z: "z", value: "value" }, { threshold: state.threshold, nested: true, wireframe: true, color: PALETTE.magnetic, wireframeColor: 0xb5d4ff }), groupKey: "isosurfaces", enabled: initialLayers.has("isosurfaces") });
-      add({ id: "electric-vector", component: "electric", dataId: "vectors", plotter: makeVectorPlotter({ x: "x", y: "y", z: "z", u: "u", v: "v", w: "w" }, 0.62, { color: PALETTE.electric }), groupKey: "vectors", mode: "static" });
-      add({ id: "magnetic-vector", component: "magnetic", dataId: "vectors", plotter: makeVectorPlotter({ x: "x", y: "y", z: "z", u: "u", v: "v", w: "w" }, 0.62, { color: PALETTE.magnetic }), groupKey: "vectors", mode: "static" });
-      add({ id: "electric-cones", component: "electric", dataId: "vectors", plotter: makeVectorPlotter({ x: "x", y: "y", z: "z", u: "u", v: "v", w: "w" }, 0.62, { animated: true, color: PALETTE.electric, cycleDuration: 3.6, maxTravel: 0.72 }), groupKey: "vectors", mode: "animated" });
-      add({ id: "magnetic-cones", component: "magnetic", dataId: "vectors", plotter: makeVectorPlotter({ x: "x", y: "y", z: "z", u: "u", v: "v", w: "w" }, 0.62, { animated: true, color: PALETTE.magnetic, cycleDuration: 3.6, maxTravel: 0.72 }), groupKey: "vectors", mode: "animated" });
-      add({ id: "electric-surface", component: "electric", dataId: "surface", plotter: makeSurfacePlotter({ x: "x", z: "z", height: "height" }), groupKey: "surface" });
-      add({ id: "magnetic-surface", component: "magnetic", dataId: "surface", plotter: makeSurfacePlotter({ x: "x", z: "z", height: "height" }), groupKey: "surface" });
-      add({ id: "electric-scatter", component: "electric", dataId: "scatter", plotter: makeScatterPlotter({ x: "x", y: "y", z: "z" }), groupKey: "scatter" });
-      add({ id: "magnetic-scatter", component: "magnetic", dataId: "scatter", plotter: makeScatterPlotter({ x: "x", y: "y", z: "z" }), groupKey: "scatter" });
-      add({ id: "electric-points", component: "electric", dataId: "points", plotter: pointCloudPlotter, groupKey: "points", configuration: { pointCloud: { color: PALETTE.electric, size: 0.065 } } });
-      add({ id: "magnetic-points", component: "magnetic", dataId: "points", plotter: pointCloudPlotter, groupKey: "points", configuration: { pointCloud: { color: PALETTE.magnetic, size: 0.065 } } });
-      add({ id: "electric-histogram", component: "electric", dataId: "histogram", plotter: makeHistogramPlotter({ x: "x", z: "z" }, 8), groupKey: "histogram" });
-      add({ id: "magnetic-histogram", component: "magnetic", dataId: "histogram", plotter: makeHistogramPlotter({ x: "x", z: "z" }, 8), groupKey: "histogram" });
-      add({ id: "electric-bars", component: "electric", dataId: "bars", plotter: barChartPlotter, groupKey: "bars", configuration: { barChart: { mappings: { categoryX: "categoryX", categoryZ: "categoryZ", value: "value" }, color: PALETTE.electric, barWidth: 0.65 } } });
-      add({ id: "magnetic-bars", component: "magnetic", dataId: "bars", plotter: barChartPlotter, groupKey: "bars", configuration: { barChart: { mappings: { categoryX: "categoryX", categoryZ: "categoryZ", value: "value" }, color: PALETTE.magnetic, barWidth: 0.65 } } });
-      add({ id: "electric-csv-bars", component: "electric", dataId: "csvBars", plotter: makeBarPlotter({ categoryX: "regionX", categoryZ: "regionZ", value: "value" }, "mean"), groupKey: "csvBars" });
-      add({ id: "magnetic-csv-bars", component: "magnetic", dataId: "csvBars", plotter: makeBarPlotter({ categoryX: "regionX", categoryZ: "regionZ", value: "value" }, "mean"), groupKey: "csvBars" });
-      add({ id: "electric-trajectories", component: "electric", plotter: makeTrajectoryPlotter({ x: "x", y: "y", z: "z", time: "time", series: "series" }), groupKey: "trajectories", dataMap: data => data.paths });
-      add({ id: "electric-time-slice", component: "electric", plotter: makeTimeSlicePlotter({ x: "x", y: "y", z: "z", value: "value", time: "time" }), groupKey: "timeSlice", dataMap: data => data.timeRows });
-      add({ id: "field-weather-tubes", plotter: weatherTubesPlotter, groupKey: "weatherTubes", dataMap: data => ({ rows: data.weatherRows, keys: ["electric", "magnetic"], metricDefinitions: {
-        electric: { label: "Electric field", unit: " norm", color: PALETTE.electric },
-        magnetic: { label: "Magnetic field", unit: " norm", color: PALETTE.magnetic },
-      } }) });
+      add({ id: "electric-iso", component: "electric", plotter: makeIsosurfacePlotter({ x: "x", y: "y", z: "z", value: "value" }, { threshold: state.threshold, nested: true, wireframe: true, color: PALETTE.electric, wireframeColor: 0xffb5bc }), groupKey: "isosurfaces" });
+      add({ id: "magnetic-iso", component: "magnetic", plotter: makeIsosurfacePlotter({ x: "x", y: "y", z: "z", value: "value" }, { threshold: state.threshold, nested: true, wireframe: true, color: PALETTE.magnetic, wireframeColor: 0xb5d4ff }), groupKey: "isosurfaces" });
+      add({ id: "electric-vector", component: "electric", plotter: makeVectorPlotter({ x: "x", y: "y", z: "z", u: "u", v: "v", w: "w" }, 0.62, { color: PALETTE.electric }), groupKey: "vectors", mode: "static" });
+      add({ id: "magnetic-vector", component: "magnetic", plotter: makeVectorPlotter({ x: "x", y: "y", z: "z", u: "u", v: "v", w: "w" }, 0.62, { color: PALETTE.magnetic }), groupKey: "vectors", mode: "static" });
+      add({ id: "electric-cones", component: "electric", plotter: makeVectorPlotter({ x: "x", y: "y", z: "z", u: "u", v: "v", w: "w" }, 0.62, { animated: true, color: PALETTE.electric, cycleDuration: 5, maxTravel: 1.2 }), groupKey: "vectors", mode: "animated" });
+      add({ id: "magnetic-cones", component: "magnetic", plotter: makeVectorPlotter({ x: "x", y: "y", z: "z", u: "u", v: "v", w: "w" }, 0.62, { animated: true, color: PALETTE.magnetic, cycleDuration: 5, maxTravel: 1.2 }), groupKey: "vectors", mode: "animated" });
 
-      layerGroups.forEach((group, key) => {
-        group.visible = key.startsWith("isosurfaces:");
-      });
-      vectorModes.static.forEach(group => { group.visible = false; });
-      vectorModes.animated.forEach(group => { group.visible = false; });
-
-      const dataFor = (plotter, field = generateField(currentPhase), sourceData = dataset) => {
-        const data = { ...sourceData, field };
-        return plotter.dataMap ? plotter.dataMap(data, plotter.component) : layerData(plotter.dataId, plotter.component, field, data.timeRows, data.paths, data.weatherRows);
-      };
+      const vectorOn = initialLayers.has("vectors");
+      vectorModes.static.forEach(group => { group.visible = vectorOn && !state.animatedVectors; });
+      vectorModes.animated.forEach(group => { group.visible = vectorOn && state.animatedVectors; });
       const isLayerVisible = plotter => {
         for (let parent = plotter.sceneLayer; parent; parent = parent.parent) if (parent.visible === false) return false;
         return true;
       };
       const refreshSpatialLayers = () => {
         const field = generateField(currentPhase);
-        state.currentField = field;
         for (const plotter of plotters) {
-          if (plotter.groupKey === "timeSlice" || plotter.groupKey === "trajectories" || plotter.groupKey === "weatherTubes") continue;
           if (!isLayerVisible(plotter)) continue;
-          try { plotter.instance.update(dataFor(plotter, field)); }
+          try { plotter.instance.update(layerData(plotter.component, field)); }
           catch (error) { definition.callbacks?.onLayerError?.(plotter.groupKey, error); }
+          if (plotter.mode === "animated") plotter.instance.updateFrame?.({ elapsedSeconds: animationTime, deltaSeconds: 0 });
         }
         context.requestRender();
       };
       const updateLayerVisibility = () => {
-        const vectorOn = getTypeGroups("vectors").some(group => group.visible);
+        const vectorOn = typeGroups.get("vectors").some(group => group.visible);
         vectorModes.static.forEach(group => { group.visible = vectorOn && !state.animatedVectors; });
         vectorModes.animated.forEach(group => { group.visible = vectorOn && state.animatedVectors; });
         context.requestRender();
@@ -304,13 +190,6 @@ function compositeDipolePlotter(initialLayers) {
         currentPhase = ((Number(phase) % SIMULATION_CYCLE) + SIMULATION_CYCLE) % SIMULATION_CYCLE;
         state.phase = currentPhase;
         refreshSpatialLayers();
-        const sliceTime = (currentPhase / SIMULATION_CYCLE) * 7;
-        for (const plotter of plotters) {
-          if (plotter.groupKey === "timeSlice" || plotter.groupKey === "trajectories" || plotter.groupKey === "weatherTubes") {
-            const time = plotter.groupKey === "trajectories" ? currentPhase / SIMULATION_CYCLE : plotter.groupKey === "weatherTubes" ? sliceTime : sliceTime;
-            try { plotter.instance.setTime?.(time); } catch { /* The next animation frame may use the complete sample range. */ }
-          }
-        }
       };
       const toggleLayer = (id, visible) => {
         if (id === "electric" || id === "magnetic") {
@@ -320,34 +199,28 @@ function compositeDipolePlotter(initialLayers) {
         } else if (id === "vector-mode") {
           state.animatedVectors = Boolean(visible);
           updateLayerVisibility();
-        } else if (layerGroups.has(id)) {
-          layerGroups.get(id).visible = Boolean(visible);
+        } else if (typeGroups.has(id)) {
+          typeGroups.get(id).forEach(group => { group.visible = Boolean(visible); });
           if (id === "vectors") updateLayerVisibility();
-        } else {
-          getTypeGroups(id).forEach(group => { group.visible = Boolean(visible); });
-          if (id === "vectors") updateLayerVisibility();
+          if (visible) refreshSpatialLayers();
         }
         context.requestRender();
       };
 
-      for (const [key, selector] of Object.entries(SELECTORS)) {
-        getTypeGroups(key).forEach(group => { group.visible = $(selector).checked; });
-      }
-      updateLayerVisibility();
-
       return {
         capabilities: ["selection", "time", "animation", "layers", "thresholds"],
         update(nextData) {
-          dataset = nextData;
           currentPhase = nextData.phase ?? currentPhase;
           for (const plotter of plotters) {
-            try { plotter.instance.update(dataFor(plotter, nextData.field, dataset)); }
+            try { plotter.instance.update(layerData(plotter.component, nextData.field)); }
             catch (error) { definition.callbacks?.onLayerError?.(plotter.groupKey, error); }
+            if (plotter.mode === "animated") plotter.instance.updateFrame?.({ elapsedSeconds: animationTime, deltaSeconds: 0 });
           }
           context.requestRender();
         },
         updateFrame({ elapsedSeconds, deltaSeconds }) {
-          const nextPhase = ((elapsedSeconds * state.frequency * (Math.PI * 2)) % SIMULATION_CYCLE + SIMULATION_CYCLE) % SIMULATION_CYCLE;
+          animationTime = elapsedSeconds;
+          const nextPhase = ((elapsedSeconds * state.frequency * SIMULATION_CYCLE / BASE_WAVE_PERIOD_SECONDS) % SIMULATION_CYCLE + SIMULATION_CYCLE) % SIMULATION_CYCLE;
           updateClock += deltaSeconds;
           for (const plotter of plotters) {
             if (isLayerVisible(plotter) && (!plotter.mode || plotter.mode === "animated")) plotter.instance.updateFrame?.({ elapsedSeconds, deltaSeconds });
@@ -369,7 +242,7 @@ function compositeDipolePlotter(initialLayers) {
         setLayerVisible: toggleLayer,
         describeSelection(hit) {
           let group = hit.object;
-          const knownLayerGroups = [...layerGroups.values()];
+          const knownLayerGroups = [...typeGroups.values()].flat();
           while (group && !knownLayerGroups.includes(group)) group = group.parent;
           if (!group) return undefined;
           const plotter = plotters.find(item => {
@@ -383,7 +256,7 @@ function compositeDipolePlotter(initialLayers) {
           for (const plotter of [...plotters].reverse()) {
             try { plotter.instance.dispose(); } catch (error) { definition.callbacks?.onLayerError?.(plotter.groupKey, error); }
           }
-          for (const group of layerGroups.values()) group.parent?.remove(group);
+          for (const groups of typeGroups.values()) for (const group of groups) group.parent?.remove(group);
           for (const group of componentGroups.values()) context.scene.remove(group);
         },
       };
@@ -392,14 +265,11 @@ function compositeDipolePlotter(initialLayers) {
 }
 
 function makeInitialData() {
-  const field = generateField(0);
-  const { timeRows, paths, weatherRows } = makeTimeSeries();
-  return { field, timeRows, paths, weatherRows, phase: 0 };
+  return { field: generateField(0), phase: 0 };
 }
 
 function updateFieldParameters() {
-  const data = makeInitialData();
-  state.controller.update({ ...data, field: generateField(state.phase), phase: state.phase });
+  state.controller.update({ field: generateField(state.phase), phase: state.phase });
 }
 
 function showError(message = "") {
@@ -567,7 +437,6 @@ async function start() {
   const status = $("#status-text");
   try {
     const data = makeInitialData();
-    state.currentField = data.field;
     const active = new Set(Object.entries(SELECTORS).filter(([, selector]) => $(selector).checked).map(([key]) => key));
     state.controller = await mount($("#viewport"), {
       plotter: compositeDipolePlotter(active),
@@ -662,5 +531,4 @@ async function start() {
   }
 }
 
-$("#frequency").addEventListener("input", event => { state.frequency = Number(event.target.value); $("#frequency-value").textContent = `${state.frequency.toFixed(1)}×`; });
 start();

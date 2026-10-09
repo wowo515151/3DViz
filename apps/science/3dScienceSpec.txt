@@ -1,10 +1,10 @@
 3DScience Application Specification
-Version: 1.0
-Status: Implemented and reviewed against the code and the successful GitHub Pages deployment on 2026-10-09.
+Version: 1.1
+Status: Two-plotter revision implemented and locally verified; GitHub Pages verification pending.
 
 Purpose
 
-3DScience is a static browser app in the 3DViz repository that demonstrates the existing three-viz library with an animated electromagnetic field produced by an idealized oscillating dipole. The app is a compact lab for comparing representations of the same generated field data.
+3DScience is a static browser app in the 3DViz repository that demonstrates the existing three-viz library with an animated electromagnetic field produced by an idealized oscillating dipole. It offers only two plotter choices: Isosurfaces and Vector field.
 
 Repository and reuse rules
 
@@ -12,15 +12,15 @@ Repository and reuse rules
 - Import visualization plotters and viewer lifecycle from ../../library/three-viz/src/index.js. The app must not copy or reimplement library plotter geometry, validation, selection, camera controls, coordinate mapping, or resource cleanup.
 - Keep app-only code limited to dipole field data generation and normalization, composing library plotters, UI controls, legend/export composition, and browser media recording.
 - Implement generic animated vector glyph behavior in the existing vector-field plotter module, so other library consumers receive the feature. Do not fork that plotter inside the app.
-- Use the library's isosurface, surface, scatter, histogram, trajectory, time-slice, point-cloud, bar, CSV-bar, vector, and weather-tube plotters wherever their documented input schemas apply. The app may adapt generated field records to those schemas but must not duplicate their drawing algorithms.
+- Use only the library's isosurface and vector-field plotters in this app. The app may adapt generated field records to their schemas but must not duplicate their drawing algorithms.
 
 Page layout and controls
 
 - The left side is a narrow, scrollable control panel. The right side is a large visualization stage. At small widths, stack the panel above the stage and allow normal page scrolling.
 - Use a dark slate scene background and restrained cyan/blue-gray controls, thin separators, compact labels, and high-contrast focus states. Build these styles locally in the app; do not copy EmViz source or load code from outside this repository. The page may load the same pinned Three.js runtime as the Weather app.
-- Keep controls simpler than the Weather app. A labeled checkbox list selects the visible plotter layers; checkboxes can be combined. Include Isosurfaces and Vector field as the first two choices. Start with Isosurfaces enabled.
+- Keep controls focused: the plotter checkbox list contains exactly Isosurfaces and Vector field, and they can be combined. Start with Isosurfaces enabled and Vector field disabled.
 - Isosurface options include multiple nested surfaces and their wireframes. Both are enabled by default. The library's layers and thresholds capabilities drive their controls.
-- Vector options include static field arrows and animated arrows. The animated mode starts glyphs at their grid-cell centers, moves them along the normalized local field direction with speed equal to the local field magnitude in normalized scene units, and cycles each cone from small to large to small before repeating. Animated mode is a checkbox and is off by default. Use cone glyphs in animated mode; retain the library's existing static arrow representation.
+- Vector options include static field arrows and animated arrows. The animated mode starts glyphs at their grid-cell centers and moves them along the normalized local field direction with speed equal to the local field magnitude in normalized scene units. Cone size eases through a small-to-large-to-small cycle over five seconds. Animated mode is a checkbox and is off by default. Use cone glyphs in animated mode; retain the library's existing static arrow representation.
 - Provide concise field and view settings only where needed: electric or magnetic component, frequency, amplitude, play/pause, reset time, and reset camera. Keep these independent of plotter-type selection.
 - Display a persistent stage legend identifying visible electric field in red, visible magnetic field in blue, the dipole source, normalized field magnitude, and current time phase. Selection-capable plotters show the selected field record in an accessible readout.
 - Provide a fullscreen button. The stage can be made fullscreen without the control panel.
@@ -29,20 +29,15 @@ Dipole and shared field data
 
 - Model an idealized z-directed oscillating dipole at the origin with a finite excluded source core. Use normalized units and explicitly label them; this visualization is explanatory and is not a calibrated engineering solver.
 - Compute electric and magnetic vectors from the same time-dependent dipole model. Electric values map to red and magnetic values to blue. Keep the source origin visible and prevent singular values at the dipole.
-- Generate one complete, regularly spaced 3D sample grid per active field time. Maintain stable x/y/z coordinates and numeric E/B vector components and magnitudes, plus time/series fields for temporal plotters. Derive field-specific records from this shared data rather than recalculating the model separately in each plotter adapter. Frequency or amplitude changes refresh the spatial and temporal samples from the same model.
-- Regenerate or update plotters on time changes through their update APIs. Animate only plots that declare animation support, using the viewer's play/pause lifecycle.
+- Generate one complete, regularly spaced 3D sample grid for each field update. Maintain stable x/y/z coordinates and numeric E/B vector components and magnitudes. Derive field-specific records from this shared data rather than recalculating the model separately in each plotter adapter. Frequency or amplitude changes refresh the spatial samples from the same model.
+- Run the default wave at one cycle every 12 seconds. The frequency multiplier adjusts that rate. Regenerate the visible plotters on time changes through their update APIs; animate only plots that declare animation support, using the viewer's play/pause lifecycle.
 
 Plotter coverage
 
-- Isosurface (default): call makeIsosurfacePlotter with the field magnitude mapping, nested levels enabled, wireframe enabled, and a valid midrange threshold. Expose threshold/layer controls through the viewer controller. Multiple nested shells and shell wireframes start on.
-- Vector field (second option): call makeVectorPlotter on the shared vector records. Expose static and animated-cone variants; test representative positive, negative, and zero field values.
-- Surface: call makeSurfacePlotter on a regular 2D slice of the field grid.
-- Scatter and point cloud: call makeScatterPlotter and pointCloudPlotter on field sample/probe records with normalized spatial axes.
-- Histogram and categorical bar chart: call makeHistogramPlotter and barChartPlotter to show field-value distributions by spatial region and component. Use makeBarPlotter for grouped/aggregated field summaries.
-- Trajectory and time slice: call makeTrajectoryPlotter and makeTimeSlicePlotter with shared spatial samples across time; expose play/pause and readable selected values when the underlying plotter supports selection.
-- Weather tubes: call weatherTubesPlotter with E and B signal summaries over time, using its native rows, keys, and metricDefinitions schema. Label it as a temporal field summary, not a spatial plot.
-- Each plotter-type checkbox adds/removes that library plotter as a layer in the shared scene. The app's composition adapter may route lifecycle calls and controller capabilities but must leave scene-object generation to the imported plotters.
-- If an incompatible plotter combination or data mapping fails, keep the rest of the scene available, show a readable error for the failed layer, and allow that layer to be toggled off.
+- Isosurface: call makeIsosurfacePlotter with field magnitude data, nested levels enabled, wireframe enabled, and a valid midrange threshold. Expose threshold/layer controls through the viewer controller. Multiple nested shells and shell wireframes start on.
+- Vector field: call makeVectorPlotter on the shared vector records. Expose static ArrowHelpers and animated cone variants. Animated cones start at rest until selected. The wave time phase changes no faster than one full cycle per 12 seconds at the default frequency.
+- The two plotter checkboxes add/remove their library plotters in the shared scene. The app composition adapter may route lifecycle calls and controller capabilities but must leave scene-object generation to the imported plotters.
+- If either plotter fails, keep the rest of the scene available and show a readable error for the failed layer.
 
 Export requirements
 
@@ -59,9 +54,9 @@ Accessibility, reliability, and deployment
 
 Acceptance criteria
 
-- All plotters exported by the current three-viz package that have a meaningful field or field-summary mapping can be toggled on and off from the checkbox panel and receive records from the shared dipole dataset.
-- Isosurfaces, nested surfaces, and wireframes are visible at startup; the first two plotter choices are Isosurfaces and Vector field.
-- Static vectors remain available. Animated cone vectors move from cell centers along the local vector at field-strength speed and their size cycles small/large/small repeatedly.
+- The plotter choice list contains exactly Isosurfaces and Vector field. Both can be enabled at once.
+- Isosurfaces, nested surfaces, and wireframes are visible at startup.
+- The default wave period is 12 seconds. Static vectors remain available. Animated cone vectors move from cell centers along the local vector at field-strength speed and their size cycles small/large/small over five seconds.
 - Each visible layer uses its library module; no copy of the library's rendering implementation is introduced under apps/science/.
 - Screenshot and orbit-video downloads contain the view and legend, exclude all controls, and the video completes one full orbit and restores the prior view.
 - Home page no longer presents or mentions a CSV app.

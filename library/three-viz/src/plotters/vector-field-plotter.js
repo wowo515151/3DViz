@@ -75,9 +75,9 @@ export function makeVectorPlotter(mapping, vectorScale = 0.55, options = {}) {
         const quaternion = new THREE.Quaternion();
         const up = new THREE.Vector3(0, 1, 0);
         animatedRows.forEach((glyph, index) => {
-          const period = glyph.magnitude > 0 ? Math.max(0.1, maxTravel / glyph.magnitude) : duration;
-          const localTime = ((elapsedSeconds % period) + period) % period;
-          const phase = glyph.magnitude > 0 ? localTime / period : 0;
+          const travelPeriod = glyph.magnitude > 0 ? Math.max(0.1, maxTravel / glyph.magnitude) : duration;
+          const localTime = ((elapsedSeconds % travelPeriod) + travelPeriod) % travelPeriod;
+          const phase = ((elapsedSeconds % duration) + duration) % duration / duration;
           const size = phase < 0.5 ? 0.18 + phase * 1.64 : 1 - (phase - 0.5) * 1.64;
           const travel = glyph.magnitude * localTime;
           position.copy(glyph.center).addScaledVector(glyph.direction, travel);

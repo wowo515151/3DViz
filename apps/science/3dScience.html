@@ -6,7 +6,7 @@
   <meta name="description" content="Explore an animated dipole electromagnetic field through the 3DViz plotter library." />
   <meta name="theme-color" content="#202832" />
   <title>3DScience | Electromagnetic Field Lab</title>
-  <link rel="stylesheet" href="./3dScience.css?v=20261009a" />
+  <link rel="stylesheet" href="./3dScience.css?v=20261009b" />
 </head>
 <body>
   <div class="science-shell">
@@ -15,13 +15,13 @@
       <header class="intro-block">
         <p class="eyebrow">ELECTROMAGNETICS / 01</p>
         <h1>Oscillating dipole</h1>
-        <p class="intro">One field model, multiple views. Toggle plotters to explore electric and magnetic structure in normalized units.</p>
+        <p class="intro">Explore the electric and magnetic dipole field with two focused views.</p>
       </header>
 
       <section class="control-section" aria-labelledby="plots-title">
-        <div class="section-label"><span id="plots-title">plotter layers</span><span>library demos</span></div>
+        <div class="section-label"><span id="plots-title">field views</span><span>two plotters</span></div>
         <fieldset class="plotter-list">
-          <legend class="sr-only">Choose library plotter layers</legend>
+          <legend class="sr-only">Choose field views</legend>
           <label class="plot-choice"><input id="layer-isosurfaces" type="checkbox" checked><span>Isosurfaces</span><small>nested field shells</small></label>
           <div class="nested-options">
             <label><input id="multiple-surfaces" type="checkbox" checked> Multiple surfaces</label>
@@ -31,15 +31,6 @@
           <div class="nested-options" id="vector-options" hidden>
             <label><input id="animated-cones" type="checkbox"> Animate cone arrows</label>
           </div>
-          <label class="plot-choice"><input id="layer-surface" type="checkbox"><span>Surface</span><small>equatorial field slice</small></label>
-          <label class="plot-choice"><input id="layer-scatter" type="checkbox"><span>Scatter</span><small>spatial field samples</small></label>
-          <label class="plot-choice"><input id="layer-points" type="checkbox"><span>Point cloud</span><small>probe locations</small></label>
-          <label class="plot-choice"><input id="layer-histogram" type="checkbox"><span>Histogram</span><small>field strength by region</small></label>
-          <label class="plot-choice"><input id="layer-bars" type="checkbox"><span>Bar chart</span><small>field strength on a grid</small></label>
-          <label class="plot-choice"><input id="layer-csv-bars" type="checkbox"><span>Grouped bars</span><small>CSV aggregation adapter</small></label>
-          <label class="plot-choice"><input id="layer-trajectories" type="checkbox"><span>Trajectories</span><small>field-driven probe paths</small></label>
-          <label class="plot-choice"><input id="layer-time-slice" type="checkbox"><span>Time slice</span><small>samples through a wave cycle</small></label>
-          <label class="plot-choice"><input id="layer-weather-tubes" type="checkbox"><span>Weather tubes</span><small>temporal field summary</small></label>
         </fieldset>
       </section>
 
@@ -52,6 +43,7 @@
         </fieldset>
         <label class="range-label" for="frequency">frequency <output id="frequency-value">1.0×</output></label>
         <input id="frequency" type="range" min="0.5" max="2" step="0.1" value="1" />
+        <p class="field-note">At 1×, one wave cycle takes 12 seconds.</p>
         <label class="range-label" for="field-amplitude">dipole amplitude <output id="amplitude-value">1.0</output></label>
         <input id="field-amplitude" type="range" min="0.4" max="1.6" step="0.1" value="1" />
         <label class="range-label" for="iso-threshold">shell threshold <output id="threshold-value">0.28</output></label>
@@ -107,11 +99,11 @@
         <div class="selection-note" id="selection-note" role="status" aria-live="polite">Select a plotted sample to inspect its field values.</div>
       </div>
       <p id="error-message" class="error-message" role="alert" hidden></p>
-      <p class="viewport-hint">DRAG TO ORBIT · SCROLL TO ZOOM · CHECK LAYERS TO COMPARE PLOTTERS</p>
+      <p class="viewport-hint">DRAG TO ORBIT · SCROLL TO ZOOM · TOGGLE FIELD VIEWS TO COMPARE</p>
     </main>
   </div>
 
   <script type="importmap">{ "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.186.0/build/three.module.js", "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.186.0/examples/jsm/" } }</script>
-  <script type="module" src="./3dScience.js?v=20261009a"></script>
+  <script type="module" src="./3dScience.js?v=20261009b"></script>
 </body>
 </html>
