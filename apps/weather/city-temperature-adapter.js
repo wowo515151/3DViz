@@ -1,4 +1,4 @@
-import { createGrid3D, createLabeledBox } from "../../library/three-viz/src/index.js?v=forecast-labels-20261009e";
+import { createGrid3D, createLabeledBox } from "../../library/three-viz/src/index.js?v=forecast-labels-20261009f";
 
 const CUBE_SIZE = 20;
 const HALF = CUBE_SIZE / 2;

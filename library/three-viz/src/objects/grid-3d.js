@@ -1,4 +1,4 @@
-import { createGrid2D } from "./grid-2d.js?v=forecast-labels-20261009e";
+import { createGrid2D } from "./grid-2d.js?v=forecast-labels-20261009f";
 
 function sign(value) { return value < 0 ? -1 : 1; }
 
@@ -27,7 +27,7 @@ export function createGrid3D(context, {
   if (!Number.isInteger(divisions) || divisions < 1) throw new RangeError("divisions must be a positive integer.");
   const half = size / 2;
   const group = new THREE.Group(); group.name = "grid-3d";
-  const shared = { width:size, height:size, divisionsX:divisions, divisionsY:divisions, labelColor, labelWorldUnitsPerPixel, labelFontSize, labelPaddingX, labelPaddingY, labelGap, gridColor, majorGridColor, opacity };
+  const shared = { width:size, height:size, divisionsX:divisions, divisionsY:divisions, labelColor, labelWorldUnitsPerPixel, labelFontSize, labelPaddingX, labelPaddingY, labelGap, labelNormalOffset:size, gridColor, majorGridColor, opacity };
   const xy = createGrid2D(context, { ...shared, xLabels, yLabels });
   const xz = createGrid2D(context, { ...shared, xLabels:[], yLabels:zLabels });
   const yz = createGrid2D(context, { ...shared, xLabels:[], yLabels:[] });
@@ -58,6 +58,21 @@ export function createGrid3D(context, {
     yz.object3D.position.set(-xSide * half, 0, 0);
     group.updateMatrixWorld(true);
     xy.update(camera); xz.update(camera); yz.update(camera);
+    // Keep each shared cube corner to one box even when labels come from
+    // different axis rows on different grid planes.
+    const tolerance = 1e-5;
+    const hasVisibleCornerLabel = (grid, axis, position) => grid.labelBoxes.some(item =>
+      item.axis === axis && item.group.visible && item.box.visible
+      && Math.abs(item.box.userData.axisPosition - position) < tolerance
+    );
+    const xCornerLabeled = hasVisibleCornerLabel(xy, "x", xSide * half);
+    const yCornerLabeled = hasVisibleCornerLabel(xy, "y", ySide * half);
+    if (xCornerLabeled || yCornerLabeled) {
+      const zCornerLabel = xz.labelBoxes.find(item =>
+        item.axis === "y" && Math.abs(item.box.userData.axisPosition - zSide * half) < tolerance
+      );
+      if (zCornerLabel) zCornerLabel.box.visible = false;
+    }
   }
   function setAxisLabelsVisible(next = {}) {
     if (disposed) return;

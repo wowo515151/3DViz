@@ -1,4 +1,4 @@
-import { createLabeledBox } from "./labeled-box.js?v=forecast-labels-20261009e";
+import { createLabeledBox } from "./labeled-box.js?v=forecast-labels-20261009f";
 
 function finitePositive(value, name) {
   if (!Number.isFinite(value) || value <= 0) throw new RangeError(`${name} must be positive and finite.`);
@@ -38,6 +38,7 @@ export function createGrid2D(context, {
   labelPaddingY = 3,
   labelGap = 0.025,
   labelDepth = 0.045,
+  labelNormalOffset = 0,
   gridColor = 0x526678,
   majorGridColor = 0x8198aa,
   opacity = 0.22,
@@ -47,6 +48,7 @@ export function createGrid2D(context, {
     throw new TypeError("createGrid2D() needs the Three.js runtime and a resource owner.");
   }
   finitePositive(width, "width"); finitePositive(height, "height");
+  if (!Number.isFinite(labelNormalOffset) || labelNormalOffset < 0) throw new RangeError("labelNormalOffset must be finite and non-negative.");
   if (!Number.isInteger(divisionsX) || divisionsX < 1 || !Number.isInteger(divisionsY) || divisionsY < 1) {
     throw new RangeError("Grid divisions must be positive integers.");
   }
@@ -99,6 +101,10 @@ export function createGrid2D(context, {
     box.userData.axis = "y"; box.userData.axisPosition = item.position;
     yGroup.add(box); return box;
   });
+  const labelBoxes = Object.freeze([
+    ...xBoxes.map(box => Object.freeze({ axis:"x", box, group:xGroup })),
+    ...yBoxes.map(box => Object.freeze({ axis:"y", box, group:yGroup })),
+  ]);
 
   let xVisible = xBoxes.length > 0;
   let yVisible = yBoxes.length > 0;
@@ -117,7 +123,7 @@ export function createGrid2D(context, {
     const localCamera = group.worldToLocal(cameraPosition);
     const xEdge = sign(localCamera.x) * (width / 2 + labelGap);
     const yEdge = sign(localCamera.y) * (height / 2 + labelGap);
-    const frontZ = sign(localCamera.z) * (labelDepth / 2 + 0.008);
+    const frontZ = sign(localCamera.z) * (labelDepth / 2 + 0.008 + labelNormalOffset);
     for (const box of xBoxes) {
       box.visible = true;
       box.position.set(box.userData.axisPosition, yEdge, frontZ);
@@ -143,5 +149,5 @@ export function createGrid2D(context, {
     group.removeFromParent();
   }
 
-  return Object.freeze({ object3D:group, setLabelVisibility, update, dispose });
+  return Object.freeze({ object3D:group, labelBoxes, setLabelVisibility, update, dispose });
 }
