@@ -1,4 +1,4 @@
-import { createGrid3D, createLabeledBox } from "../../library/three-viz/src/index.js?v=grid-components-20261009b";
+import { createGrid3D, createLabeledBox } from "../../library/three-viz/src/index.js?v=grid-components-20261009c";
 
 const CUBE_SIZE = 20;
 const HALF = CUBE_SIZE / 2;
@@ -41,14 +41,10 @@ export const cityTemperatureAdapter = Object.freeze({
       divisions:20,
       xLabels:axisLabels(timestamps, 5, value => new Intl.DateTimeFormat("en-CA", { timeZone:"UTC", hour:"numeric" }).format(new Date(value))),
       yLabels:axisLabels(Array.from({ length:5 }, (_, index) => tempMin + (index / 4) * (tempMax - tempMin)), 5, value => `${Number(value.toFixed(1))}°${unit}`),
-      zLabels:[...cities].reverse().map((city, index, reversed) => ({
-        text:city.name,
-        position:reversed.length === 1 ? 0 : -HALF + (index / (reversed.length - 1)) * CUBE_SIZE,
-        key:city.id,
-      })),
-      labelColor:0x566d7c,
-      labelFontSize:14,
-      labelWorldUnitsPerPixel:0.007,
+      zLabels:axisLabels([...cities].reverse(), 5, city => city.name),
+      labelColor:0x778b98,
+      labelFontSize:18,
+      labelWorldUnitsPerPixel:0.014,
       labelPaddingX:5,
       labelPaddingY:3,
       labelGap:0.04,

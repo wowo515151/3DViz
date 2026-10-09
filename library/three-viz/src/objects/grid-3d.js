@@ -1,4 +1,4 @@
-import { createGrid2D } from "./grid-2d.js?v=grid-components-20261009b";
+import { createGrid2D } from "./grid-2d.js?v=grid-components-20261009c";
 
 function sign(value) { return value < 0 ? -1 : 1; }
 

@@ -1,4 +1,4 @@
-import { createLabeledBox } from "./labeled-box.js?v=grid-components-20261009b";
+import { createLabeledBox } from "./labeled-box.js?v=grid-components-20261009c";
 
 function finitePositive(value, name) {
   if (!Number.isFinite(value) || value <= 0) throw new RangeError(`${name} must be positive and finite.`);
