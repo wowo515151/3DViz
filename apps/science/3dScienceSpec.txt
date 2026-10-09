@@ -1,6 +1,6 @@
 3DScience Application Specification
 Version: 1.8
-Status: Implemented, reviewed against this specification, and verified on GitHub Pages in Chrome (2026-10-09).
+Status: Vector lighting fix implemented; pending GitHub Pages verification.
 
 Purpose
 

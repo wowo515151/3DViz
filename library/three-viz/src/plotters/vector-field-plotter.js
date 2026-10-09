@@ -6,6 +6,7 @@ export function makeVectorPlotter(mapping, vectorScale = 0.55, options = {}) {
     capabilities: Object.freeze(options.animated ? ["animation"] : []),
     create(context, definition, initialRows) {
       const { THREE, scene, resources } = context;
+      const removeLights = addSceneLights(THREE, scene);
       const group = new THREE.Group(); group.name = "csv-vector-field"; scene.add(group);
       const helpers = [];
       const staticResources = [];
@@ -131,6 +132,7 @@ export function makeVectorPlotter(mapping, vectorScale = 0.55, options = {}) {
           if (animatedGlyphs) resources.release(animatedGlyphs);
           if (animatedGeometry) resources.release(animatedGeometry);
           if (animatedMaterial) resources.release(animatedMaterial);
+          removeLights();
           scene.remove(group);
         },
         get report() { return report; },
