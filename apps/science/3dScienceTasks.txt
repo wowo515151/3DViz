@@ -26,6 +26,6 @@
 [x] Review the updated specification against the implementation and run local library checks, including tube-radius controller capability forwarding.
 [x] Publish the final 3DScience revision and verify startup, 21³ sampling, the single-shell rule, blue magnetic wires, and wireframe-only display in isolated Chrome on GitHub Pages.
 [x] Verify tube radius zero-line and positive-radius tube modes, plus stage-only PNG and 360-degree WebM export status with field legends and no app controls.
-[ ] Apply the shared glossy car-paint material to isosurfaces, tubular wires, static arrows, and animated cones.
-[ ] Remove the visible dipole source dot and DIPOLE label from the stage and exports.
-[ ] Review the updated spec and verify glossy materials and marker removal in Chrome on GitHub Pages.
+[x] Apply the shared glossy car-paint material to isosurfaces, tubular wires, static arrows, and animated cones.
+[x] Remove the visible dipole source dot and DIPOLE label from the stage and exports.
+[x] Review the updated spec and verify glossy materials and marker removal in Chrome on GitHub Pages, including PNG and WebM export messages.
