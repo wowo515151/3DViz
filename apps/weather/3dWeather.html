@@ -3,8 +3,8 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <meta name="description" content="Explore Environment and Climate Change Canada forecasts as interactive 3D weather visualizations." />
-  <title>3dWeather — Forecast in space</title>
+  <meta name="description" content="Compare hourly Environment and Climate Change Canada temperatures across major Canadian cities in 3D." />
+  <title>3dWeather — Canada by the hour</title>
   <link rel="stylesheet" href="./3dWeather.css" />
 </head>
 <body>
@@ -12,81 +12,59 @@
   <aside class="control-panel" aria-label="3dWeather controls">
     <div class="brand"><div class="brand-mark" aria-hidden="true">3D</div><div class="brand-wordmark">3DWEATHER</div></div>
     <header class="intro-block">
-      <p class="eyebrow">forecast data lab / 01</p>
-      <h1>Weather takes shape.</h1>
-      <p class="intro">Compare several forecast signals for a Canadian location. Each signal has its own color and scale.</p>
+      <p class="eyebrow">canada forecast atlas / 01</p>
+      <h1>One country.<br />24 hours ahead.</h1>
+      <p class="intro">Compare hourly temperatures across 39 major Canadian cities. Every city uses the same vertical temperature scale.</p>
     </header>
 
     <section>
       <div class="section-label"><span>weather source</span><span id="data-size">ECCC</span></div>
-      <label class="parameter-title" for="location-search">Canadian city or town</label>
-      <div class="search-row"><input id="location-search" type="search" value="Edmonton" placeholder="Search a place" autocomplete="off" /><button id="search-button" type="button">SEARCH</button></div>
-      <label class="sr-only" for="location-select">Matching locations</label>
-      <select id="location-select" hidden aria-label="Matching locations"></select>
-      <p id="source-note" class="field-note">Search the ECCC City Page Weather API. No API key is required.</p>
+      <p id="source-note" class="field-note">Connecting to Environment and Climate Change Canada…</p>
       <div id="weather-error" class="error-message" role="alert" hidden></div>
     </section>
 
     <section>
-      <div class="section-label"><span>visual mapping</span><span id="active-mode">HOURLY SIGNALS</span></div>
-      <label class="parameter-title" for="mode-select">visualization mode</label>
-      <select id="mode-select">
-        <option value="hourly">Hourly forecast signals</option>
-        <option value="periods">Day and night signals</option>
-        <option value="bars">Daily temperature bars</option>
-      </select>
-      <p id="mapping-note" class="field-note">X = forecast time · Y = normalized value · Z = weather variable lane.</p>
-      <div class="readout">forecast points <strong id="row-count">—</strong> · fields <strong id="field-count">—</strong></div>
+      <div class="section-label"><span>forecast view</span><span>hourly temperatures</span></div>
+      <label class="parameter-title" for="units-select">temperature units</label>
+      <select id="units-select"><option value="C">Celsius</option><option value="F">Fahrenheit</option></select>
+      <div class="control-group"><label for="horizon-select">forecast horizon</label><select id="horizon-select"><option value="12">Next 12 hours</option><option value="24" selected>Next 24 hours</option></select></div>
+      <div class="control-group"><label for="sort-select">city lanes ordered by</label><select id="sort-select"><option value="west">West to east</option><option value="name">City name</option><option value="warmest">Warmest now</option><option value="coldest">Coldest now</option></select></div>
+      <div class="readout"><strong id="city-count">0</strong> of 39 cities · <strong id="point-count">0</strong> hourly readings</div>
     </section>
 
-    <section>
-      <div class="section-label"><span>current conditions</span><span id="current-time">—</span></div>
-      <div id="current-conditions" class="condition-grid"><p class="field-note">Choose a location to load the current reading.</p></div>
+    <section class="city-section">
+      <div class="section-label"><span>city lanes</span><span><button class="text-button" id="select-all" type="button">ALL</button> · <button class="text-button" id="select-none" type="button">NONE</button></span></div>
+      <label class="sr-only" for="city-filter">Filter cities</label>
+      <input id="city-filter" type="search" placeholder="Filter cities" autocomplete="off" />
+      <div id="city-list" class="city-list" aria-label="Choose cities"></div>
+      <p id="coverage-note" class="field-note">Loading hourly forecasts for the selected cities.</p>
     </section>
 
     <section>
       <div class="section-label"><span>view and playback</span><span>local render</span></div>
       <label class="parameter-title" for="camera-mode">camera projection</label>
       <select id="camera-mode"><option value="perspective">Perspective</option><option value="orthographic">Orthographic</option></select>
-      <div class="button-row"><button id="reset-view" type="button">RESET VIEW</button><button id="play-toggle" type="button">PLAY FORECAST</button></div>
-      <div class="slider-row" id="time-control">
-        <div class="slider-meta"><label for="time-slider">forecast step</label><output id="time-value">—</output></div>
-        <input id="time-slider" type="range" min="0" max="1" step="1" value="0" />
-      </div>
+      <div class="button-row"><button id="reset-view" type="button">RESET VIEW</button><button id="play-toggle" type="button">PLAY HOURS</button></div>
+      <div class="slider-row" id="time-control"><div class="slider-meta"><label for="time-slider">forecast hour</label><output id="time-value">—</output></div><input id="time-slider" type="range" min="0" max="1" step="1" value="0" /></div>
     </section>
 
     <section>
       <div class="section-label"><span>selection</span><span>exact values</span></div>
-      <p id="selection-readout" class="field-note">Select a forecast marker or bar to inspect its source value.</p>
-      <details class="preview-details"><summary>Forecast data table</summary><div id="forecast-table" class="table-wrap"><p class="field-note">Forecast records appear here after a location loads.</p></div></details>
+      <p id="selection-readout" class="field-note">Select a city marker to inspect its forecast temperature and time.</p>
     </section>
 
-    <footer class="panel-footer">
-      <b>DATA AND ATTRIBUTION</b><br />Environment and Climate Change Canada · MSC GeoMet<br />Data Source: Environment and Climate Change Canada<br /><a href="https://eccc-msc.github.io/open-data/licence/readme_en/" target="_blank" rel="noopener noreferrer">Open data licence</a><br />
-      <a href="https://www.linkedin.com/in/warren-harding-29a0a673/" class="dev-contact" target="_blank" rel="noopener noreferrer">Contact the Developer</a>
-    </footer>
+    <footer class="panel-footer"><b>DATA AND ATTRIBUTION</b><br />Environment and Climate Change Canada · MSC GeoMet<br /><a href="https://eccc-msc.github.io/open-data/licence/readme_en/" target="_blank" rel="noopener noreferrer">Open data licence</a><br /><a href="https://www.linkedin.com/in/warren-harding-29a0a673/" class="dev-contact" target="_blank" rel="noopener noreferrer">Contact the Developer</a></footer>
   </aside>
 
   <main class="stage">
-    <div class="stage-header">
-      <div><div class="stage-heading" id="stage-heading">CANADIAN WEATHER FORECAST</div><div class="stage-subheading" id="stage-subheading">SEARCH FOR A LOCATION TO LOAD FORECASTS</div></div>
-      <div class="status-pill"><span class="status-dot"></span><span id="status-text">READY</span></div>
-    </div>
-    <div id="viewport" aria-label="Interactive 3D weather forecast visualization" role="img"><div class="loading" id="loading">CONNECTING TO ECCC…</div></div>
-    <div class="stage-legend" id="stage-legend" aria-label="Visualization legend"></div>
-    <div class="stage-actions">
-      <button id="screenshot-download" type="button">DOWNLOAD PNG</button>
-      <button id="video-download" type="button">DOWNLOAD 360° VIDEO</button>
-      <label class="sr-only" for="video-duration">Orbit video duration</label>
-      <select id="video-duration" aria-label="Orbit video duration"><option value="6">6 sec</option><option value="8" selected>8 sec</option><option value="12">12 sec</option></select>
-      <button id="fullscreen-toggle" type="button" aria-label="Enter fullscreen" aria-pressed="false">FULLSCREEN</button>
-    </div>
-    <div class="viewport-hint">DRAG TO ORBIT · SCROLL TO ZOOM</div>
+    <div class="stage-header"><div><div class="stage-heading" id="stage-heading">CANADIAN HOURLY TEMPERATURES</div><div class="stage-subheading" id="stage-subheading">LOADING 39 ECCC CITY FORECASTS</div></div><div class="status-pill"><span class="status-dot"></span><span id="status-text">CONNECTING</span></div></div>
+    <div id="viewport" aria-label="Interactive 3D hourly temperature forecasts for Canadian cities" role="img"><div class="loading" id="loading">CONNECTING TO ECCC…</div></div>
+    <div class="stage-legend" id="stage-legend" aria-label="Temperature scale legend"></div>
+    <div class="stage-actions"><button id="screenshot-download" type="button">DOWNLOAD PNG</button><button id="fullscreen-toggle" type="button" aria-label="Enter fullscreen" aria-pressed="false">FULLSCREEN</button></div>
+    <div class="viewport-hint">DRAG TO ORBIT · SCROLL TO ZOOM · CLICK A CITY MARKER</div>
   </main>
 </div>
-<script type="importmap">
-  { "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.186.0/build/three.module.js", "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.186.0/examples/jsm/" } }
-</script>
-<script type="module" src="./3dWeather.js?v=camera-fit-20261009"></script>
+<script type="importmap">{ "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.186.0/build/three.module.js", "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.186.0/examples/jsm/" } }</script>
+<script type="module" src="./3dWeather.js?v=canada-hourly-20261009"></script>
 </body>
 </html>
