@@ -1,4 +1,4 @@
-import { createGrid2D } from "./grid-2d.js?v=forecast-labels-20261009g";
+import { createGrid2D } from "./grid-2d.js?v=forecast-labels-20261009h";
 
 function sign(value) { return value < 0 ? -1 : 1; }
 

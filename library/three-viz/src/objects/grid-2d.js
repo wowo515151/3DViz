@@ -1,4 +1,4 @@
-import { createLabeledBox } from "./labeled-box.js?v=forecast-labels-20261009g";
+import { createLabeledBox } from "./labeled-box.js?v=forecast-labels-20261009h";
 
 function finitePositive(value, name) {
   if (!Number.isFinite(value) || value <= 0) throw new RangeError(`${name} must be positive and finite.`);
