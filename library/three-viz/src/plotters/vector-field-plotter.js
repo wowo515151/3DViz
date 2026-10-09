@@ -1,15 +1,26 @@
 import * as common from './shared/csv-support.js';
 const { addSceneLights, mapBars, projectedColumn, validRows, selected, categoryValue, valueOf, gridForSurface, scalarGridForVolume, displayNumber, extent, parseNumeric, scaleLinear, PALETTE } = common;
-export function makeVectorPlotter(mapping, vectorScale) {
+export function makeVectorPlotter(mapping, vectorScale = 0.55, options = {}) {
   return Object.freeze({
-    capabilities: Object.freeze([]),
+    capabilities: Object.freeze(options.animated ? ["animation"] : []),
     create(context, definition, initialRows) {
       const { THREE, scene, resources } = context;
       const group = new THREE.Group(); group.name = "csv-vector-field"; scene.add(group);
       const helpers = [];
+      let animatedGlyphs;
+      let animatedGeometry;
+      let animatedMaterial;
+      let animatedRows = [];
       const clear = () => { for (const arrow of helpers.splice(0)) { group.remove(arrow); for (const resource of arrow.userData.resources) resources.release(resource); } };
       const build = rows => {
         clear();
+        if (animatedGlyphs) {
+          group.remove(animatedGlyphs);
+          resources.release(animatedGlyphs);
+          animatedGlyphs = undefined;
+        }
+        if (animatedGeometry) { resources.release(animatedGeometry); animatedGeometry = undefined; }
+        if (animatedMaterial) { resources.release(animatedMaterial); animatedMaterial = undefined; }
         const fields = [mapping.x,mapping.y,mapping.z,mapping.u,mapping.v,mapping.w];
         const usable = validRows(rows, fields).filter(({row}) => fields.every(key => valueOf(row,key) !== null));
         if (!usable.length) throw new Error("Vector mode needs rows with three numeric positions and three numeric vector components.");
@@ -21,20 +32,76 @@ export function makeVectorPlotter(mapping, vectorScale) {
         const pExtent = [0,1,2].map(axis => extent(positions.map(p => p[axis])));
         const magnitudes = components.map(v => Math.hypot(...v));
         const maxLength = Math.max(...magnitudes,1e-9);
+        if (options.animated) {
+          if (typeof THREE.ConeGeometry !== "function" || typeof THREE.InstancedMesh !== "function" || typeof THREE.Matrix4 !== "function" || typeof THREE.Quaternion !== "function" || typeof THREE.Vector3 !== "function") {
+            throw new Error("Animated vector cones require Three.js cone and instancing support.");
+          }
+          animatedGeometry = resources.track(new THREE.ConeGeometry(options.coneRadius ?? 0.12, options.coneLength ?? 0.32, 9));
+          animatedMaterial = resources.track(new THREE.MeshStandardMaterial({ color: options.color ?? 0x45caff, emissive: options.color ?? 0x45caff, emissiveIntensity: 0.08, metalness: 0.08, roughness: 0.36 }));
+          animatedGlyphs = resources.track(new THREE.InstancedMesh(animatedGeometry, animatedMaterial, chosen.length));
+          animatedGlyphs.name = "animated-field-cones";
+          animatedGlyphs.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+          animatedGlyphs.frustumCulled = false;
+          animatedRows = chosen.map(({row}, index) => {
+            const direction = new THREE.Vector3(...components[index]);
+            const magnitude = magnitudes[index];
+            const center = new THREE.Vector3(...positions[index].map((value, axis) => scaleLinear(value, pExtent[axis][0], pExtent[axis][1])));
+            if (magnitude > 0) direction.normalize();
+            return { direction, center, magnitude, row };
+          });
+          group.add(animatedGlyphs);
+          updateAnimatedGlyphs(0);
+          return { count: chosen.length, sampled: chosen.length < usable.length, maxMagnitude: maxLength };
+        }
         chosen.forEach(({row}, index) => {
           const p = positions[index], v = components[index], direction = new THREE.Vector3(...v);
           if (direction.lengthSq() === 0) return;
           const origin = new THREE.Vector3(...p.map((value, axis) => scaleLinear(value, pExtent[axis][0], pExtent[axis][1])));
           const length = .25 + Math.hypot(...v) / maxLength * vectorScale;
-          const arrow = new THREE.ArrowHelper(direction.normalize(), origin, length, PALETTE[index % PALETTE.length], Math.min(.28,length*.28), Math.min(.18,length*.2));
+          const arrow = new THREE.ArrowHelper(direction.normalize(), origin, length, options.color ?? PALETTE[index % PALETTE.length], Math.min(.28,length*.28), Math.min(.18,length*.2));
           const owned = [arrow.line.geometry, arrow.line.material, arrow.cone.geometry, arrow.cone.material];
           owned.forEach(resource => resources.track(resource));
           arrow.userData.resources = owned; arrow.userData.sourceRow = row; group.add(arrow); helpers.push(arrow);
         });
         return { count: chosen.length, sampled: chosen.length < usable.length, maxMagnitude: maxLength };
       };
+      const updateAnimatedGlyphs = elapsedSeconds => {
+        if (!animatedGlyphs) return;
+        const duration = Math.max(0.1, options.cycleDuration ?? 4);
+        const maxTravel = Math.max(0, options.maxTravel ?? 0.45);
+        const matrix = new THREE.Matrix4();
+        const position = new THREE.Vector3();
+        const scale = new THREE.Vector3();
+        const quaternion = new THREE.Quaternion();
+        const up = new THREE.Vector3(0, 1, 0);
+        animatedRows.forEach((glyph, index) => {
+          const period = glyph.magnitude > 0 ? Math.max(0.1, maxTravel / glyph.magnitude) : duration;
+          const localTime = ((elapsedSeconds % period) + period) % period;
+          const phase = glyph.magnitude > 0 ? localTime / period : 0;
+          const size = phase < 0.5 ? 0.18 + phase * 1.64 : 1 - (phase - 0.5) * 1.64;
+          const travel = glyph.magnitude * localTime;
+          position.copy(glyph.center).addScaledVector(glyph.direction, travel);
+          quaternion.setFromUnitVectors(up, glyph.direction.lengthSq() > 0 ? glyph.direction : up);
+          scale.setScalar(size);
+          matrix.compose(position, quaternion, scale);
+          animatedGlyphs.setMatrixAt(index, matrix);
+        });
+        animatedGlyphs.instanceMatrix.needsUpdate = true;
+      };
       let report = build(initialRows);
-      return { capabilities: [], update(rows) { report = build(rows); context.requestRender(); }, dispose() { clear(); scene.remove(group); }, get report() { return report; } };
+      return {
+        capabilities: options.animated ? ["animation"] : [],
+        update(rows) { report = build(rows); context.requestRender(); },
+        ...(options.animated ? { updateFrame({ elapsedSeconds }) { updateAnimatedGlyphs(elapsedSeconds); } } : {}),
+        dispose() {
+          clear();
+          if (animatedGlyphs) resources.release(animatedGlyphs);
+          if (animatedGeometry) resources.release(animatedGeometry);
+          if (animatedMaterial) resources.release(animatedMaterial);
+          scene.remove(group);
+        },
+        get report() { return report; },
+      };
     },
   });
 }

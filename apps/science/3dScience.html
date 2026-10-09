@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="description" content="Explore an animated dipole electromagnetic field through the 3DViz plotter library." />
+  <meta name="theme-color" content="#202832" />
+  <title>3DScience | Electromagnetic Field Lab</title>
+  <link rel="stylesheet" href="./3dScience.css?v=20261009a" />
+</head>
+<body>
+  <div class="science-shell">
+    <aside class="control-panel" aria-label="Science visualization controls">
+      <a class="brand" href="../../index.html"><span class="brand-mark" aria-hidden="true">3D</span><span>SCIENCE <small>FIELD LAB</small></span></a>
+      <header class="intro-block">
+        <p class="eyebrow">ELECTROMAGNETICS / 01</p>
+        <h1>Oscillating dipole</h1>
+        <p class="intro">One field model, multiple views. Toggle plotters to explore electric and magnetic structure in normalized units.</p>
+      </header>
+
+      <section class="control-section" aria-labelledby="plots-title">
+        <div class="section-label"><span id="plots-title">plotter layers</span><span>library demos</span></div>
+        <fieldset class="plotter-list">
+          <legend class="sr-only">Choose library plotter layers</legend>
+          <label class="plot-choice"><input id="layer-isosurfaces" type="checkbox" checked><span>Isosurfaces</span><small>nested field shells</small></label>
+          <div class="nested-options">
+            <label><input id="multiple-surfaces" type="checkbox" checked> Multiple surfaces</label>
+            <label><input id="iso-wireframes" type="checkbox" checked> Wireframes</label>
+          </div>
+          <label class="plot-choice"><input id="layer-vectors" type="checkbox"><span>Vector field</span><small>local direction + strength</small></label>
+          <div class="nested-options" id="vector-options" hidden>
+            <label><input id="animated-cones" type="checkbox"> Animate cone arrows</label>
+          </div>
+          <label class="plot-choice"><input id="layer-surface" type="checkbox"><span>Surface</span><small>equatorial field slice</small></label>
+          <label class="plot-choice"><input id="layer-scatter" type="checkbox"><span>Scatter</span><small>spatial field samples</small></label>
+          <label class="plot-choice"><input id="layer-points" type="checkbox"><span>Point cloud</span><small>probe locations</small></label>
+          <label class="plot-choice"><input id="layer-histogram" type="checkbox"><span>Histogram</span><small>field strength by region</small></label>
+          <label class="plot-choice"><input id="layer-bars" type="checkbox"><span>Bar chart</span><small>field strength on a grid</small></label>
+          <label class="plot-choice"><input id="layer-csv-bars" type="checkbox"><span>Grouped bars</span><small>CSV aggregation adapter</small></label>
+          <label class="plot-choice"><input id="layer-trajectories" type="checkbox"><span>Trajectories</span><small>field-driven probe paths</small></label>
+          <label class="plot-choice"><input id="layer-time-slice" type="checkbox"><span>Time slice</span><small>samples through a wave cycle</small></label>
+          <label class="plot-choice"><input id="layer-weather-tubes" type="checkbox"><span>Weather tubes</span><small>temporal field summary</small></label>
+        </fieldset>
+      </section>
+
+      <section class="control-section">
+        <div class="section-label"><span>field source</span><span>normalized</span></div>
+        <fieldset class="component-list">
+          <legend class="sr-only">Electromagnetic field components</legend>
+          <label><input id="show-electric" type="checkbox" checked><i class="legend-dot electric-dot"></i> Electric field</label>
+          <label><input id="show-magnetic" type="checkbox" checked><i class="legend-dot magnetic-dot"></i> Magnetic field</label>
+        </fieldset>
+        <label class="range-label" for="frequency">frequency <output id="frequency-value">1.0×</output></label>
+        <input id="frequency" type="range" min="0.5" max="2" step="0.1" value="1" />
+        <label class="range-label" for="field-amplitude">dipole amplitude <output id="amplitude-value">1.0</output></label>
+        <input id="field-amplitude" type="range" min="0.4" max="1.6" step="0.1" value="1" />
+        <label class="range-label" for="iso-threshold">shell threshold <output id="threshold-value">0.28</output></label>
+        <input id="iso-threshold" type="range" min="0.05" max="0.75" step="0.01" value="0.28" />
+      </section>
+
+      <section class="control-section">
+        <div class="section-label"><span>simulation</span><span id="phase-readout">PHASE 0.00</span></div>
+        <div class="button-row">
+          <button id="play-toggle" type="button" aria-pressed="true">PAUSE FIELD</button>
+          <button id="reset-time" type="button">RESET TIME</button>
+        </div>
+        <label class="range-label" for="phase">wave phase <output id="phase-value">0.00</output></label>
+        <input id="phase" type="range" min="0" max="6.28" step="0.02" value="0" />
+      </section>
+
+      <section class="control-section" aria-labelledby="view-title">
+        <div class="section-label"><span id="view-title">view</span><span>drag to orbit</span></div>
+        <div class="button-row">
+          <button id="reset-view" type="button">RESET CAMERA</button>
+          <button id="fullscreen-toggle" type="button" aria-pressed="false">FULLSCREEN</button>
+        </div>
+      </section>
+
+      <section class="control-section" aria-labelledby="export-title">
+        <div class="section-label"><span id="export-title">export view</span><span>scene + legend</span></div>
+        <div class="button-row export-row">
+          <button id="download-image" type="button">DOWNLOAD PNG</button>
+          <button id="download-video" type="button">DOWNLOAD 360° VIDEO</button>
+        </div>
+        <p id="export-status" class="field-note" role="status" aria-live="polite">Exports contain the visualization and field legend.</p>
+      </section>
+
+      <footer class="panel-footer"><span>3DVIZ PLOTTER LIBRARY</span><br /><a href="../../README.md">Repository notes</a></footer>
+    </aside>
+
+    <main class="stage" id="stage">
+      <header class="stage-header">
+        <div><p class="stage-heading" id="stage-heading">DIPOLE FIELD / NESTED ISOSURFACES</p><p class="stage-subheading" id="stage-subheading">ELECTRIC + MAGNETIC · NORMALIZED VECTORS</p></div>
+        <div class="status-pill"><i id="status-dot" class="status-dot"></i><span id="status-text" role="status" aria-live="polite">STARTING</span></div>
+      </header>
+      <div class="scene-frame">
+        <div id="viewport" aria-label="Interactive three-dimensional electromagnetic field visualization" role="img">
+          <div id="loading" class="loading">PREPARING FIELD GRID…</div>
+        </div>
+        <div class="source-marker" aria-hidden="true"><i></i><span>DIPOLE</span></div>
+        <div class="scene-legend" id="scene-legend" aria-label="Field color legend">
+          <strong>FIELD AMPLITUDE · NORMALIZED</strong>
+          <span id="legend-electric"><i class="legend-dot electric-dot"></i> E · electric field</span>
+          <span id="legend-magnetic"><i class="legend-dot magnetic-dot"></i> B · magnetic field</span>
+          <span class="legend-phase" id="legend-phase">PHASE 0.00 RAD</span>
+        </div>
+        <div class="selection-note" id="selection-note" role="status" aria-live="polite">Select a plotted sample to inspect its field values.</div>
+      </div>
+      <p id="error-message" class="error-message" role="alert" hidden></p>
+      <p class="viewport-hint">DRAG TO ORBIT · SCROLL TO ZOOM · CHECK LAYERS TO COMPARE PLOTTERS</p>
+    </main>
+  </div>
+
+  <script type="importmap">{ "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.186.0/build/three.module.js", "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.186.0/examples/jsm/" } }</script>
+  <script type="module" src="./3dScience.js?v=20261009a"></script>
+</body>
+</html>

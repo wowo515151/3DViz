@@ -7,12 +7,14 @@
 ## Apps
 
 - **Weather in 3D:** open [`apps/weather/3dWeather.html`](apps/weather/3dWeather.html). It uses the public Environment and Climate Change Canada City Page Weather API. The service is experimental and may change. The page includes the source and licence attribution.
+- **Science in 3D:** open [`apps/science/3dScience.html`](apps/science/3dScience.html). It demonstrates the shared plotters with an animated, normalized dipole electromagnetic field. Its implementation requirements are documented in [`apps/science/3dScienceSpec.txt`](apps/science/3dScienceSpec.txt).
 - **CSV plotters:** reusable bar, scatter, histogram, surface, trajectory, vector-field, time-slice, and isosurface plotters are included in the library. The CSV explorer UI remains a local development tool under `Tools/3dCsv/`.
 
 ## Layout
 
 - `index.html` and `style.css`: animated, responsive GitHub Pages landing page.
 - `apps/weather/`: Weather preview UI, data normalization, and the city-temperature plotter.
+- `apps/science/`: dipole-field plotter demo, application spec, and implementation task list.
 - `library/three-viz/src/`: shared browser visualization library, including its individual plotters and common wireframe/isosurface helpers.
 - `library/three-viz/tests/`: development tests for the library; not loaded by the website.
 - `LICENSE`: MIT License for this repository.

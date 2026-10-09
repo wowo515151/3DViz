@@ -1,0 +1,16 @@
+3DScience Implementation Tasks
+
+[x] Read the current three-viz public exports, plotter schemas/capabilities, mount lifecycle, and resource handling.
+[x] Fix an undefined rayTarget reference in weather-tube cleanup found during the library review.
+[x] Define a shared dipole-field dataset and app-to-plotter mappings in the specification.
+[x] Specify a local left-control-panel/right-stage layout and remove CSV from the landing page plan.
+[x] Add the generic animated cone-vector option to the shared vector-field plotter.
+[x] Add the static 3DScience page, app module, styles, and import map under apps/science/.
+[x] Compose the library plotters as optional checkbox-controlled scene layers using their native schemas and lifecycle methods.
+[x] Make nested isosurfaces and wireframe visible by default; expose layer and threshold options.
+[x] Implement shared dipole E/B field records, time controls, legend, status, and selection details.
+[x] Implement PNG and 360-degree WebM downloads with only the scene and legend in the output.
+[x] Remove CSV app mentions and links from the main index and update repository documentation.
+[x] Review the finished implementation against every requirement in 3dScienceSpec.txt; align temporal sample refresh and animated/static vector wording.
+[x] Verify locally in Chrome in a separate tab, including layer toggles, field parameter changes, PNG, and 360-degree WebM exports.
+[ ] Publish the reviewed repository to GitHub and verify the GitHub Pages version.
