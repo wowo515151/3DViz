@@ -1,4 +1,4 @@
-export { mount } from "./core/mount.js?v=forecast-labels-20261009k";
+export { mount } from "./core/mount.js?v=tube-radius-20261009";
 export { VisualizationError } from "./core/errors.js";
 export { createResourceRegistry } from "./core/resource-registry.js";
 export { createCoordinateMapper } from "./data/coordinate-mapping.js";
