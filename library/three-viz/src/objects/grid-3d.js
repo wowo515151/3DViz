@@ -1,4 +1,4 @@
-import { createGrid2D } from "./grid-2d.js?v=forecast-labels-20261009h";
+import { createGrid2D } from "./grid-2d.js?v=forecast-labels-20261009i";
 
 function sign(value) { return value < 0 ? -1 : 1; }
 
@@ -59,6 +59,14 @@ export function createGrid3D(context, {
     yz.object3D.position.set(-xSide * half, 0, 0);
     group.updateMatrixWorld(true);
     xy.update(camera); xz.update(camera); yz.update(camera);
+    // Weather city labels can follow their latest temperature along the
+    // xz plane's normal while remaining on its camera-facing edge.
+    for (const item of xz.labelBoxes) {
+      const temperaturePosition = item.box.userData.normalPosition;
+      if (Number.isFinite(temperaturePosition)) {
+        item.box.position.z = xz.object3D.position.y - temperaturePosition;
+      }
+    }
     // Keep each shared cube corner to one box even when labels come from
     // different axis rows on different grid planes.
     const tolerance = 1e-5;

@@ -1,4 +1,4 @@
-import { createLabeledBox } from "./labeled-box.js?v=forecast-labels-20261009h";
+import { createLabeledBox } from "./labeled-box.js?v=forecast-labels-20261009i";
 
 function finitePositive(value, name) {
   if (!Number.isFinite(value) || value <= 0) throw new RangeError(`${name} must be positive and finite.`);
@@ -18,6 +18,7 @@ function normalizeLabels(labels, extent) {
     worldUnitsPerPixel:item?.worldUnitsPerPixel,
     paddingX:item?.paddingX,
     paddingY:item?.paddingY,
+    normalPosition:Number.isFinite(item?.normalPosition) ? item.normalPosition : undefined,
   }));
   return labels.map((item, index) => ({
     text:String(item?.text ?? item ?? ""),
@@ -28,6 +29,7 @@ function normalizeLabels(labels, extent) {
     worldUnitsPerPixel:item?.worldUnitsPerPixel,
     paddingX:item?.paddingX,
     paddingY:item?.paddingY,
+    normalPosition:Number.isFinite(item?.normalPosition) ? item.normalPosition : undefined,
   }));
 }
 
@@ -107,6 +109,7 @@ export function createGrid2D(context, {
     });
     box.name = `grid-y-label-${item.key}`;
     box.userData.axis = "y"; box.userData.axisPosition = item.position;
+    if (Number.isFinite(item.normalPosition)) box.userData.normalPosition = item.normalPosition;
     yGroup.add(box); return box;
   });
   const labelBoxes = Object.freeze([
