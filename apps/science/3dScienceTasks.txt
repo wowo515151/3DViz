@@ -20,4 +20,5 @@
 [x] Add an independent solid-surface visibility control so wireframes can remain visible alone.
 [x] Increase dipole field sampling to a 21³ grid for smoother isosurface tessellation.
 [x] Review the updated specification against the implementation and run local library checks.
-[ ] Publish the aligned cone-motion refinement and verify it in Chrome on GitHub Pages.
+[x] Publish the final 3DScience revision and verify 21³ sampling and wireframe-only display in Chrome on GitHub Pages.
+[x] Verify stage-only PNG and 360-degree video exports include the field legend and omit app controls.

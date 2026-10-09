@@ -1,6 +1,6 @@
 3DScience Application Specification
 Version: 1.4
-Status: Higher-resolution dipole grid and independent solid-surface visibility implemented; pending GitHub Pages verification.
+Status: Reviewed against the implementation and verified on GitHub Pages in Chrome (2026-10-09).
 
 Purpose
 
