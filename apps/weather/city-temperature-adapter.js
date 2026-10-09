@@ -1,4 +1,4 @@
-import { createLabeledBox } from "../../library/three-viz/src/index.js?v=cube-box-20261009a";
+import { createLabeledBox } from "../../library/three-viz/src/index.js?v=cube-box-20261009b";
 
 const CUBE_SIZE = 20;
 const HALF = CUBE_SIZE / 2;
@@ -38,10 +38,6 @@ export const cityTemperatureAdapter = Object.freeze({
     addGrid([0, 0, 0], [0, -HALF, 0]);
     addGrid([Math.PI / 2, 0, 0], [0, 0, -HALF]);
     addGrid([0, 0, Math.PI / 2], [-HALF, 0, 0]);
-    const outlineGeometry = resources.track(new THREE.EdgesGeometry(new THREE.BoxGeometry(CUBE_SIZE, CUBE_SIZE, CUBE_SIZE)));
-    const outlineMaterial = resources.track(new THREE.LineBasicMaterial({ color:0xa9bdcb, transparent:true, opacity:0.8 }));
-    const outline = new THREE.LineSegments(outlineGeometry, outlineMaterial); outline.name = "temperature-cube-outline"; outline.raycast = () => {}; root.add(outline);
-
     const pointRecords = [];
     cities.forEach((city, lane) => city.forecasts.forEach((forecast, hour) => {
       if (!Number.isFinite(forecast.value)) return;
@@ -71,9 +67,13 @@ export const cityTemperatureAdapter = Object.freeze({
       // Matching city tabs bracket the line at its first and last forecast hour.
       const cityColor = city.color ?? 0x9bdcff;
       for (const [hour, side] of [[0, "start"], [hourCount - 1, "end"]]) {
-        const label = createLabeledBox(context, `${city.name}, ${city.province}`, cityColor, { fontSize:18, worldUnitsPerPixel:0.009, paddingX:7, paddingY:4 });
+        const label = createLabeledBox(context, `${city.name}, ${city.province}`, cityColor, { fontSize:22, worldUnitsPerPixel:0.02, paddingX:7, paddingY:4 });
         const labelWidth = label.userData.labeledBoxSize.width;
-        label.position.set(x(hour) + (side === "start" ? -labelWidth / 2 - 0.18 : labelWidth / 2 + 0.18), -HALF + 0.38, z(lane));
+        const endpoint = city.forecasts.findLast(forecast => Number.isFinite(forecast.value));
+        const endpointForecast = side === "start" ? city.forecasts.find(forecast => Number.isFinite(forecast.value)) : endpoint;
+        const endpointY = endpointForecast ? y(endpointForecast.value) : -HALF;
+        const labelY = endpointY + (endpointY > HALF - 1 ? -0.65 : 0.65);
+        label.position.set(x(hour) + (side === "start" ? -labelWidth / 2 - 0.18 : labelWidth / 2 + 0.18), labelY, z(lane));
         label.name = `city-label-${side}-${city.id}`; label.raycast = () => {}; root.add(label);
       }
     });
@@ -83,7 +83,7 @@ export const cityTemperatureAdapter = Object.freeze({
     pointRecords.forEach(point => {
       const value = `${Number(point.forecast.value.toFixed(1))}°`;
       const label = createLabeledBox(context, value, point.city.color ?? 0x9bdcff, {
-        fontSize:17, worldUnitsPerPixel:0.0065, paddingX:5, paddingY:3, depth:0.04,
+        fontSize:20, worldUnitsPerPixel:0.016, paddingX:5, paddingY:3, depth:0.04,
       });
       label.position.set(point.x, point.y + (point.y > HALF - 0.75 ? -0.3 : 0.3), point.z);
       label.userData.temperaturePoint = point;

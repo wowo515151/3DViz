@@ -1,0 +1,165 @@
+name: Refresh hourly Canadian weather data
+
+on:
+  schedule:
+    - cron: "1 * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pages: write
+
+concurrency:
+  group: refresh-hourly-weather
+  cancel-in-progress: false
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Fetch forecasts and update the static snapshot
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          GITHUB_REF_NAME: ${{ github.ref_name }}
+        run: |
+          python - <<'PY'
+          import base64
+          import concurrent.futures
+          import datetime as dt
+          import json
+          import os
+          import time
+          import urllib.error
+          import urllib.parse
+          import urllib.request
+
+          CITIES = [
+              ("bc-74", "Vancouver"), ("bc-85", "Victoria"), ("bc-48", "Kelowna"),
+              ("bc-45", "Kamloops"), ("bc-20", "Nanaimo"), ("bc-79", "Prince George"),
+              ("ab-52", "Calgary"), ("ab-50", "Edmonton"), ("ab-29", "Red Deer"),
+              ("ab-30", "Lethbridge"), ("sk-40", "Saskatoon"), ("sk-32", "Regina"),
+              ("mb-38", "Winnipeg"), ("mb-52", "Brandon"), ("on-143", "Toronto"),
+              ("on-118", "Ottawa"), ("on-24", "Mississauga"), ("on-77", "Hamilton"),
+              ("on-137", "London Ontario"), ("on-82", "Kitchener Waterloo"), ("on-94", "Windsor"),
+              ("on-40", "Greater Sudbury"), ("on-100", "Thunder Bay"), ("on-69", "Kingston Ontario"),
+              ("qc-147", "Montréal"), ("qc-133", "Québec"), ("qc-126", "Gatineau"),
+              ("qc-136", "Sherbrooke"), ("qc-130", "Trois-Rivières"), ("qc-166", "Saguenay"),
+              ("nb-29", "Fredericton"), ("nb-36", "Moncton"), ("nb-23", "Saint John New Brunswick"),
+              ("ns-19", "Halifax"), ("pe-5", "Charlottetown"),
+              ("nl-24", "St. John's Newfoundland"), ("yt-16", "Whitehorse"),
+              ("nt-24", "Yellowknife"), ("nu-21", "Iqaluit"),
+          ]
+          ECCC = "https://api.weather.gc.ca/collections/citypageweather-realtime/items"
+          API = "https://api.github.com"
+          USER_AGENT = "3DViz-hourly-weather-cache/1.0"
+
+          def request_json(url, headers=None, data=None, method=None):
+              request_headers = {"User-Agent": USER_AGENT, "Accept": "application/geo+json, application/json"}
+              request_headers.update(headers or {})
+              request = urllib.request.Request(url, data=data, headers=request_headers, method=method)
+              with urllib.request.urlopen(request, timeout=30) as response:
+                  return json.loads(response.read().decode("utf-8"))
+
+          def fetch_city(item):
+              city_id, query = item
+              url = ECCC + "?" + urllib.parse.urlencode({"f": "json", "q": query, "limit": "10", "lang": "en"})
+              for attempt in range(3):
+                  try:
+                      data = request_json(url)
+                      feature = next((row for row in data.get("features", []) if str(row.get("id", "")).lower() == city_id.lower()), None)
+                      if not feature:
+                          raise RuntimeError("city feature missing from ECCC search result")
+                      properties = feature.get("properties", {})
+                      forecasts = properties.get("hourlyForecastGroup", {}).get("hourlyForecasts") or properties.get("hourlyForecasts") or []
+                      if isinstance(forecasts, dict):
+                          forecasts = [forecasts]
+                      rows = []
+                      for row in forecasts:
+                          temperature = row.get("temperature")
+                          if isinstance(temperature, dict):
+                              temperature = temperature.get("value", temperature)
+                          if isinstance(temperature, dict):
+                              temperature = temperature.get("en")
+                          try:
+                              value = float(str(temperature).replace(",", ""))
+                          except (TypeError, ValueError):
+                              continue
+                          timestamp = str(row.get("timestamp") or row.get("dateTime") or "")
+                          if timestamp:
+                              rows.append({"timestamp": timestamp, "value": value})
+                      if not rows:
+                          raise RuntimeError("ECCC returned no hourly temperatures")
+                      coordinates = feature.get("geometry", {}).get("coordinates", [])
+                      longitude = coordinates[0] if coordinates and isinstance(coordinates[0], (int, float)) else None
+                      return city_id, {"longitude": longitude, "forecasts": rows}
+                  except urllib.error.HTTPError as error:
+                      if error.code not in (429, 500, 502, 503, 504) or attempt == 2:
+                          raise
+                      try:
+                          delay = max(1, int(error.headers.get("Retry-After", "")))
+                      except ValueError:
+                          delay = 2 ** (attempt + 1)
+                      time.sleep(min(delay, 20))
+                  except (urllib.error.URLError, TimeoutError):
+                      if attempt == 2:
+                          raise
+                      time.sleep(2 ** (attempt + 1))
+
+          results = {}
+          failures = []
+          with concurrent.futures.ThreadPoolExecutor(max_workers=5) as pool:
+              futures = {pool.submit(fetch_city, item): item[0] for item in CITIES}
+              for future in concurrent.futures.as_completed(futures):
+                  city_id = futures[future]
+                  try:
+                      key, value = future.result()
+                      results[key] = value
+                      print(f"Loaded {city_id}: {len(value['forecasts'])} hourly readings")
+                  except Exception as error:
+                      failures.append(f"{city_id}: {error}")
+          if failures:
+              raise SystemExit("Forecast refresh incomplete; keeping the last published snapshot:\n" + "\n".join(failures))
+          if len(results) != len(CITIES):
+              raise SystemExit(f"Expected {len(CITIES)} cities, received {len(results)}")
+
+          snapshot = {
+              "fetchedAt": dt.datetime.now(dt.timezone.utc).isoformat(timespec="seconds").replace("+00:00", "Z"),
+              "source": "Environment and Climate Change Canada · MSC GeoMet",
+              "cities": results,
+          }
+          content = json.dumps(snapshot, ensure_ascii=False, separators=(",", ":")).encode("utf-8")
+          token = os.environ["GH_TOKEN"]
+          repo = os.environ["GITHUB_REPOSITORY"]
+          branch = os.environ["GITHUB_REF_NAME"]
+          path = "apps/weather/forecast.json"
+          headers = {
+              "Authorization": "Bearer " + token,
+              "Accept": "application/vnd.github+json",
+              "X-GitHub-Api-Version": "2022-11-28",
+              "Content-Type": "application/json",
+          }
+          endpoint = f"{API}/repos/{repo}/contents/{path}"
+          try:
+              existing = request_json(endpoint + "?" + urllib.parse.urlencode({"ref": branch}), headers)
+              sha = existing["sha"]
+          except urllib.error.HTTPError as error:
+              if error.code != 404:
+                  raise
+              sha = None
+          payload = {
+              "message": "Refresh hourly Canadian weather snapshot",
+              "content": base64.b64encode(content).decode("ascii"),
+              "branch": branch,
+          }
+          if sha:
+              payload["sha"] = sha
+          request_json(endpoint, headers, json.dumps(payload).encode("utf-8"), method="PUT")
+          print(f"Published {len(results)} cities to {path} ({snapshot['fetchedAt']}).")
+          PY
+
+      - name: Rebuild the GitHub Pages branch site
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh api --method POST "repos/${GITHUB_REPOSITORY}/pages/builds"

@@ -1,6 +1,6 @@
-import { mount, generateRainbowColors } from "../../library/three-viz/src/index.js?v=cube-box-20261009a";
+import { mount, generateRainbowColors } from "../../library/three-viz/src/index.js?v=cube-box-20261009c";
 import { canadianCities } from "./canadian-cities.js?v=canada-hourly-20261009f";
-import { cityTemperatureAdapter } from "./city-temperature-adapter.js?v=cube-box-20261009a";
+import { cityTemperatureAdapter } from "./city-temperature-adapter.js?v=cube-box-20261009c";
 
 const API = "https://api.weather.gc.ca/collections/citypageweather-realtime/items";
 const $ = selector => document.querySelector(selector);
@@ -23,7 +23,9 @@ let renderRevision = 0;
 function showError(message = "") { ui.error.hidden = !message; ui.error.textContent = message; }
 function numericTemperature(value) {
   const candidate = value?.value?.en ?? value?.value ?? value?.en ?? value;
-  const parsed = Number(String(candidate ?? "").replace(/,/g, ""));
+  const text = String(candidate ?? "").trim();
+  if (!text) return null;
+  const parsed = Number(text.replace(/,/g, ""));
   return Number.isFinite(parsed) ? parsed : null;
 }
 function recordsFrom(feature) {
@@ -49,21 +51,44 @@ async function fetchCity(city) {
   forecasts.set(city.id, rows);
   return city;
 }
+async function loadForecastSnapshot() {
+  const response = await fetch(`./forecast.json?refresh=${Date.now()}`, { cache:"no-store", headers:{ Accept:"application/json" } });
+  if (!response.ok) throw new Error(`Forecast snapshot HTTP ${response.status}`);
+  const snapshot = await response.json();
+  if (!snapshot?.cities || typeof snapshot.cities !== "object") throw new Error("Forecast snapshot format is invalid");
+  for (const city of canadianCities) {
+    const cached = snapshot.cities[city.id];
+    if (!Array.isArray(cached?.forecasts) || !cached.forecasts.length) continue;
+    const rows = cached.forecasts.map(row => ({ timestamp:String(row.timestamp ?? ""), value:numericTemperature(row.value) }))
+      .filter(row => row.timestamp && row.value !== null);
+    if (!rows.length) continue;
+    forecasts.set(city.id, rows);
+    if (Number.isFinite(cached.longitude)) longitudes.set(city.id, cached.longitude);
+  }
+  return snapshot;
+}
 async function loadCities() {
   ready = false; ui.loading.hidden = false; ui.loading.textContent = "LOADING 39 CANADIAN CITY FORECASTS…";
-  ui.status.textContent = "LOADING ECCC"; ui.source.textContent = "Loading hourly forecast data from Environment and Climate Change Canada.";
+  ui.status.textContent = "LOADING FORECAST CACHE"; ui.source.textContent = "Loading the latest hourly forecast snapshot.";
   const failures = [];
-  let completed = 0;
-  const queue = [...canadianCities];
-  const worker = async () => {
-    while (queue.length) {
-      const city = queue.shift(); if (!city) return;
-      try { await fetchCity(city); } catch (error) { failures.push({ city, error }); }
-      completed += 1;
-      ui.status.textContent = `ECCC ${completed}/${canadianCities.length}`;
-    }
-  };
-  await Promise.all(Array.from({ length:6 }, worker));
+  let snapshot;
+  try { snapshot = await loadForecastSnapshot(); }
+  catch (error) { console.info("Hourly forecast cache unavailable; requesting ECCC forecasts directly.", error); }
+  if (!forecasts.size) {
+    snapshot = undefined;
+    ui.status.textContent = "LOADING ECCC"; ui.source.textContent = "Forecast cache unavailable; loading hourly data from Environment and Climate Change Canada.";
+    let completed = 0;
+    const queue = [...canadianCities];
+    const worker = async () => {
+      while (queue.length) {
+        const city = queue.shift(); if (!city) return;
+        try { await fetchCity(city); } catch (error) { failures.push({ city, error }); }
+        completed += 1;
+        ui.status.textContent = `ECCC ${completed}/${canadianCities.length}`;
+      }
+    };
+    await Promise.all(Array.from({ length:6 }, worker));
+  }
   const available = canadianCities.filter(city => forecasts.has(city.id));
   if (!available.length) {
     ui.loading.hidden = true; ui.status.textContent = "DATA REQUEST FAILED";
@@ -79,10 +104,14 @@ async function loadCities() {
   for (const city of canadianCities) if (!forecasts.has(city.id)) selected.delete(city.id);
   ready = true;
   ui.dataSize.textContent = `${available.length}/${canadianCities.length}`;
-  ui.source.textContent = `Environment and Climate Change Canada · MSC GeoMet · ${new Date().toLocaleTimeString([], { hour:"numeric", minute:"2-digit" })} browser time`;
+  const updatedAt = snapshot?.fetchedAt ? new Date(snapshot.fetchedAt) : null;
+  const updatedText = updatedAt && !Number.isNaN(updatedAt.valueOf()) ? `${updatedAt.toLocaleString([], { timeZone:"UTC", dateStyle:"medium", timeStyle:"short" })} UTC` : "direct from ECCC";
+  ui.source.textContent = `Environment and Climate Change Canada · MSC GeoMet · refreshed ${updatedText}`;
   ui.coverage.textContent = failures.length
     ? `${available.length} cities loaded · ${failures.length} unavailable (omitted).`
-    : `${available.length} cities loaded · ${commonTimes.length} shared hourly forecast times · timestamps shown in UTC.`;
+    : snapshot
+      ? `${available.length} cities loaded from the hourly snapshot · ${commonTimes.length} shared forecast hours · updated ${updatedText}.`
+      : `${available.length} cities loaded · ${commonTimes.length} shared hourly forecast times · timestamps shown in UTC.`;
   ui.subheading.textContent = `${available.length} CITY FORECASTS · UTC HOURS · SHARED TEMPERATURE SCALE`;
   renderCityChoices();
   await renderVisualization();
@@ -182,7 +211,7 @@ async function renderVisualization() {
     ui.camera.value="perspective";
     ui.subheading.textContent=`${cities.length} CITIES · ${ui.horizon.value} HOURS · CITY LANES WEST TO EAST`;
     ui.status.textContent="ECCC · READY"; ui.loading.hidden=true;
-    ui.selection.textContent="Select a colored city marker to inspect its forecast temperature and UTC time.";
+    ui.selection.textContent="Select a black temperature node or its label to inspect the forecast value and UTC time.";
   } catch (error) {
     if (revision !== renderRevision) return;
     controller?.dispose(); controller=undefined; ui.viewport.querySelector("canvas")?.remove();
