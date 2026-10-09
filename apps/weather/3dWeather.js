@@ -1,6 +1,6 @@
-import { mount, generateRainbowColors } from "../../library/three-viz/src/index.js?v=city-rainbow-20261009";
+import { mount, generateRainbowColors } from "../../library/three-viz/src/index.js?v=cube-box-20261009a";
 import { canadianCities } from "./canadian-cities.js?v=canada-hourly-20261009f";
-import { cityTemperatureAdapter } from "./city-temperature-adapter.js?v=canada-hourly-20261009f";
+import { cityTemperatureAdapter } from "./city-temperature-adapter.js?v=cube-box-20261009a";
 
 const API = "https://api.weather.gc.ca/collections/citypageweather-realtime/items";
 const $ = selector => document.querySelector(selector);
@@ -9,7 +9,7 @@ const ui = {
   units:$("#units-select"), horizon:$("#horizon-select"), sort:$("#sort-select"), cityCount:$("#city-count"), pointCount:$("#point-count"),
   cityFilter:$("#city-filter"), cityList:$("#city-list"), coverage:$("#coverage-note"), status:$("#status-text"), heading:$("#stage-heading"),
   subheading:$("#stage-subheading"), legend:$("#stage-legend"), selection:$("#selection-readout"), camera:$("#camera-mode"), reset:$("#reset-view"),
-  play:$("#play-toggle"), slider:$("#time-slider"), timeValue:$("#time-value"), screenshot:$("#screenshot-download"), fullscreen:$("#fullscreen-toggle"),
+  screenshot:$("#screenshot-download"), fullscreen:$("#fullscreen-toggle"),
 };
 const forecasts = new Map();
 const longitudes = new Map();
@@ -129,7 +129,11 @@ function formatUtc(value, options = {}) {
 function renderLegend(cities) {
   ui.legend.replaceChildren();
   const title = document.createElement("strong"); title.textContent = `Temperature scale · °${ui.units.value}`; ui.legend.append(title);
-  const scale = document.createElement("div"); scale.textContent = ui.units.value === "F" ? "−40°F to 104°F · shared across cities" : "−40°C to 40°C · shared across cities"; ui.legend.append(scale);
+  const values = cities.flatMap(city => city.forecasts.map(row => row.value).filter(Number.isFinite));
+  const format = value => Number.isInteger(value) ? String(value) : value.toFixed(1);
+  const scale = document.createElement("div");
+  scale.textContent = values.length ? `${format(Math.min(...values))}° to ${format(Math.max(...values))}° · shared across cities` : "No temperature values";
+  ui.legend.append(scale);
   cities.forEach(city => {
     const row = document.createElement("div"); row.className = "legend-row";
     const chip = document.createElement("i"); chip.className = "legend-chip"; chip.style.backgroundColor = `#${city.color.toString(16).padStart(6,"0")}`;
@@ -144,27 +148,25 @@ async function renderVisualization() {
   const palette = generateRainbowColors(orderedCities.length, { saturation:0.82, lightness:0.59 });
   const cities = orderedCities.map((city, index) => ({ ...city, color:palette[index], forecasts:displayRows(city, Number(ui.horizon.value)) }));
   const pointCount = cities.reduce((sum, city) => sum + city.forecasts.length, 0);
+  const temperatures = cities.flatMap(city => city.forecasts.map(row => row.value).filter(Number.isFinite));
+  const minimumTemperature = temperatures.length ? Math.min(...temperatures) : -40;
+  const maximumTemperature = temperatures.length ? Math.max(...temperatures) : 40;
   ui.cityCount.textContent = String(cities.length); ui.pointCount.textContent = String(pointCount);
   ui.heading.textContent = "CANADIAN HOURLY TEMPERATURES";
   renderLegend(cities);
   controller?.dispose(); controller = undefined; ui.viewport.querySelector("canvas")?.remove();
-  ui.play.dataset.playing = "false"; ui.play.textContent = "PLAY HOURS";
   ui.loading.hidden = false; ui.loading.textContent = "BUILDING CANADA TEMPERATURE MAP…";
   if (!cities.length || !pointCount) {
     ui.loading.hidden = true; ui.status.textContent = "SELECT A CITY"; showError("Select at least one city with available forecast data."); return;
   }
   showError("");
   try {
-    const targetY = 3.8;
-    const laneSpan = Math.max(0.88, (cities.length - 1) * 0.88);
-    const hourSpan = Math.max(0.88, (Number(ui.horizon.value) - 1) * 0.88);
-    const distance = Math.max(20, Math.hypot(hourSpan * 0.55, 14, laneSpan * 0.72));
-    const cameraPosition = [distance * 0.72, targetY + distance * 0.58, distance * 0.85];
-    const orthographicHeight = Math.max(18, laneSpan * 1.18);
+    const cameraPosition = [32, 24, 36];
+    const orthographicHeight = 32;
     const nextController = await mount(ui.viewport, {
-      adapter:cityTemperatureAdapter, data:{ cities, timestamps:commonTimes.slice(0, Number(ui.horizon.value)), unit:ui.units.value }, configuration:{ backgroundColor:0x202832 },
+      adapter:cityTemperatureAdapter, data:{ cities, timestamps:commonTimes.slice(0, Number(ui.horizon.value)), unit:ui.units.value, temperatureRange:[minimumTemperature, maximumTemperature] }, configuration:{ backgroundColor:0x202832 },
       renderer:{ antialias:true, maxPixelRatio:1.5, preserveDrawingBuffer:true, powerPreference:"high-performance", toneMapping:"ACESFilmicToneMapping", toneMappingExposure:1.08 },
-      camera:{ type:"perspective", modes:["perspective","orthographic"], position:cameraPosition, target:[0,targetY,0], fov:40, orthographicHeight },
+      camera:{ type:"perspective", modes:["perspective","orthographic"], position:cameraPosition, target:[0,0,0], fov:40, orthographicHeight },
       controls:{ enabled:true, enableDamping:true, dampingFactor:0.065, minDistance:4, maxDistance:140 },
       callbacks:{
         onError:error => { ui.status.textContent="RENDER ERROR"; showError(error.message); },
@@ -172,17 +174,13 @@ async function renderVisualization() {
           if (!selection) return;
           ui.selection.textContent = `${selection.label}\n${Object.entries(selection.values ?? {}).map(([key,value]) => `${key}: ${String(value)}`).join(" · ")}`;
         },
-        onTime:index => { ui.slider.value=String(index); ui.timeValue.textContent=`${formatUtc(commonTimes[index])} UTC`; },
       },
     });
     if (revision !== renderRevision) { nextController.dispose(); return; }
     controller = nextController;
     ui.camera.disabled = !controller.capabilities.includes("cameraModes");
-    ui.slider.min="0"; ui.slider.max=String(Math.max(0, Number(ui.horizon.value)-1)); ui.slider.value="0";
-    ui.slider.disabled = Number(ui.horizon.value) < 2;
-    ui.timeValue.textContent = `${formatUtc(commonTimes[0])} UTC`;
-    controller.setTime(0); ui.camera.value="perspective";
-    ui.subheading.textContent=`${cities.length} CITIES · NEXT ${ui.horizon.value} HOURS · SHARED °${ui.units.value} SCALE`;
+    ui.camera.value="perspective";
+    ui.subheading.textContent=`${cities.length} CITIES · ${ui.horizon.value} HOURS · CITY LANES WEST TO EAST`;
     ui.status.textContent="ECCC · READY"; ui.loading.hidden=true;
     ui.selection.textContent="Select a colored city marker to inspect its forecast temperature and UTC time.";
   } catch (error) {
@@ -214,14 +212,6 @@ $("#select-none").addEventListener("click", () => { selected.clear(); renderCity
 ui.units.addEventListener("change", renderVisualization); ui.horizon.addEventListener("change", renderVisualization); ui.sort.addEventListener("change", renderVisualization);
 ui.camera.addEventListener("change", () => { try { controller?.setCameraMode(ui.camera.value); } catch (error) { showError(error.message); } });
 ui.reset.addEventListener("click", () => controller?.resetView());
-ui.slider.addEventListener("input", () => {
-  const index=Number(ui.slider.value); ui.timeValue.textContent=`${formatUtc(commonTimes[index])} UTC`; controller?.setTime(index);
-});
-ui.play.addEventListener("click", () => {
-  if (!controller) return;
-  if (ui.play.dataset.playing === "true") { controller.pause(); ui.play.dataset.playing="false"; ui.play.textContent="PLAY HOURS"; }
-  else { controller.setTime(0); ui.slider.value="0"; ui.play.dataset.playing="true"; ui.play.textContent="PAUSE HOURS"; controller.play(); }
-});
 ui.screenshot.addEventListener("click", () => {
   try { exportFrame().toBlob(blob => { if (!blob) { showError("Chrome could not encode the screenshot."); return; } downloadBlob(blob,"canada-hourly-temperatures.png"); ui.status.textContent="PNG READY"; },"image/png"); }
   catch (error) { showError(error.message); }
