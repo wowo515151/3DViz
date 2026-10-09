@@ -1,6 +1,6 @@
 3DScience Application Specification
-Version: 1.6
-Status: Single-shell constraint, field-colored wires, and tube-radius control implemented; pending GitHub Pages verification.
+Version: 1.7
+Status: Implemented, reviewed against this specification, and verified on GitHub Pages in Chrome (2026-10-09).
 
 Purpose
 

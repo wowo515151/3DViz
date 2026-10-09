@@ -23,6 +23,6 @@
 [x] Require Multiple surfaces off while the solid surface is visible.
 [x] Color electric wireframes red and magnetic wireframes blue.
 [x] Add a tube-radius slider where zero uses line wireframes and positive values create tubular wires.
-[x] Review the updated specification against the implementation and run local library checks.
-[x] Publish the final 3DScience revision and verify 21³ sampling and wireframe-only display in Chrome on GitHub Pages.
-[x] Verify stage-only PNG and 360-degree video exports include the field legend and omit app controls.
+[x] Review the updated specification against the implementation and run local library checks, including tube-radius controller capability forwarding.
+[x] Publish the final 3DScience revision and verify startup, 21³ sampling, the single-shell rule, blue magnetic wires, and wireframe-only display in isolated Chrome on GitHub Pages.
+[x] Verify tube radius zero-line and positive-radius tube modes, plus stage-only PNG and 360-degree WebM export status with field legends and no app controls.
