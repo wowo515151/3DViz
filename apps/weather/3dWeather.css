@@ -23,8 +23,8 @@ select option { background:#141b23; color:#e8edf4; }
 .error-message { margin-top:7px; padding:8px; color:#ffc6ba; background:#9a3d2829; border:1px solid #ef90735c; border-radius:4px; font-size:10px; line-height:1.4; }
 .readout { margin-top:8px; color:#9db0c3; font:9px ui-monospace,monospace; }
 .readout strong { color:#d8e8f4; font-weight:400; }
-.city-section { min-height:120px; flex:1 1 auto; display:flex; flex-direction:column; }
-.city-list { max-height:230px; overflow:auto; margin-top:6px; display:grid; grid-template-columns:1fr; gap:2px 6px; scrollbar-color:#47586a #141a22; }
+.city-section { min-height:300px; flex:1 1 auto; display:flex; flex-direction:column; }
+.city-list { height:210px; max-height:230px; flex:0 0 210px; overflow:auto; margin-top:6px; display:grid; grid-template-columns:1fr; gap:2px 6px; scrollbar-color:#47586a #141a22; }
 .city-choice { display:flex; align-items:center; min-width:0; gap:6px; padding:4px 2px; color:#aebdcb; font-size:9px; cursor:pointer; }
 .city-choice input { accent-color:#76c8f3; margin:0; }
 .city-choice span { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
@@ -61,5 +61,5 @@ input[type=range] { width:100%; height:3px; margin:0; accent-color:var(--strong)
 .sr-only { position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap; border:0; }
 button:focus-visible,select:focus-visible,input:focus-visible { outline:2px solid #8bd5ff; outline-offset:2px; }
 .stage:fullscreen { position:fixed; inset:0; width:100vw; height:100vh; }
-@media(max-width:800px) { body{overflow:auto}.app-shell{display:block;height:auto;min-height:100vh}.control-panel{min-height:0;max-height:none;padding-bottom:22px}.panel-footer{margin-top:12px}.city-list{max-height:280px}.stage{height:68vh;min-height:480px}.stage-header{top:16px;left:18px;right:18px}.stage-actions{left:17px;bottom:16px;flex-wrap:wrap}.stage-legend{top:70px;right:14px}.viewport-hint{right:14px;bottom:20px} }
+@media(max-width:800px) { body{overflow:auto}.app-shell{display:block;height:auto;min-height:100vh}.control-panel{min-height:0;max-height:none;padding-bottom:22px}.panel-footer{margin-top:12px}.city-list{height:260px;max-height:280px;flex-basis:260px}.stage{height:68vh;min-height:480px}.stage-header{top:16px;left:18px;right:18px}.stage-actions{left:17px;bottom:16px;flex-wrap:wrap}.stage-legend{top:70px;right:14px}.viewport-hint{right:14px;bottom:20px} }
 @media(max-width:430px) { .stage-actions button{font-size:8px;padding:7px}.viewport-hint{display:none}.stage-heading{max-width:220px;font-size:9px} }
