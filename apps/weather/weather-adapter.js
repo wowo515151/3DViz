@@ -115,7 +115,7 @@ export const weatherSignalAdapter = Object.freeze({
       },
       dispose() {
         scene.remove(root, cursor, grid, hemi, keyLight, rimLight);
-        root.traverse(object => { if (object.isMesh && object !== rayTarget) { object.geometry?.dispose?.(); object.material?.dispose?.(); } });
+        root.traverse(object => { if (object.isMesh) { object.geometry?.dispose?.(); object.material?.dispose?.(); } });
         cursor.traverse(object => { object.geometry?.dispose?.(); object.material?.dispose?.(); });
         grid.geometry.dispose();
         if (Array.isArray(grid.material)) grid.material.forEach(material => material.dispose()); else grid.material.dispose();
