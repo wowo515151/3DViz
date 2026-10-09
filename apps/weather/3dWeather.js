@@ -1,6 +1,6 @@
 import { mount, barChartAdapter } from "../../library/three-viz/src/index.js";
-import { normalizeFeature, metricDefinition, makeSignalRecords, makeTemperatureBars, formatValue } from "./weather-data.js";
-import { weatherSignalAdapter } from "./weather-adapter.js?v=eb6065a";
+import { normalizeFeature, metricDefinition, makeSignalRecords, makeTemperatureBars, formatValue } from "./weather-data.js?v=weather-data-20261009";
+import { weatherSignalAdapter } from "./weather-adapter.js?v=weather-data-20261009";
 
 const API = "https://api.weather.gc.ca/collections/citypageweather-realtime/items";
 const $ = selector => document.querySelector(selector);

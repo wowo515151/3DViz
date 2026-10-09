@@ -111,7 +111,8 @@ export function normalizeFeature(feature) {
     const high = numeric(at(record, "temperatures.temp_high.value.en"), at(record, "temperatures.temp_high"), at(record, "temperature.high.value.en"), at(record, "temperature.high"));
     const low = numeric(at(record, "temperatures.temp_low.value.en"), at(record, "temperatures.temp_low"), at(record, "temperature.low.value.en"), at(record, "temperature.low"));
     let classifiedHigh = high; let classifiedLow = low;
-    for (const item of arr(record.temperatures)) {
+    const temperatureItems = arr(record.temperatures?.temperature ?? record.temperatures);
+    for (const item of temperatureItems) {
       const kind = text(item.class?.value?.en, item.class?.en, item.class, item.type?.en, item.type).toLowerCase();
       const value = numeric(item.temperature, item.value, item);
       if (kind.includes("high")) classifiedHigh ??= value;
