@@ -67,7 +67,6 @@ export function makeVectorPlotter(mapping, vectorScale = 0.55, options = {}) {
       };
       const updateAnimatedGlyphs = elapsedSeconds => {
         if (!animatedGlyphs) return;
-        const duration = Math.max(0.1, options.cycleDuration ?? 4);
         const maxTravel = Math.max(0, options.maxTravel ?? 0.45);
         const matrix = new THREE.Matrix4();
         const position = new THREE.Vector3();
@@ -75,14 +74,12 @@ export function makeVectorPlotter(mapping, vectorScale = 0.55, options = {}) {
         const quaternion = new THREE.Quaternion();
         const up = new THREE.Vector3(0, 1, 0);
         animatedRows.forEach((glyph, index) => {
-          const travelPeriod = glyph.magnitude > 0 ? Math.max(0.1, maxTravel / glyph.magnitude) : duration;
+          const travelPeriod = glyph.magnitude > 0 ? Math.max(0.1, maxTravel / glyph.magnitude) : 1;
           const localTime = ((elapsedSeconds % travelPeriod) + travelPeriod) % travelPeriod;
-          const phase = ((elapsedSeconds % duration) + duration) % duration / duration;
-          const size = phase < 0.5 ? 0.18 + phase * 1.64 : 1 - (phase - 0.5) * 1.64;
           const travel = glyph.magnitude * localTime;
           position.copy(glyph.center).addScaledVector(glyph.direction, travel);
           quaternion.setFromUnitVectors(up, glyph.direction.lengthSq() > 0 ? glyph.direction : up);
-          scale.setScalar(size);
+          scale.setScalar(1);
           matrix.compose(position, quaternion, scale);
           animatedGlyphs.setMatrixAt(index, matrix);
         });

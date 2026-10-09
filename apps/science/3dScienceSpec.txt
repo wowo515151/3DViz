@@ -1,6 +1,6 @@
 3DScience Application Specification
 Version: 1.1
-Status: Two-plotter revision implemented and locally verified; GitHub Pages verification pending.
+Status: Fixed-size vector cone revision implemented; GitHub Pages verification pending.
 
 Purpose
 
@@ -20,7 +20,7 @@ Page layout and controls
 - Use a dark slate scene background and restrained cyan/blue-gray controls, thin separators, compact labels, and high-contrast focus states. Build these styles locally in the app; do not copy EmViz source or load code from outside this repository. The page may load the same pinned Three.js runtime as the Weather app.
 - Keep controls focused: the plotter checkbox list contains exactly Isosurfaces and Vector field, and they can be combined. Start with Isosurfaces enabled and Vector field disabled.
 - Isosurface options include multiple nested surfaces and their wireframes. Both are enabled by default. The library's layers and thresholds capabilities drive their controls.
-- Vector options include static field arrows and animated arrows. The animated mode starts glyphs at their grid-cell centers and moves them along the normalized local field direction with speed equal to the local field magnitude in normalized scene units. Cone size eases through a small-to-large-to-small cycle over five seconds. Animated mode is a checkbox and is off by default. Use cone glyphs in animated mode; retain the library's existing static arrow representation.
+- Vector options include static field arrows and animated arrows. The animated mode starts glyphs at their grid-cell centers and moves them along the normalized local field direction with speed equal to the local field magnitude in normalized scene units. Animated cone size remains constant during travel. Animated mode is a checkbox and is off by default. Use cone glyphs in animated mode; retain the library's existing static arrow representation.
 - Provide concise field and view settings only where needed: electric or magnetic component, frequency, amplitude, play/pause, reset time, and reset camera. Keep these independent of plotter-type selection.
 - Display a persistent stage legend identifying visible electric field in red, visible magnetic field in blue, the dipole source, normalized field magnitude, and current time phase. Selection-capable plotters show the selected field record in an accessible readout.
 - Provide a fullscreen button. The stage can be made fullscreen without the control panel.
@@ -56,7 +56,7 @@ Acceptance criteria
 
 - The plotter choice list contains exactly Isosurfaces and Vector field. Both can be enabled at once.
 - Isosurfaces, nested surfaces, and wireframes are visible at startup.
-- The default wave period is 12 seconds. Static vectors remain available. Animated cone vectors move from cell centers along the local vector at field-strength speed and their size cycles small/large/small over five seconds.
+- The default wave period is 12 seconds. Static vectors remain available. Animated cones move from cell centers along the local vector at field-strength speed while keeping a constant size.
 - Each visible layer uses its library module; no copy of the library's rendering implementation is introduced under apps/science/.
 - Screenshot and orbit-video downloads contain the view and legend, exclude all controls, and the video completes one full orbit and restores the prior view.
 - Home page no longer presents or mentions a CSV app.

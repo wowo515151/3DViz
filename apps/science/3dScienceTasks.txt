@@ -12,6 +12,6 @@
 [x] Implement PNG and 360-degree WebM downloads with only the scene and legend in the output.
 [x] Remove CSV app mentions and links from the main index and update repository documentation.
 [x] Restrict the Science app's available plotter choices and composition to Isosurfaces and Vector field.
-[x] Slow the default wave cycle and animated cone size cycle while retaining field-strength movement speed.
+[x] Slow the default wave cycle and keep animated cone size constant while retaining field-strength movement speed.
 [x] Review this narrowed implementation against 3dScienceSpec.txt and verify two choices, running status, slowed wave, and animated cones in local Chrome.
-[ ] Publish and verify the narrowed app and slower animation on GitHub Pages.
+[ ] Publish and verify the narrowed app, slower wave, and fixed-size animated cones on GitHub Pages.
