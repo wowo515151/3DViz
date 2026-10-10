@@ -132,6 +132,14 @@ test("vector and ConeIso plotters instance cones at samples and eligible facet c
   assert.equal(coneIsoGroup.children.length, 3);
   assert.deepEqual(coneIso.report.levels.map(level => level.color), generateColorShades(0xed5363, 3));
   assert.ok(coneIso.report.levels.every(level => level.count > 0));
+  const coarseFacetCount = coneIso.report.count;
+  const finerRows = [];
+  for (let xi = 0; xi < 5; xi += 1) for (let yi = 0; yi < 5; yi += 1) for (let zi = 0; zi < 5; zi += 1) {
+    const x = xi / 4, y = yi / 4, z = zi / 4;
+    finerRows.push({ x, y, z, value: x, u: 0, v: 0, w: 1 });
+  }
+  coneIso.update(finerRows);
+  assert.ok(coneIso.report.count > coarseFacetCount, "multiple ConeIso levels should gain facets as tessellation increases");
   coneIso.dispose();
 
   const filtered = makeConeIsoPlotter(
