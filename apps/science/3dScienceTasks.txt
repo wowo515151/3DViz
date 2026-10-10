@@ -33,3 +33,4 @@
 [x] Add and export a reusable generator for evenly spaced shades of a single hue in the 3DViz library.
 [x] Add a multiple-wireframe surface-count slider and map low-to-high field values to light-to-dark electric red and magnetic blue shades.
 [x] Review the final specification against the code and verify slider gating, count changes, field colors, app startup, and error-free rendering on GitHub Pages in isolated Chrome.
+[ ] Increase shade contrast so low magnetic wireframes stay visibly blue and high magnetic wireframes remain blue rather than approaching black; verify the deployed gradient in Chrome.

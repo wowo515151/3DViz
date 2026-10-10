@@ -3,7 +3,7 @@ const { addSceneLights, mapBars, projectedColumn, validRows, selected, categoryV
 import { extractIsosurface } from './shared/isosurface.js';
 import { createWireframe } from './shared/wireframe.js?v=car-paint-20261009';
 import { createCarPaintMaterial } from './shared/materials.js';
-import { generateColorShades } from '../utils/shades.js?v=shades-20261009';
+import { generateColorShades } from '../utils/shades.js?v=shades-20261009b';
 export function makeIsosurfacePlotter(mapping, options) {
   return Object.freeze({
     capabilities:Object.freeze(["selection","thresholds","layers","tubeRadius","surfaceCount"]),

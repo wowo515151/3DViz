@@ -45,7 +45,9 @@ test("generates evenly spaced, hue-preserving shades from light to dark", () => 
   assert.ok(blueShades[0] > blueShades.at(-1));
   assert.notEqual(redShades[0], redShades.at(-1));
   const redLightness = redShades.map(color => rgbToHsl(color).lightness);
-  assert.ok(redLightness.slice(1).every((value, index) => Math.abs((value - redLightness[index]) + 0.145) < 0.01));
+  assert.ok(redLightness.slice(1).every((value, index) => Math.abs((value - redLightness[index]) + 0.1) < 0.01));
+  assert.equal(blueShades[0], 0x8fbfff);
+  assert.equal(blueShades.at(-1), 0x0053c2);
   assert.throws(() => generateColorShades(-1, 3), RangeError);
   assert.throws(() => generateColorShades(0xed5363, -1), RangeError);
 });
