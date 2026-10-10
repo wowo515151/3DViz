@@ -3,7 +3,7 @@ import {
   makeVectorPlotter,
   makeIsosurfacePlotter,
   makeConeIsoPlotter,
-} from "../../library/three-viz/src/index.js?v=science-controls-20261010e";
+} from "../../library/three-viz/src/index.js?v=science-controls-20261010f";
 
 const $ = selector => document.querySelector(selector);
 const PALETTE = Object.freeze({ electric: 0xed5363, magnetic: 0x529cff });
