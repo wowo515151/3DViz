@@ -44,5 +44,5 @@
 [x] Add an independent Science checkbox for ConeIso and apply the shared cone scaling rule to both plotters.
 [x] Review the updated library index, Science spec, UI, and repo layout; run library checks and inspect the scene in local Chrome.
 [x] Publish the repository revision and verify the landing page, Science controls, vector cones, and independent ConeIso view in isolated Chrome on GitHub Pages.
-[ ] Make ConeIso follow the active isosurface levels and colors; double the Science plot recalculation cadence again; publish and verify on GitHub Pages in isolated Chrome.
+[x] Make ConeIso follow the active isosurface levels and colors; double the Science plot recalculation cadence again; publish and verify on GitHub Pages in isolated Chrome.
 [x] Publish and verify the updated shades, car-paint reflections, and low-radius default in isolated Chrome on GitHub Pages.

@@ -1,6 +1,6 @@
 3DScience Application Specification
 Version: 3.0
-Status: ConeIso follows the active isosurface levels and colors; local tests and Chrome checks pass, and the doubled recalculation cadence is in place.
+Status: ConeIso follows the active isosurface levels and colors; local tests and local/GitHub Pages Chrome checks pass, and the doubled recalculation cadence is in place.
 
 Purpose
 
