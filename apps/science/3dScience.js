@@ -179,6 +179,16 @@ function compositeDipolePlotter(initialLayers) {
         for (let parent = plotter.sceneLayer; parent; parent = parent.parent) if (parent.visible === false) return false;
         return true;
       };
+      const updateConeIsoCount = () => {
+        const visible = plotters.filter(plotter => plotter.groupKey === "coneIso" && isLayerVisible(plotter));
+        if (!visible.length) {
+          $("#cone-iso-count").textContent = "Enable ConeIso to see its cone count.";
+          return;
+        }
+        const counts = { electric: 0, magnetic: 0 };
+        for (const plotter of visible) counts[plotter.component] += plotter.instance.report?.count ?? 0;
+        $("#cone-iso-count").textContent = `ConeIso cones · E ${counts.electric.toLocaleString()} · B ${counts.magnetic.toLocaleString()}`;
+      };
       const refreshSpatialLayers = () => {
         const fieldData = generateFieldData(currentPhase);
         for (const plotter of plotters) {
@@ -187,6 +197,7 @@ function compositeDipolePlotter(initialLayers) {
           try { plotter.instance.update(layerData(plotter.component, source)); }
           catch (error) { definition.callbacks?.onLayerError?.(plotter.groupKey, error); }
         }
+        updateConeIsoCount();
         context.requestRender();
       };
       const setTime = phase => {
@@ -207,6 +218,7 @@ function compositeDipolePlotter(initialLayers) {
           typeGroups.get(id).forEach(group => { group.visible = Boolean(visible); });
           if (visible) refreshSpatialLayers();
         }
+        updateConeIsoCount();
         context.requestRender();
       };
 
@@ -220,6 +232,7 @@ function compositeDipolePlotter(initialLayers) {
             try { plotter.instance.update(layerData(plotter.component, source)); }
             catch (error) { definition.callbacks?.onLayerError?.(plotter.groupKey, error); }
           }
+          updateConeIsoCount();
           context.requestRender();
         },
         updateFrame({ elapsedSeconds, deltaSeconds }) {
@@ -241,6 +254,7 @@ function compositeDipolePlotter(initialLayers) {
         setThreshold(value) {
           state.threshold = Number(value);
           plotters.filter(plotter => plotter.groupKey === "isosurfaces" || plotter.groupKey === "coneIso").forEach(plotter => plotter.instance.setThreshold?.(state.threshold));
+          updateConeIsoCount();
         },
         setTubeRadius(value) {
           plotters.filter(plotter => plotter.groupKey === "isosurfaces").forEach(plotter => plotter.instance.setTubeRadius?.(value));
@@ -248,6 +262,7 @@ function compositeDipolePlotter(initialLayers) {
         setSurfaceCount(value) {
           plotters.filter(plotter => plotter.groupKey === "isosurfaces").forEach(plotter => plotter.instance.setSurfaceCount?.(value));
           plotters.filter(plotter => plotter.groupKey === "coneIso").forEach(plotter => plotter.instance.setSurfaceCount?.(value));
+          updateConeIsoCount();
         },
         setLayerVisible: toggleLayer,
         describeSelection(hit) {
