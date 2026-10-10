@@ -7,7 +7,11 @@ function clampUnit(value, label) {
   return value;
 }
 
-/** Return evenly spaced light-to-dark shades that retain a color's hue. */
+/**
+ * Return evenly spaced light-to-dark 24-bit RGB shades that retain a color's
+ * hue and saturation. `color` is a 24-bit RGB integer; `count` is the number
+ * of shades. Optional lightness endpoints range from 0 (black) to 1 (white).
+ */
 export function generateColorShades(color, count, {
   lightnessStart = 0.88,
   lightnessEnd = 0.3,

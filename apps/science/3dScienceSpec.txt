@@ -1,6 +1,6 @@
 3DScience Application Specification
 Version: 1.9
-Status: Surface-count slider and reusable field-color shade ramps implemented; pending GitHub Pages verification.
+Status: Implemented, spec-reviewed, library-tested (17/17), and visually verified on GitHub Pages in isolated Chrome (2026-10-09).
 
 Purpose
 
