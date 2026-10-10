@@ -1,3 +1,5 @@
+import { retainCarPaintEnvironment } from './materials.js?v=car-paint-20261010a';
+
 const MISSING = new Set(["", "na", "n/a", "null", "nan"]);
 export function parseNumeric(value) {
   const text = String(value ?? "").trim();
@@ -33,15 +35,16 @@ export const categoryValue = (rows, field) => {
 };
 export const valueOf = (row, field) => parseNumeric(row[field]);
 
-export function addSceneLights(THREE, scene) {
-  if (typeof THREE.HemisphereLight !== "function" || typeof THREE.DirectionalLight !== "function") return () => {};
+export function addSceneLights(THREE, scene, renderer) {
+  const releaseEnvironment = retainCarPaintEnvironment(THREE, scene, renderer);
+  if (typeof THREE.HemisphereLight !== "function" || typeof THREE.DirectionalLight !== "function") return releaseEnvironment;
   const ambient = new THREE.HemisphereLight(0xb4d9ee, 0x111820, 1.15);
   const key = new THREE.DirectionalLight(0xe8f6ff, 1.7);
   const rim = new THREE.DirectionalLight(0x388dce, .55);
   key.position.set(-4, 7, 6);
   rim.position.set(6, 2, -5);
   scene.add(ambient, key, rim);
-  return () => { scene.remove(ambient); scene.remove(key); scene.remove(rim); };
+  return () => { scene.remove(ambient); scene.remove(key); scene.remove(rim); releaseEnvironment(); };
 }
 
 export function mapBars(rows, mapping, aggregate) {

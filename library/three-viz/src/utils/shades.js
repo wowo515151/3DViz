@@ -13,7 +13,7 @@ function clampUnit(value, label) {
  * of shades. Optional lightness endpoints range from 0 (black) to 1 (white).
  */
 export function generateColorShades(color, count, {
-  lightnessStart = 0.78,
+  lightnessStart = 0.72,
   lightnessEnd = 0.38,
 } = {}) {
   if (!Number.isSafeInteger(color) || color < 0 || color > 0xffffff) {

@@ -1,6 +1,6 @@
 3DScience Application Specification
-Version: 2.0
-Status: Shade contrast tuned to keep blue wireframes visibly blue from light to dark; pending GitHub Pages verification.
+Version: 2.2
+Status: Car-paint, shade, and animation cadence updates are pending browser verification on GitHub Pages.
 
 Purpose
 
@@ -12,7 +12,7 @@ Repository and reuse rules
 - Import visualization plotters and viewer lifecycle from ../../library/three-viz/src/index.js. The app must not copy or reimplement library plotter geometry, validation, selection, camera controls, coordinate mapping, or resource cleanup.
 - Keep app-only code limited to dipole field data generation and normalization, composing library plotters, UI controls, legend/export composition, and browser media recording.
 - Implement generic animated vector glyph behavior in the existing vector-field plotter module, so other library consumers receive the feature. Do not fork that plotter inside the app.
-- Keep generic color palette helpers in the reusable library and export them through src/index.js. The library includes evenly spaced rainbow palettes and single-hue light-to-dark shade generation, with default blue shades that remain visibly blue at both ends of the range.
+- Keep generic color palette helpers in the reusable library and export them through src/index.js. The library includes evenly spaced rainbow palettes and single-hue light-to-dark shade generation. Default light blue is visibly blue and darker than the earlier 0.78 lightness start; default shade lightness starts at 0.72 and ends at 0.38.
 - Use only the library's isosurface and vector-field plotters in this app. The app may adapt generated field records to their schemas but must not duplicate their drawing algorithms.
 
 Page layout and controls
@@ -20,11 +20,11 @@ Page layout and controls
 - The left side is a narrow, scrollable control panel. The right side is a large visualization stage. At small widths, stack the panel above the stage and allow normal page scrolling.
 - Use a dark slate scene background and restrained cyan/blue-gray controls, thin separators, compact labels, and high-contrast focus states. Build these styles locally in the app; do not copy EmViz source or load code from outside this repository. The page may load the same pinned Three.js runtime as the Weather app.
 - Keep controls focused: the plotter checkbox list contains exactly Isosurfaces and Vector field, and they can be combined. Start with Isosurfaces enabled and Vector field disabled.
-- Isosurface options include a single opaque solid shell, multiple wireframe surfaces, and an adjustable tube radius. The solid shell and wireframes are enabled by default. Multiple surfaces are disabled while the solid shell is enabled; turning the solid shell off makes multiple wireframe surfaces available and enables a surface-count slider. The chosen count is evenly spread across the field-value range. Lower field values use noticeably light red or blue and higher values use dark red or blue that remain distinct from black. A tube radius of zero uses line wireframes.
+- Isosurface options include a single opaque solid shell, multiple wireframe surfaces, and an adjustable tube radius. The solid shell and glossy tubular wireframes are enabled by default. Multiple surfaces are disabled while the solid shell is enabled; turning the solid shell off makes multiple wireframe surfaces available and enables a surface-count slider. The chosen count is evenly spread across the field-value range. Lower field values use noticeably light red or blue and higher values use dark red or blue that remain distinct from black. A tube radius of zero uses flat line wireframes; positive radii use tubular wireframes with the shared car-paint finish.
 - Vector options include static field arrows and animated cones. Vector positions share the dipole's coordinate bounds with its isosurfaces. Animated cones start at their grid-cell centers, point along the normalized local field direction, and move continuously at a velocity magnitude equal to the local field magnitude in normalized scene units. Their centers persist when the wave field refreshes and wrap through the opposite side of the coordinate bounds at grid boundaries. Cone length stays constant, while cone radius is proportional to field strength. Animated mode is a checkbox and is off by default. Animated glyphs have no shaft; retain the library's existing static arrow representation.
 - Provide concise field and view settings only where needed: electric or magnetic component, frequency, amplitude, play/pause, reset time, and reset camera. Keep these independent of plotter-type selection.
 - Display a persistent stage legend identifying visible electric field in red, visible magnetic field in blue, normalized field magnitude, and current time phase. Selection-capable plotters show the selected field record in an accessible readout.
-- Use one glossy metallic car-paint material treatment for solid isosurfaces, tubular wireframes, static vector arrows, and animated cones. Do not draw an additional dipole source dot or DIPOLE marker on the stage or in exports.
+- Use one metallic car-paint material treatment for solid isosurfaces, tubular wireframes, static vector arrows, and animated cones. Defaults match the reference demo's minimum Flake Sparkle (0), minimum Clearcoat Gloss (0), minimum Clearcoat Polish roughness (0.01), and metalness 1; base roughness is 0.16. No flake texture is applied. Generate and attach the softbox reflection environment to the containing Three.js Scene, including when plotters receive nested Groups. Since line materials cannot reflect the car-paint lighting, default to a small positive wireframe tube radius while keeping zero available for users who prefer flat lines. Do not draw an additional dipole source dot or DIPOLE marker on the stage or in exports.
 - Provide a fullscreen button. The stage can be made fullscreen without the control panel.
 
 Dipole and shared field data
@@ -32,12 +32,12 @@ Dipole and shared field data
 - Model an idealized z-directed oscillating dipole at the origin with a finite excluded source core. Use normalized units and explicitly label them; this visualization is explanatory and is not a calibrated engineering solver.
 - Compute electric and magnetic vectors from the same time-dependent dipole model. Electric values map to red and magnetic values to blue. Keep the source origin visible and prevent singular values at the dipole.
 - Generate one complete, regularly spaced 21³ 3D sample grid for each field update to provide smooth isosurfaces. Maintain stable x/y/z coordinates and numeric E/B vector components and magnitudes. Derive field-specific records from this shared data rather than recalculating the model separately in each plotter adapter. Frequency or amplitude changes refresh the spatial samples from the same model.
-- Run the default wave at one cycle every 12 seconds. The frequency multiplier adjusts that rate. Regenerate the visible plotters on time changes through their update APIs; animate only plots that declare animation support, using the viewer's play/pause lifecycle.
+- Run the default wave at one cycle every 12 seconds. The frequency multiplier adjusts that rate. Regenerate the visible plotters on time changes through their update APIs at twice the former cadence (0.12 second interval and 0.03 phase-step minimum); animate only plots that declare animation support, using the viewer's play/pause lifecycle.
 
 Plotter coverage
 
 - Isosurface: call makeIsosurfacePlotter with field magnitude data, one opaque solid shell and wireframe enabled, and a valid midrange threshold. Never render multiple transparent solid shells. When the solid shell is visible, nested surfaces must be off. When the solid shell is hidden, expose multiple wireframe surfaces and a slider for their count. Spread surface levels evenly over the scalar range and use the reusable shade generator for noticeably light-to-dark colors along the electric-red and magnetic-blue hues; blue should stay visibly blue at the light end and remain blue rather than black at the dark end. Expose threshold, independent surface and wireframe visibility, surface count, and tube-radius controls through the viewer controller. A tube radius of zero creates line wireframes; positive values create tubular wires.
-- Vector field: call makeVectorPlotter on the shared vector records. Expose static ArrowHelpers and animated cone variants. Map vector positions to the same coordinate bounds as the isosurfaces. Animated cones start at rest until selected, travel continuously in the field direction at field-strength speed, wrap at grid boundaries, and scale their radius with field strength. The wave time phase changes no faster than one full cycle per 12 seconds at the default frequency.
+- Vector field: call makeVectorPlotter on the shared vector records. Expose static ArrowHelpers and animated cone variants. Map vector positions to the same coordinate bounds as the isosurfaces. Animated cones start at rest until selected, travel continuously in the field direction at field-strength speed, wrap at grid boundaries, and scale their radius with field strength. The wave time phase completes one cycle every 12 seconds at the default frequency.
 - The two plotter checkboxes add/remove their library plotters in the shared scene. The app composition adapter may route lifecycle calls and controller capabilities but must leave scene-object generation to the imported plotters.
 - If either plotter fails, keep the rest of the scene available and show a readable error for the failed layer.
 
@@ -65,3 +65,10 @@ Acceptance criteria
 - Screenshot and orbit-video downloads contain the view and legend, exclude all controls, and the video completes one full orbit and restores the prior view.
 - Home page no longer presents or mentions a CSV app.
 - The spec is reviewed against the finished code and GitHub Pages deployment.
+
+Car-paint and animation update (version 2.2)
+
+- Reuse the shared library car-paint material in the Weather and 3DScience apps. Keep car-paint setup in the shared library; app code only consumes the public exports.
+- Match the local reference material's requested settings: no flake sparkle layer, clearcoat gloss 0, clearcoat roughness 0.01, and metalness 1.
+- Double the Science field refresh cadence and the reusable Weather tube animation time step.
+- Darken the default lightest shade endpoint while retaining a visibly blue color.

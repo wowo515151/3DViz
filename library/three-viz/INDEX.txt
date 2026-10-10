@@ -8,7 +8,8 @@ Modules
 
 - src/index.js: public exports, including mount, plotters, validation, mapping, and resource tools.
 - src/utils/: reusable color helpers, including evenly spaced rainbow palettes and single-hue light-to-dark shades.
-- `generateColorShades(color, count, { lightnessStart, lightnessEnd })` returns shades ordered evenly from the starting lightness to the ending lightness while retaining the input hue.
+- `generateColorShades(color, count, { lightnessStart, lightnessEnd })` returns shades ordered evenly from the starting lightness to the ending lightness while retaining the input hue. The default range starts at lightness 0.72 for a darker, still visibly blue light shade and ends at 0.38.
+- `createCarPaintMaterial(THREE, color, options)` supplies shared metalness-1 materials with minimum clearcoat gloss and polish settings; `retainCarPaintEnvironment(THREE, scene, renderer)` shares a generated softbox environment across plotters attached to that scene.
 - src/core/: viewer lifecycle, errors, and resource ownership.
 - src/data/: input validation and coordinate mapping.
 - src/plotters/: bar-chart, point-cloud, CSV bars, scatter, histogram, surface, trajectory, vector-field, time-slice, isosurface, and weather-tube plotters; each implementation has its own JavaScript module.

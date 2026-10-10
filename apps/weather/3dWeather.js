@@ -1,4 +1,4 @@
-import { mount, generateRainbowColors } from "../../library/three-viz/src/index.js?v=forecast-labels-20261009k";
+import { mount, generateRainbowColors } from "../../library/three-viz/src/index.js?v=20261010v";
 import { canadianCities } from "./canadian-cities.js?v=canada-hourly-20261009f";
 import { cityTemperaturePlotter } from "./city-temperature-plotter.js?v=forecast-labels-20261009k";
 

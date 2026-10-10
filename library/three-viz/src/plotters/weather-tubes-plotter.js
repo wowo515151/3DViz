@@ -1,9 +1,11 @@
 
+import { createCarPaintMaterial, retainCarPaintEnvironment } from './shared/materials.js?v=car-paint-20261010a';
 
 export const weatherTubesPlotter = Object.freeze({
   capabilities: Object.freeze(["selection", "time", "animation"]),
   create(context, definition, input) {
     const { THREE, scene, resources } = context;
+    const releaseCarPaintEnvironment = retainCarPaintEnvironment(THREE, scene, context.renderer);
     const rows = input.rows ?? [];
     const metricDefinition = key => input.metricDefinitions?.[key] ?? { label: key, unit: "", color: 0xb5c5d8 };
     const keys = input.keys ?? [];
@@ -29,7 +31,11 @@ export const weatherTubesPlotter = Object.freeze({
     rimLight.position.set(7, 4, -8);
     scene.add(hemi, keyLight, rimLight);
 
-    const lineMaterial = key => resources.track(new THREE.MeshStandardMaterial({ color: metricDefinition(key).color, metalness: 0.12, roughness: 0.3, emissive: metricDefinition(key).color, emissiveIntensity: 0.06 }));
+    const materials = new Map();
+    const lineMaterial = key => {
+      if (!materials.has(key)) materials.set(key, resources.track(createCarPaintMaterial(THREE, metricDefinition(key).color)));
+      return materials.get(key);
+    };
     const markerGeometry = resources.track(new THREE.SphereGeometry(0.085, 14, 10));
     const pointIndex = new Map();
 
@@ -95,7 +101,7 @@ export const weatherTubesPlotter = Object.freeze({
         context.requestRender();
       },
       updateFrame({ elapsedSeconds }) {
-        const step = Math.floor(elapsedSeconds * 1.5) % Math.max(1, rows.length);
+        const step = Math.floor(elapsedSeconds * 3) % Math.max(1, rows.length);
         cursor.position.x = x(step);
         definition.callbacks?.onTime?.(step);
       },
@@ -121,6 +127,7 @@ export const weatherTubesPlotter = Object.freeze({
         grid.geometry.dispose();
         if (Array.isArray(grid.material)) grid.material.forEach(material => material.dispose()); else grid.material.dispose();
         hemi.dispose?.(); keyLight.dispose?.(); rimLight.dispose?.();
+        releaseCarPaintEnvironment();
       },
     };
   },

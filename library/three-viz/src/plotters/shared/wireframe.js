@@ -1,4 +1,4 @@
-import { createCarPaintMaterial } from './materials.js';
+import { createCarPaintMaterial } from './materials.js?v=car-paint-20261010a';
 /** Build a disposable line or tubular wireframe layer around an existing Three.js geometry. */
 export function createWireframe(THREE, geometry, { color = 0xd6f4ff, opacity = 0.64, threshold = 1, full = false, tubeRadius = 0 } = {}) {
   const WireGeometry = full ? THREE.WireframeGeometry : THREE.EdgesGeometry;

@@ -2,7 +2,7 @@ import {
   mount,
   makeVectorPlotter,
   makeIsosurfacePlotter,
-} from "../../library/three-viz/src/index.js?v=20261009u";
+} from "../../library/three-viz/src/index.js?v=20261010v";
 
 const $ = selector => document.querySelector(selector);
 const PALETTE = Object.freeze({ electric: 0xed5363, magnetic: 0x529cff });
@@ -12,6 +12,8 @@ const VECTOR_POSITION_BOUNDS = Object.freeze([[-HALF_EXTENT, HALF_EXTENT], [-HAL
 const FIELD_EPSILON = 0.38;
 const SIMULATION_CYCLE = Math.PI * 2;
 const BASE_WAVE_PERIOD_SECONDS = 12;
+const FIELD_REFRESH_INTERVAL_SECONDS = 0.12;
+const MIN_FIELD_REFRESH_PHASE_STEP = 0.03;
 const SELECTORS = Object.freeze({
   isosurfaces: "#layer-isosurfaces", vectors: "#layer-vectors",
 });
@@ -156,8 +158,8 @@ function compositeDipolePlotter(initialLayers) {
         }
       };
 
-      add({ id: "electric-iso", component: "electric", plotter: makeIsosurfacePlotter({ x: "x", y: "y", z: "z", value: "value" }, { threshold: state.threshold, nested: false, surfaceCount: Number($("#iso-surface-count").value), wireframe: true, color: PALETTE.electric, wireframeColor: PALETTE.electric }), groupKey: "isosurfaces" });
-      add({ id: "magnetic-iso", component: "magnetic", plotter: makeIsosurfacePlotter({ x: "x", y: "y", z: "z", value: "value" }, { threshold: state.threshold, nested: false, surfaceCount: Number($("#iso-surface-count").value), wireframe: true, color: PALETTE.magnetic, wireframeColor: PALETTE.magnetic }), groupKey: "isosurfaces" });
+      add({ id: "electric-iso", component: "electric", plotter: makeIsosurfacePlotter({ x: "x", y: "y", z: "z", value: "value" }, { threshold: state.threshold, nested: false, surfaceCount: Number($("#iso-surface-count").value), tubeRadius: Number($("#iso-tube-radius").value), wireframe: true, color: PALETTE.electric, wireframeColor: PALETTE.electric }), groupKey: "isosurfaces" });
+      add({ id: "magnetic-iso", component: "magnetic", plotter: makeIsosurfacePlotter({ x: "x", y: "y", z: "z", value: "value" }, { threshold: state.threshold, nested: false, surfaceCount: Number($("#iso-surface-count").value), tubeRadius: Number($("#iso-tube-radius").value), wireframe: true, color: PALETTE.magnetic, wireframeColor: PALETTE.magnetic }), groupKey: "isosurfaces" });
       add({ id: "electric-vector", component: "electric", plotter: makeVectorPlotter({ x: "x", y: "y", z: "z", u: "u", v: "v", w: "w" }, 0.62, { color: PALETTE.electric, positionBounds: VECTOR_POSITION_BOUNDS }), groupKey: "vectors", mode: "static" });
       add({ id: "magnetic-vector", component: "magnetic", plotter: makeVectorPlotter({ x: "x", y: "y", z: "z", u: "u", v: "v", w: "w" }, 0.62, { color: PALETTE.magnetic, positionBounds: VECTOR_POSITION_BOUNDS }), groupKey: "vectors", mode: "static" });
       add({ id: "electric-cones", component: "electric", plotter: makeVectorPlotter({ x: "x", y: "y", z: "z", u: "u", v: "v", w: "w" }, 0.62, { animated: true, color: PALETTE.electric, positionBounds: VECTOR_POSITION_BOUNDS }), groupKey: "vectors", mode: "animated" });
@@ -226,7 +228,7 @@ function compositeDipolePlotter(initialLayers) {
           for (const plotter of plotters) {
             if (isLayerVisible(plotter) && (!plotter.mode || plotter.mode === "animated")) plotter.instance.updateFrame?.({ elapsedSeconds, deltaSeconds });
           }
-          if (updateClock > 0.24 && Math.abs(nextPhase - lastUpdatePhase) > 0.06) {
+          if (updateClock > FIELD_REFRESH_INTERVAL_SECONDS && Math.abs(nextPhase - lastUpdatePhase) > MIN_FIELD_REFRESH_PHASE_STEP) {
             currentPhase = nextPhase;
             state.phase = currentPhase;
             lastUpdatePhase = nextPhase;

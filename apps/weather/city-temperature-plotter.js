@@ -1,4 +1,4 @@
-import { createGrid3D, createLabeledBox } from "../../library/three-viz/src/index.js?v=forecast-labels-20261009k";
+import { createGrid3D, createLabeledBox, createCarPaintMaterial, retainCarPaintEnvironment } from "../../library/three-viz/src/index.js?v=20261010v";
 
 const CUBE_SIZE = 20;
 const HALF = CUBE_SIZE / 2;
@@ -17,6 +17,7 @@ export const cityTemperaturePlotter = Object.freeze({
   capabilities: Object.freeze(["selection"]),
   create(context, _definition, input) {
     const { THREE, scene, resources } = context;
+    const releaseCarPaintEnvironment = retainCarPaintEnvironment(THREE, scene, context.renderer);
     const cities = input.cities ?? [];
     const timestamps = input.timestamps ?? [];
     const unit = input.unit ?? "C";
@@ -78,13 +79,14 @@ export const cityTemperaturePlotter = Object.freeze({
       pointRecords.push({ city, forecast, hour, lane, x:x(hour), y:y(forecast.value), z:z(lane) });
     }));
     const markerGeometry = resources.track(new THREE.SphereGeometry(0.11, 14, 10));
-    const markerMaterial = resources.track(new THREE.MeshStandardMaterial({ color:0x080b0e, metalness:0.05, roughness:0.36 }));
+    const markerMaterial = resources.track(createCarPaintMaterial(THREE, 0xffffff));
     const markers = new THREE.InstancedMesh(markerGeometry, markerMaterial, pointRecords.length);
     markers.name = "city-temperature-markers";
     const markerTransform = new THREE.Object3D();
     pointRecords.forEach((point, index) => {
       markerTransform.position.set(point.x, point.y, point.z); markerTransform.updateMatrix();
       markers.setMatrixAt(index, markerTransform.matrix);
+      markers.setColorAt(index, new THREE.Color(point.city.color ?? 0x9bdcff));
     });
     markers.instanceMatrix.needsUpdate = true; markers.computeBoundingSphere(); root.add(markers);
 
@@ -93,7 +95,7 @@ export const cityTemperaturePlotter = Object.freeze({
       if (valid.length >= 2) {
         const curve = new THREE.CatmullRomCurve3(valid);
         const color = city.color ?? 0x9bdcff;
-        const material = resources.track(new THREE.MeshStandardMaterial({ color, metalness:0.08, roughness:0.32, emissive:color, emissiveIntensity:0.07 }));
+        const material = resources.track(createCarPaintMaterial(THREE, color));
         const tube = new THREE.Mesh(resources.track(new THREE.TubeGeometry(curve, Math.max(30, valid.length * 6), 0.035, 7, false)), material);
         tube.name = `temperature-line-${city.id}`; tube.raycast = () => {}; root.add(tube);
       }
@@ -124,6 +126,7 @@ export const cityTemperaturePlotter = Object.freeze({
       dispose() {
         axisGrid.dispose();
         scene.remove(root, hemi, keyLight, rimLight);
+        releaseCarPaintEnvironment();
         hemi.dispose?.(); keyLight.dispose?.(); rimLight.dispose?.();
       },
     };

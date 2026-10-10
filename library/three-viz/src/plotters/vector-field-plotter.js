@@ -1,12 +1,12 @@
-import * as common from './shared/csv-support.js';
-import { createCarPaintMaterial } from './shared/materials.js';
+import * as common from './shared/csv-support.js?v=car-paint-20261010a';
+import { createCarPaintMaterial } from './shared/materials.js?v=car-paint-20261010a';
 const { addSceneLights, mapBars, projectedColumn, validRows, selected, categoryValue, valueOf, gridForSurface, scalarGridForVolume, displayNumber, extent, parseNumeric, scaleLinear, PALETTE } = common;
 export function makeVectorPlotter(mapping, vectorScale = 0.55, options = {}) {
   return Object.freeze({
     capabilities: Object.freeze(options.animated ? ["animation"] : []),
     create(context, definition, initialRows) {
       const { THREE, scene, resources } = context;
-      const removeLights = addSceneLights(THREE, scene);
+      const removeLights = addSceneLights(THREE, scene, context.renderer);
       const group = new THREE.Group(); group.name = "csv-vector-field"; scene.add(group);
       const helpers = [];
       const staticResources = [];

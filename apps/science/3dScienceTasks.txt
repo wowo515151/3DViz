@@ -33,4 +33,9 @@
 [x] Add and export a reusable generator for evenly spaced shades of a single hue in the 3DViz library.
 [x] Add a multiple-wireframe surface-count slider and map low-to-high field values to light-to-dark electric red and magnetic blue shades.
 [x] Review the final specification against the code and verify slider gating, count changes, field colors, app startup, and error-free rendering on GitHub Pages in isolated Chrome.
-[ ] Increase shade contrast so low magnetic wireframes stay visibly blue and high magnetic wireframes remain blue rather than approaching black; verify the deployed gradient in Chrome.
+[x] Darken the default lightest single-hue shade and update its regression expectation.
+[x] Use shared car-paint shading with metalness 1 and minimum flake/clearcoat settings across Weather and Science surfaces.
+[x] Attach the reusable reflection environment to the root Three.js Scene for nested plotter groups.
+[x] Double the Science field refresh cadence and reusable Weather tube animation rate.
+[x] Review the specification against the shared materials, shade helper, and animation implementations.
+[ ] Publish and verify the updated shades, car-paint reflections, and low-radius default in isolated Chrome on GitHub Pages.

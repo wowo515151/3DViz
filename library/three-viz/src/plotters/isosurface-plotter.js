@@ -1,15 +1,15 @@
-import * as common from './shared/csv-support.js';
+import * as common from './shared/csv-support.js?v=car-paint-20261010a';
 const { addSceneLights, mapBars, projectedColumn, validRows, selected, categoryValue, valueOf, gridForSurface, scalarGridForVolume, displayNumber, extent, parseNumeric, scaleLinear, PALETTE } = common;
 import { extractIsosurface } from './shared/isosurface.js';
-import { createWireframe } from './shared/wireframe.js?v=car-paint-20261009';
-import { createCarPaintMaterial } from './shared/materials.js';
-import { generateColorShades } from '../utils/shades.js?v=shades-20261009b';
+import { createWireframe } from './shared/wireframe.js?v=car-paint-20261010a';
+import { createCarPaintMaterial } from './shared/materials.js?v=car-paint-20261010a';
+import { generateColorShades } from '../utils/shades.js?v=shades-20261010v';
 export function makeIsosurfacePlotter(mapping, options) {
   return Object.freeze({
     capabilities:Object.freeze(["selection","thresholds","layers","tubeRadius","surfaceCount"]),
     create(context,definition,initialRows){
       const {THREE,scene,resources}=context;
-      const removeLights=addSceneLights(THREE,scene);
+      const removeLights=addSceneLights(THREE,scene,context.renderer);
       const group=new THREE.Group();group.name="csv-isosurfaces";scene.add(group);
       let rows=initialRows, grid, threshold=options.threshold, shells=[], wireframes=[];
       let nested=Boolean(options.nested), surfaceVisible=options.surfaceVisible !== false, wireframeVisible=Boolean(options.wireframe), tubeRadius=Math.max(0,Number(options.tubeRadius??0)), surfaceCount=normalizeSurfaceCount(options.surfaceCount??5);
