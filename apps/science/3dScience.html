@@ -6,7 +6,7 @@
   <meta name="description" content="Explore an animated dipole electromagnetic field through the 3DViz plotter library." />
   <meta name="theme-color" content="#202832" />
   <title>3DScience | Electromagnetic Field Lab</title>
-  <link rel="stylesheet" href="./3dScience.css?v=20261009d" />
+  <link rel="stylesheet" href="./3dScience.css?v=20261010e" />
 </head>
 <body>
   <div class="science-shell">
@@ -24,11 +24,15 @@
           <legend class="sr-only">Choose field views</legend>
           <label class="plot-choice"><input id="layer-isosurfaces" type="checkbox" checked><span>Isosurfaces</span><small>nested field shells</small></label>
           <div class="nested-options">
+            <label class="nested-layer-choice"><input id="layer-cone-iso" type="checkbox"><span>ConeIso</span><small>field-aligned facet cones</small></label>
             <label><input id="multiple-surfaces" type="checkbox" aria-describedby="multiple-surfaces-note"> Multiple surfaces</label>
             <p id="multiple-surfaces-note" class="field-note">Turn off Solid surfaces to show multiple wireframe levels.</p>
             <label class="range-label" for="iso-surface-count">number of surfaces <output id="surface-count-value">5</output></label>
             <input id="iso-surface-count" type="range" min="2" max="12" step="1" value="5" disabled aria-describedby="surface-count-note" />
             <p id="surface-count-note" class="field-note">Surface shades run from light at low field values to dark at high values.</p>
+            <label class="range-label" for="iso-resolution">surface tessellation <output id="iso-resolution-value">21³</output></label>
+            <input id="iso-resolution" type="range" min="11" max="31" step="2" value="21" aria-describedby="iso-resolution-note" />
+            <p id="iso-resolution-note" class="field-note">Higher sample counts create finer isosurface meshes.</p>
             <label><input id="iso-solids" type="checkbox" checked> Solid surfaces</label>
             <label><input id="iso-wireframes" type="checkbox" checked> Wireframes</label>
             <label class="range-label" for="iso-tube-radius">tube radius <output id="tube-radius-value">0.006</output></label>
@@ -36,7 +40,6 @@
             <p id="tube-radius-note" class="field-note">Glossy tubes are on by default; set 0 for flat line wireframes.</p>
           </div>
           <label class="plot-choice"><input id="layer-vectors" type="checkbox"><span>Vector field</span><small>cones at grid samples</small></label>
-          <label class="plot-choice"><input id="layer-cone-iso" type="checkbox"><span>ConeIso</span><small>cones on larger shell facets</small></label>
         </fieldset>
         <p class="field-note">Cone height tracks field magnitude; its diameter is always half its height in both cone plotters.</p>
       </section>
@@ -50,7 +53,9 @@
         </fieldset>
         <label class="range-label" for="frequency">frequency <output id="frequency-value">1.0×</output></label>
         <input id="frequency" type="range" min="0.5" max="2" step="0.1" value="1" />
-        <p class="field-note">At 1×, one wave cycle takes 12 seconds.</p>
+        <p id="period-note" class="field-note">At 1×, each period takes 30 seconds.</p>
+        <label class="range-label" for="period-seconds">time per period <output id="period-value">30s</output></label>
+        <input id="period-seconds" type="range" min="10" max="60" step="1" value="30" />
         <label class="range-label" for="field-amplitude">dipole amplitude <output id="amplitude-value">1.0</output></label>
         <input id="field-amplitude" type="range" min="0.4" max="1.6" step="0.1" value="1" />
         <label class="range-label" for="iso-threshold">shell threshold <output id="threshold-value">0.28</output></label>
@@ -110,6 +115,6 @@
   </div>
 
   <script type="importmap">{ "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.186.0/build/three.module.js", "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.186.0/examples/jsm/" } }</script>
-  <script type="module" src="./3dScience.js?v=cone-plotters-20261010c"></script>
+  <script type="module" src="./3dScience.js?v=science-controls-20261010e"></script>
 </body>
 </html>

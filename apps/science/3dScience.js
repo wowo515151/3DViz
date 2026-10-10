@@ -3,7 +3,7 @@ import {
   makeVectorPlotter,
   makeIsosurfacePlotter,
   makeConeIsoPlotter,
-} from "../../library/three-viz/src/index.js?v=cone-plotters-20261010c";
+} from "../../library/three-viz/src/index.js?v=science-controls-20261010e";
 
 const $ = selector => document.querySelector(selector);
 const PALETTE = Object.freeze({ electric: 0xed5363, magnetic: 0x529cff });
@@ -12,7 +12,8 @@ const HALF_EXTENT = 2.7;
 const VECTOR_POSITION_BOUNDS = Object.freeze([[-2.5, 2.5], [-2.5, 2.5], [-2.5, 2.5]]);
 const FIELD_EPSILON = 0.38;
 const SIMULATION_CYCLE = Math.PI * 2;
-const BASE_WAVE_PERIOD_SECONDS = 12;
+const GRID_MIN = 11;
+const GRID_MAX = 31;
 const FIELD_REFRESH_INTERVAL_SECONDS = 0.06;
 const MIN_FIELD_REFRESH_PHASE_STEP = 0.015;
 const SELECTORS = Object.freeze({
@@ -23,6 +24,8 @@ const state = {
   phase: 0,
   frequency: 1,
   amplitude: 1,
+  periodSeconds: 30,
+  surfaceResolution: 21,
   threshold: 0.28,
   playing: true,
   electricVisible: true,
@@ -57,16 +60,16 @@ function dipoleAt(x, y, z, phase, frequency, amplitude) {
   return { ex, ey, ez, bx, by, bz, eMagnitude: Math.hypot(ex, ey, ez), bMagnitude: Math.hypot(bx, by, bz) };
 }
 
-function generateField(phase = state.phase, frequency = state.frequency, amplitude = state.amplitude) {
+function generateField(phase = state.phase, frequency = state.frequency, amplitude = state.amplitude, resolution = GRID) {
   const records = [];
-  const step = (HALF_EXTENT * 2) / (GRID - 1);
+  const step = (HALF_EXTENT * 2) / (resolution - 1);
   let electricPeak = 0, magneticPeak = 0;
   let rowNumber = 1;
-  for (let ix = 0; ix < GRID; ix += 1) {
+  for (let ix = 0; ix < resolution; ix += 1) {
     const x = -HALF_EXTENT + step * ix;
-    for (let iy = 0; iy < GRID; iy += 1) {
+    for (let iy = 0; iy < resolution; iy += 1) {
       const y = -HALF_EXTENT + step * iy;
-      for (let iz = 0; iz < GRID; iz += 1) {
+      for (let iz = 0; iz < resolution; iz += 1) {
         const z = -HALF_EXTENT + step * iz;
         const field = dipoleAt(x, y, z, phase, frequency, 1);
         electricPeak = Math.max(electricPeak, field.eMagnitude);
@@ -92,6 +95,14 @@ function generateField(phase = state.phase, frequency = state.frequency, amplitu
     electricMagnitude: Math.min(1, record.electricMagnitude / eScale * amplitude),
     magneticMagnitude: Math.min(1, record.magneticMagnitude / bScale * amplitude),
   }));
+}
+
+function generateFieldData(phase = state.phase) {
+  const field = generateField(phase);
+  const surfaceField = state.surfaceResolution === GRID
+    ? field
+    : generateField(phase, state.frequency, state.amplitude, state.surfaceResolution);
+  return { field, surfaceField, phase };
 }
 
 function layerData(component, currentRecords) {
@@ -145,7 +156,7 @@ function compositeDipolePlotter(initialLayers) {
           const instance = plotter.create({ ...context, scene: sceneLayer }, {
             ...definition,
             configuration: { ...definition.configuration, ...configuration },
-          }, layerData(component, initialData.field));
+          }, layerData(component, groupKey === "vectors" ? initialData.field : (initialData.surfaceField ?? initialData.field)));
           plotters.push({ id, component, groupKey, sceneLayer, instance });
         } catch (error) {
           layerGroup.remove(sceneLayer);
@@ -169,10 +180,11 @@ function compositeDipolePlotter(initialLayers) {
         return true;
       };
       const refreshSpatialLayers = () => {
-        const field = generateField(currentPhase);
+        const fieldData = generateFieldData(currentPhase);
         for (const plotter of plotters) {
           if (!isLayerVisible(plotter)) continue;
-          try { plotter.instance.update(layerData(plotter.component, field)); }
+          const source = plotter.groupKey === "vectors" ? fieldData.field : fieldData.surfaceField;
+          try { plotter.instance.update(layerData(plotter.component, source)); }
           catch (error) { definition.callbacks?.onLayerError?.(plotter.groupKey, error); }
         }
         context.requestRender();
@@ -204,13 +216,14 @@ function compositeDipolePlotter(initialLayers) {
           currentPhase = nextData.phase ?? currentPhase;
           for (const plotter of plotters) {
             if (!isLayerVisible(plotter)) continue;
-            try { plotter.instance.update(layerData(plotter.component, nextData.field)); }
+            const source = plotter.groupKey === "vectors" ? nextData.field : (nextData.surfaceField ?? nextData.field);
+            try { plotter.instance.update(layerData(plotter.component, source)); }
             catch (error) { definition.callbacks?.onLayerError?.(plotter.groupKey, error); }
           }
           context.requestRender();
         },
         updateFrame({ elapsedSeconds, deltaSeconds }) {
-          const nextPhase = ((elapsedSeconds * state.frequency * SIMULATION_CYCLE / BASE_WAVE_PERIOD_SECONDS) % SIMULATION_CYCLE + SIMULATION_CYCLE) % SIMULATION_CYCLE;
+          const nextPhase = ((elapsedSeconds * state.frequency * SIMULATION_CYCLE / state.periodSeconds) % SIMULATION_CYCLE + SIMULATION_CYCLE) % SIMULATION_CYCLE;
           updateClock += deltaSeconds;
           for (const plotter of plotters) {
             if (isLayerVisible(plotter)) plotter.instance.updateFrame?.({ elapsedSeconds, deltaSeconds });
@@ -262,11 +275,11 @@ function compositeDipolePlotter(initialLayers) {
 }
 
 function makeInitialData() {
-  return { field: generateField(0), phase: 0 };
+  return generateFieldData(0);
 }
 
 function updateFieldParameters() {
-  state.controller.update({ field: generateField(state.phase), phase: state.phase });
+  state.controller.update(generateFieldData(state.phase));
 }
 
 function showError(message = "") {
@@ -284,6 +297,8 @@ function updateReadouts(phase = state.phase) {
   $("#frequency-value").textContent = `${state.frequency.toFixed(1)}×`;
   $("#amplitude-value").textContent = state.amplitude.toFixed(1);
   $("#threshold-value").textContent = state.threshold.toFixed(2);
+  $("#period-value").textContent = `${state.periodSeconds}s`;
+  $("#period-note").textContent = `At ${state.frequency.toFixed(1)}×, each period takes ${(state.periodSeconds / state.frequency).toFixed(1)} seconds.`;
 }
 
 function updatePlotterControls() {
@@ -459,7 +474,7 @@ async function start() {
     status.textContent = "FIELD RUNNING";
     $("#status-dot").className = "status-dot ready";
     $("#stage-heading").textContent = "DIPOLE FIELD / ISOSURFACE + CONE PLOTTERS";
-    $("#stage-subheading").textContent = `${GRID}³ REGULAR GRID · E RED · B BLUE · NORMALIZED UNITS`;
+    $("#stage-subheading").textContent = `${GRID}³ VECTOR GRID · ${state.surfaceResolution}³ SURFACE GRID · E RED · B BLUE`;
     updatePlotterControls();
     updateReadouts();
     $("#phase").addEventListener("input", event => {
@@ -470,6 +485,10 @@ async function start() {
     $("#frequency").addEventListener("input", event => {
       state.frequency = Number(event.target.value);
       updateFieldParameters();
+      updateReadouts();
+    });
+    $("#period-seconds").addEventListener("input", event => {
+      state.periodSeconds = Number(event.target.value);
       updateReadouts();
     });
     $("#field-amplitude").addEventListener("input", event => {
@@ -532,6 +551,12 @@ async function start() {
       const count = Number(event.target.value);
       $("#surface-count-value").textContent = String(count);
       state.controller.setSurfaceCount(count);
+    });
+    $("#iso-resolution").addEventListener("change", event => {
+      state.surfaceResolution = Math.min(GRID_MAX, Math.max(GRID_MIN, Number(event.target.value)));
+      $("#iso-resolution-value").textContent = `${state.surfaceResolution}³`;
+      $("#stage-subheading").textContent = `${GRID}³ VECTOR GRID · ${state.surfaceResolution}³ SURFACE GRID · E RED · B BLUE`;
+      updateFieldParameters();
     });
   } catch (error) {
     loading.hidden = true;
