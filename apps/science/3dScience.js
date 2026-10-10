@@ -3,7 +3,7 @@ import {
   makeVectorPlotter,
   makeIsosurfacePlotter,
   makeConeIsoPlotter,
-} from "../../library/three-viz/src/index.js?v=cone-plotters-20261010b";
+} from "../../library/three-viz/src/index.js?v=cone-plotters-20261010c";
 
 const $ = selector => document.querySelector(selector);
 const PALETTE = Object.freeze({ electric: 0xed5363, magnetic: 0x529cff });
@@ -13,8 +13,8 @@ const VECTOR_POSITION_BOUNDS = Object.freeze([[-2.5, 2.5], [-2.5, 2.5], [-2.5, 2
 const FIELD_EPSILON = 0.38;
 const SIMULATION_CYCLE = Math.PI * 2;
 const BASE_WAVE_PERIOD_SECONDS = 12;
-const FIELD_REFRESH_INTERVAL_SECONDS = 0.12;
-const MIN_FIELD_REFRESH_PHASE_STEP = 0.03;
+const FIELD_REFRESH_INTERVAL_SECONDS = 0.06;
+const MIN_FIELD_REFRESH_PHASE_STEP = 0.015;
 const SELECTORS = Object.freeze({
   isosurfaces: "#layer-isosurfaces", vectors: "#layer-vectors", coneIso: "#layer-cone-iso",
 });
@@ -186,7 +186,10 @@ function compositeDipolePlotter(initialLayers) {
       const toggleLayer = (id, visible) => {
         if (id === "electric" || id === "magnetic") {
           componentGroups.get(id).visible = Boolean(visible);
-        } else if (id === "multiple" || id === "surface" || id === "wireframe") {
+        } else if (id === "multiple") {
+          for (const plotter of plotters.filter(item => item.groupKey === "isosurfaces")) plotter.instance.setLayerVisible?.(id, Boolean(visible));
+          for (const plotter of plotters.filter(item => item.groupKey === "coneIso")) plotter.instance.setLayerVisible?.(id, Boolean(visible));
+        } else if (id === "surface" || id === "wireframe") {
           for (const plotter of plotters.filter(item => item.groupKey === "isosurfaces")) plotter.instance.setLayerVisible?.(id, Boolean(visible));
         } else if (typeGroups.has(id)) {
           typeGroups.get(id).forEach(group => { group.visible = Boolean(visible); });
@@ -231,6 +234,7 @@ function compositeDipolePlotter(initialLayers) {
         },
         setSurfaceCount(value) {
           plotters.filter(plotter => plotter.groupKey === "isosurfaces").forEach(plotter => plotter.instance.setSurfaceCount?.(value));
+          plotters.filter(plotter => plotter.groupKey === "coneIso").forEach(plotter => plotter.instance.setSurfaceCount?.(value));
         },
         setLayerVisible: toggleLayer,
         describeSelection(hit) {

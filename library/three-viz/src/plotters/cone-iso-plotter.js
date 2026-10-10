@@ -2,6 +2,7 @@ import { addSceneLights, valueOf, PALETTE, scalarGridForVolume } from './shared/
 import { extractIsosurface } from './shared/isosurface.js';
 import { createCarPaintMaterial } from './shared/materials.js?v=car-paint-20261010a';
 import { coneHeightForMagnitude } from './vector-field-plotter.js?v=cone-plotters-20261010b';
+import { generateColorShades } from '../utils/shades.js?v=shades-20261010v';
 
 const SCENE_HALF_EXTENT = 2.5;
 
@@ -40,7 +41,7 @@ function sampleField(grid, worldPosition, vectorMapping) {
 
 export function makeConeIsoPlotter(mapping, vectorMapping, options = {}) {
   return Object.freeze({
-    capabilities: Object.freeze(["selection", "thresholds"]),
+    capabilities: Object.freeze(["selection", "thresholds", "layers", "surfaceCount"]),
     create(context, definition, initialRows) {
       const { THREE, scene, resources } = context;
       const removeLights = addSceneLights(THREE, scene, context.renderer);
@@ -52,47 +53,59 @@ export function makeConeIsoPlotter(mapping, vectorMapping, options = {}) {
       if (!Number.isFinite(minimumArea) || minimumArea < 0) throw new Error("Minimum facet area must be a finite, nonnegative number.");
       if (!Number.isFinite(maximumHeight) || maximumHeight <= 0) throw new Error("Maximum cone height must be a positive number.");
       const geometry = resources.track(new THREE.ConeGeometry(0.25, 1, options.radialSegments ?? 12));
-      const material = resources.track(createCarPaintMaterial(THREE, options.color ?? PALETTE[0]));
       let rows = initialRows;
       let threshold = options.threshold;
-      let glyphs;
-      let selectedFacets = [];
+      let nested = Boolean(options.nested);
+      let surfaceCount = normalizeSurfaceCount(options.surfaceCount ?? 5);
+      let glyphSets = [];
       let report;
 
       const clearGlyphs = () => {
-        if (!glyphs) return;
-        group.remove(glyphs);
-        resources.release(glyphs);
-        glyphs = undefined;
+        for (const set of glyphSets) {
+          group.remove(set.glyphs);
+          resources.release(set.glyphs);
+          resources.release(set.material);
+        }
+        glyphSets = [];
       };
       const build = () => {
         if (rows.some(row => [vectorMapping.u, vectorMapping.v, vectorMapping.w].some(key => valueOf(row, key) === null))) {
           throw new Error("ConeIso needs three numeric vector components at every scalar-grid sample.");
         }
         const grid = scalarGridForVolume(rows, mapping);
-        const level = Number.isFinite(threshold) ? threshold : (grid.scalarExtent[0] + grid.scalarExtent[1]) / 2;
-        if (level <= grid.scalarExtent[0] || level >= grid.scalarExtent[1]) throw new Error("Choose a ConeIso threshold strictly between the minimum and maximum scalar values.");
-        const surface = extractIsosurface(grid, level);
-        const candidates = [];
-        for (let offset = 0; offset < surface.positions.length; offset += 9) {
-          const a = Array.from(surface.positions.slice(offset, offset + 3));
-          const b = Array.from(surface.positions.slice(offset + 3, offset + 6));
-          const c = Array.from(surface.positions.slice(offset + 6, offset + 9));
-          const area = triangleArea(a, b, c);
-          if (area <= minimumArea) continue;
-          const center = a.map((value, axis) => (value + b[axis] + c[axis]) / 3);
-          const vector = sampleField(grid, center, vectorMapping);
-          const magnitude = Math.hypot(...vector);
-          candidates.push({ center, vector, magnitude, area, row: surface.triangleRows[offset / 3] });
-        }
+        if (!Number.isFinite(threshold)) threshold = (grid.scalarExtent[0] + grid.scalarExtent[1]) / 2;
+        const [low, high] = grid.scalarExtent;
+        const levels = nested
+          ? Array.from({ length: surfaceCount }, (_, index) => low + (high - low) * (index + 1) / (surfaceCount + 1))
+          : [threshold];
+        if (levels.some(level => level <= low || level >= high)) throw new Error("Choose ConeIso thresholds strictly between the minimum and maximum scalar values.");
+        const colors = nested ? generateColorShades(options.color ?? PALETTE[0], levels.length) : [options.color ?? PALETTE[0]];
         const maximumMagnitude = Math.max(...rows.map(row => Math.hypot(
           valueOf(row, vectorMapping.u), valueOf(row, vectorMapping.v), valueOf(row, vectorMapping.w),
         )), 1e-9);
         clearGlyphs();
-        if (candidates.length) {
-          glyphs = resources.track(new THREE.InstancedMesh(geometry, material, candidates.length));
-          glyphs.name = "cone-iso-facets";
+        const levelReports = levels.map((level, levelIndex) => {
+          const surface = extractIsosurface(grid, level);
+          const candidates = [];
+          for (let offset = 0; offset < surface.positions.length; offset += 9) {
+            const a = Array.from(surface.positions.slice(offset, offset + 3));
+            const b = Array.from(surface.positions.slice(offset + 3, offset + 6));
+            const c = Array.from(surface.positions.slice(offset + 6, offset + 9));
+            const area = triangleArea(a, b, c);
+            if (area <= minimumArea) continue;
+            const center = a.map((value, axis) => (value + b[axis] + c[axis]) / 3);
+            const vector = sampleField(grid, center, vectorMapping);
+            const magnitude = Math.hypot(...vector);
+            candidates.push({ center, vector, magnitude, area, row: surface.triangleRows[offset / 3], threshold: level });
+          }
+          if (!candidates.length) return { threshold: level, color: colors[levelIndex], count: 0 };
+          const levelMaterial = resources.track(createCarPaintMaterial(THREE, colors[levelIndex]));
+          const glyphs = resources.track(new THREE.InstancedMesh(geometry, levelMaterial, candidates.length));
+          glyphs.name = `cone-iso-facets-${levelIndex + 1}`;
           glyphs.frustumCulled = false;
+          glyphs.userData.coneIsoFacets = candidates;
+          glyphs.userData.threshold = level;
+          glyphs.userData.color = colors[levelIndex];
           const matrix = new THREE.Matrix4();
           candidates.forEach((facet, index) => {
             const position = new THREE.Vector3(...facet.center);
@@ -104,15 +117,15 @@ export function makeConeIsoPlotter(mapping, vectorMapping, options = {}) {
           });
           glyphs.instanceMatrix.needsUpdate = true;
           group.add(glyphs);
-        }
-        selectedFacets = candidates;
-        threshold = level;
-        report = { count: candidates.length, minimumArea, threshold: level, sampled: false };
+          glyphSets.push({ glyphs, material: levelMaterial });
+          return { threshold: level, color: colors[levelIndex], count: candidates.length };
+        });
+        report = { count: levelReports.reduce((sum, level) => sum + level.count, 0), levels: levelReports, minimumArea, threshold, sampled: false };
       };
 
       build();
       return {
-        capabilities: ["selection", "thresholds"],
+        capabilities: ["selection", "thresholds", "layers", "surfaceCount"],
         update(nextRows) { rows = nextRows; build(); context.requestRender(); },
         setThreshold(value) {
           const next = Number(value);
@@ -121,19 +134,33 @@ export function makeConeIsoPlotter(mapping, vectorMapping, options = {}) {
           build();
           context.requestRender();
         },
+        setLayerVisible(id, visible) {
+          if (id !== "multiple") throw new Error(`Unknown ConeIso layer: ${id}`);
+          const next = Boolean(visible);
+          if (next === nested) return;
+          nested = next;
+          build();
+          context.requestRender();
+        },
+        setSurfaceCount(value) {
+          const next = normalizeSurfaceCount(value);
+          if (next === surfaceCount) return;
+          surfaceCount = next;
+          build();
+          context.requestRender();
+        },
         describeSelection(hit) {
-          const facet = selectedFacets[hit.instanceId];
+          const facet = hit.object?.userData?.coneIsoFacets?.[hit.instanceId];
           if (!facet) return undefined;
           return {
             id: `facet-${hit.instanceId}`,
-            label: `ConeIso facet · area ${facet.area.toFixed(4)}`,
+            label: `ConeIso facet · threshold ${facet.threshold.toFixed(3)} · area ${facet.area.toFixed(4)}`,
             values: { x: facet.center[0], y: facet.center[1], z: facet.center[2], area: facet.area, fieldMagnitude: facet.magnitude, ...facet.row },
           };
         },
         dispose() {
           clearGlyphs();
           resources.release(geometry);
-          resources.release(material);
           removeLights();
           scene.remove(group);
         },
@@ -141,4 +168,10 @@ export function makeConeIsoPlotter(mapping, vectorMapping, options = {}) {
       };
     },
   });
+}
+
+function normalizeSurfaceCount(value) {
+  const count = Number(value);
+  if (!Number.isSafeInteger(count) || count < 2 || count > 20) throw new Error("Surface count must be a whole number from 2 to 20.");
+  return count;
 }

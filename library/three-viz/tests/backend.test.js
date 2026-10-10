@@ -84,7 +84,7 @@ test("vector and ConeIso plotters instance cones at samples and eligible facet c
   class TestConeGeometry { constructor(radius, height) { Object.assign(this, { radius, height }); } dispose() {} }
   class TestMaterial { constructor(options) { this.options = options; } dispose() {} }
   class TestInstances {
-    constructor(geometry, material, count) { Object.assign(this, { geometry, material, count, matrices: [], instanceMatrix: {} }); }
+    constructor(geometry, material, count) { Object.assign(this, { geometry, material, count, matrices: [], instanceMatrix: {}, userData: {} }); }
     setMatrixAt(index, matrix) { this.matrices[index] = { ...matrix }; }
     dispose() {}
   }
@@ -116,7 +116,7 @@ test("vector and ConeIso plotters instance cones at samples and eligible facet c
   const coneIso = makeConeIsoPlotter(
     { x: "x", y: "y", z: "z", value: "value" },
     { u: "u", v: "v", w: "w" },
-    { threshold: 0.5, minimumArea: 0, maximumHeight: 0.22 },
+    { threshold: 0.5, minimumArea: 0, maximumHeight: 0.22, color: 0xed5363 },
   ).create(context, {}, rows);
   const coneIsoGroup = scene.children[0];
   const facetCones = coneIsoGroup.children[0];
@@ -125,7 +125,13 @@ test("vector and ConeIso plotters instance cones at samples and eligible facet c
   assert.equal(facetCones.count, coneIso.report.count);
   assert.ok(facetCones.matrices.every(matrix => Math.abs(matrix.position.x) < 1e-6));
   assert.ok(facetCones.matrices.every(matrix => matrix.quaternion.to.z === 1));
-  assert.ok(Math.abs(coneIso.describeSelection({ instanceId: 0 }).values.fieldMagnitude - 1) < 1e-9);
+  assert.ok(Math.abs(coneIso.describeSelection({ object: facetCones, instanceId: 0 }).values.fieldMagnitude - 1) < 1e-9);
+  coneIso.setLayerVisible("multiple", true);
+  coneIso.setSurfaceCount(3);
+  assert.equal(coneIso.report.levels.length, 3);
+  assert.equal(coneIsoGroup.children.length, 3);
+  assert.deepEqual(coneIso.report.levels.map(level => level.color), generateColorShades(0xed5363, 3));
+  assert.ok(coneIso.report.levels.every(level => level.count > 0));
   coneIso.dispose();
 
   const filtered = makeConeIsoPlotter(
