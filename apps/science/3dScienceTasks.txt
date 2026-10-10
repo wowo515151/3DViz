@@ -43,5 +43,5 @@
 [x] Add and export the ConeIso plotter with minimum-area facet filtering, interpolated field directions, and no isosurface rendering.
 [x] Add an independent Science checkbox for ConeIso and apply the shared cone scaling rule to both plotters.
 [x] Review the updated library index, Science spec, UI, and repo layout; run library checks and inspect the scene in local Chrome.
-[ ] Obtain Warren's visual approval and publish the approved repository revision to GitHub Pages.
-[ ] Publish and verify the updated shades, car-paint reflections, and low-radius default in isolated Chrome on GitHub Pages.
+[x] Publish the repository revision and verify the landing page, Science controls, vector cones, and independent ConeIso view in isolated Chrome on GitHub Pages.
+[x] Publish and verify the updated shades, car-paint reflections, and low-radius default in isolated Chrome on GitHub Pages.

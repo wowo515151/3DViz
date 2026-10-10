@@ -1,6 +1,6 @@
 3DScience Application Specification
 Version: 3.0
-Status: Cone vector-field and ConeIso plotters pass local library and Chrome preview checks; GitHub Pages verification awaits publication.
+Status: Cone vector-field and ConeIso plotters pass local library and GitHub Pages Chrome checks.
 
 Purpose
 
