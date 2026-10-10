@@ -3,7 +3,7 @@ import {
   makeVectorPlotter,
   makeIsosurfacePlotter,
   makeConeIsoPlotter,
-} from "../../library/three-viz/src/index.js?v=science-controls-20261010f";
+} from "../../library/three-viz/src/index.js?v=science-controls-20261010g";
 
 const $ = selector => document.querySelector(selector);
 const PALETTE = Object.freeze({ electric: 0xed5363, magnetic: 0x529cff });
@@ -180,13 +180,16 @@ function compositeDipolePlotter(initialLayers) {
         return true;
       };
       const updateConeIsoCount = () => {
-        const visible = plotters.filter(plotter => plotter.groupKey === "coneIso" && isLayerVisible(plotter));
-        if (!visible.length) {
+        if (!$("#layer-cone-iso").checked) {
           $("#cone-iso-count").textContent = "Enable ConeIso to see its cone count.";
           return;
         }
         const counts = { electric: 0, magnetic: 0 };
-        for (const plotter of visible) counts[plotter.component] += plotter.instance.report?.count ?? 0;
+        for (const plotter of plotters.filter(item => item.groupKey === "coneIso")) {
+          if ($(`#show-${plotter.component === "electric" ? "electric" : "magnetic"}`).checked) {
+            counts[plotter.component] += plotter.instance.report?.count ?? 0;
+          }
+        }
         $("#cone-iso-count").textContent = `ConeIso cones · E ${counts.electric.toLocaleString()} · B ${counts.magnetic.toLocaleString()}`;
       };
       const refreshSpatialLayers = () => {
