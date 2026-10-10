@@ -1,6 +1,6 @@
 3DScience Application Specification
 Version: 3.0
-Status: Science includes a 30-second default period slider, a surface tessellation slider, and ConeIso selection within the Isosurfaces section.
+Status: The 30-second period slider, surface tessellation control, and ConeIso placement pass local and GitHub Pages Chrome checks.
 
 Purpose
 
