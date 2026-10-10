@@ -1,21 +1,21 @@
 # 3DViz
 
-**Status — 2026-10-09:** The repository contains a reusable Three.js plotter library plus Weather and Science demo apps. The CSV and live weather-signal development tools remain under the workspace's `Tools/` directory and import this repository's library.
+**Status — 2026-10-09:** The repository contains a reusable Three.js plotter library plus Weather and Science demo apps. The Science lab includes a voxel-centered cone vector field and a ConeIso facet plotter. The CSV and live weather-signal development tools remain under the workspace's `Tools/` directory and import this repository's library.
 
 3DViz is a collection of interactive 3D visualizations for science, technology, and multidimensional data. The home page is a small animated introduction with links to the available apps. It is not itself a visualization app.
 
 ## Apps
 
 - **Weather in 3D:** open [`apps/weather/3dWeather.html`](apps/weather/3dWeather.html). It uses the public Environment and Climate Change Canada City Page Weather API. The service is experimental and may change. The page includes the source and licence attribution.
-- **Science in 3D:** open [`apps/science/3dScience.html`](apps/science/3dScience.html). It demonstrates the shared plotters with an animated, normalized dipole electromagnetic field. Its implementation requirements are documented in [`apps/science/3dScienceSpec.txt`](apps/science/3dScienceSpec.txt).
-- **CSV plotters:** reusable bar, scatter, histogram, surface, trajectory, vector-field, time-slice, and isosurface plotters are included in the library. The CSV explorer UI remains a local development tool under `Tools/3dCsv/`.
+- **Science in 3D:** open [`apps/science/3dScience.html`](apps/science/3dScience.html). It demonstrates the shared plotters with a normalized dipole electromagnetic field. Its implementation requirements are documented in [`apps/science/3dScienceSpec.txt`](apps/science/3dScienceSpec.txt).
+- **Plotter library:** reusable bar, scatter, histogram, surface, trajectory, vector-field cone, ConeIso, time-slice, and isosurface plotters are included in the library. The CSV explorer UI remains a local development tool under `Tools/3dCsv/`.
 
 ## Layout
 
 - `index.html` and `style.css`: animated, responsive GitHub Pages landing page.
 - `apps/weather/`: Weather preview UI, data normalization, and the city-temperature plotter.
 - `apps/science/`: dipole-field plotter demo, application spec, and implementation task list.
-- `library/three-viz/src/`: shared browser visualization library, including its individual plotters and common wireframe/isosurface helpers.
+- `library/three-viz/src/`: shared browser visualization library, including its individual plotters, ConeIso facet sampling, and common wireframe/isosurface helpers.
 - `library/three-viz/tests/`: development tests for the library; not loaded by the website.
 - `LICENSE`: MIT License for this repository.
 

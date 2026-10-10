@@ -15,11 +15,11 @@
       <header class="intro-block">
         <p class="eyebrow">ELECTROMAGNETICS / 01</p>
         <h1>Oscillating dipole</h1>
-        <p class="intro">Explore the electric and magnetic dipole field with two focused views.</p>
+        <p class="intro">Explore the electric and magnetic dipole field with three focused views.</p>
       </header>
 
       <section class="control-section" aria-labelledby="plots-title">
-        <div class="section-label"><span id="plots-title">field views</span><span>two plotters</span></div>
+        <div class="section-label"><span id="plots-title">field views</span><span>three plotters</span></div>
         <fieldset class="plotter-list">
           <legend class="sr-only">Choose field views</legend>
           <label class="plot-choice"><input id="layer-isosurfaces" type="checkbox" checked><span>Isosurfaces</span><small>nested field shells</small></label>
@@ -35,11 +35,10 @@
             <input id="iso-tube-radius" type="range" min="0" max="0.05" step="0.002" value="0.006" aria-describedby="tube-radius-note" />
             <p id="tube-radius-note" class="field-note">Glossy tubes are on by default; set 0 for flat line wireframes.</p>
           </div>
-          <label class="plot-choice"><input id="layer-vectors" type="checkbox"><span>Vector field</span><small>local direction + strength</small></label>
-          <div class="nested-options" id="vector-options" hidden>
-            <label><input id="animated-cones" type="checkbox"> Animate cone arrows</label>
-          </div>
+          <label class="plot-choice"><input id="layer-vectors" type="checkbox"><span>Vector field</span><small>cones at grid samples</small></label>
+          <label class="plot-choice"><input id="layer-cone-iso" type="checkbox"><span>ConeIso</span><small>cones on larger shell facets</small></label>
         </fieldset>
+        <p class="field-note">Cone height tracks field magnitude; its diameter is always half its height in both cone plotters.</p>
       </section>
 
       <section class="control-section">
@@ -90,7 +89,7 @@
 
     <main class="stage" id="stage">
       <header class="stage-header">
-        <div><p class="stage-heading" id="stage-heading">DIPOLE FIELD / NESTED ISOSURFACES</p><p class="stage-subheading" id="stage-subheading">ELECTRIC + MAGNETIC · NORMALIZED VECTORS</p></div>
+        <div><p class="stage-heading" id="stage-heading">DIPOLE FIELD / ISOSURFACES + CONE PLOTTERS</p><p class="stage-subheading" id="stage-subheading">ELECTRIC + MAGNETIC · NORMALIZED FIELD</p></div>
         <div class="status-pill"><i id="status-dot" class="status-dot"></i><span id="status-text" role="status" aria-live="polite">STARTING</span></div>
       </header>
       <div class="scene-frame">
@@ -111,6 +110,6 @@
   </div>
 
   <script type="importmap">{ "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.186.0/build/three.module.js", "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.186.0/examples/jsm/" } }</script>
-  <script type="module" src="./3dScience.js?v=20261010v"></script>
+  <script type="module" src="./3dScience.js?v=cone-plotters-20261010b"></script>
 </body>
 </html>

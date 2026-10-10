@@ -12,7 +12,7 @@ Tree
 - style.css: responsive landing page styling and reduced-motion handling.
 - apps/weather/: runnable 3D Weather UI and its local application modules.
 - apps/science/: runnable electromagnetic field lab, app specification, and implementation tasks.
-- library/three-viz/src/: browser library modules, with one file per plotter and shared wireframe/isosurface helpers.
+- library/three-viz/src/: browser library modules, with one file per plotter, ConeIso facet sampling, and shared wireframe/isosurface helpers.
 - library/three-viz/tests/: library development tests; not loaded by the site.
 - library/three-viz/package.json: native ES module metadata for local test execution.
 
@@ -21,7 +21,7 @@ Paths
 - Landing page: /
 - Weather app: /apps/weather/3dWeather.html
 - Weather app imports the shared library from ../../library/three-viz/src/index.js.
-- Science app composes plotters from ../../library/three-viz/src/index.js and keeps its dipole data model in the app folder.
+- Science app composes isosurface, vector-cone, and ConeIso plotters from ../../library/three-viz/src/index.js and keeps its dipole data model in the app folder.
 
 Release notes
 

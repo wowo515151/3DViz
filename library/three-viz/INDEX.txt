@@ -12,7 +12,9 @@ Modules
 - `createCarPaintMaterial(THREE, color, options)` supplies shared metalness-1 materials with minimum clearcoat gloss and polish settings; `retainCarPaintEnvironment(THREE, scene, renderer)` shares a generated softbox environment across plotters attached to that scene.
 - src/core/: viewer lifecycle, errors, and resource ownership.
 - src/data/: input validation and coordinate mapping.
-- src/plotters/: bar-chart, point-cloud, CSV bars, scatter, histogram, surface, trajectory, vector-field, time-slice, isosurface, and weather-tube plotters; each implementation has its own JavaScript module.
+- src/plotters/: bar-chart, point-cloud, CSV bars, scatter, histogram, surface, trajectory, vector-field cone, ConeIso, time-slice, isosurface, and weather-tube plotters; each implementation has its own JavaScript module.
+- `src/plotters/vector-field-plotter.js` places an instanced cone at each valid vector sample. Cone height scales linearly with magnitude; its diameter is half its height.
+- `src/plotters/cone-iso-plotter.js` extracts an isosurface, filters facets by minimum area, samples the local field direction at each retained facet center, and places instanced cones without drawing the isosurface.
 - src/plotters/shared/: CSV mapping support plus reusable wireframe and marching-tetrahedra isosurface geometry helpers.
 - src/objects/: reusable labeled boxes and 2D/3D grids. Grid components remain separate from plotter implementations.
 - tests/: local development tests; the website does not import these files.

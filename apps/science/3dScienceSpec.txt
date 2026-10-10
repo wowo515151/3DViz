@@ -1,30 +1,31 @@
 3DScience Application Specification
-Version: 2.2
-Status: Car-paint, shade, and animation cadence updates are pending browser verification on GitHub Pages.
+Version: 3.0
+Status: Cone vector-field and ConeIso plotters pass local library and Chrome preview checks; GitHub Pages verification awaits publication.
 
 Purpose
 
-3DScience is a static browser app in the 3DViz repository that demonstrates the existing three-viz library with an animated electromagnetic field produced by an idealized oscillating dipole. It offers only two plotter choices: Isosurfaces and Vector field.
+3DScience is a static browser app in the 3DViz repository that demonstrates the shared library with an electromagnetic field produced by an idealized oscillating dipole. It offers three plotter choices: Isosurfaces, Vector field, and ConeIso.
 
 Repository and reuse rules
 
 - App files live under apps/science/ and are served from GitHub Pages without a build step.
 - Import visualization plotters and viewer lifecycle from ../../library/three-viz/src/index.js. The app must not copy or reimplement library plotter geometry, validation, selection, camera controls, coordinate mapping, or resource cleanup.
 - Keep app-only code limited to dipole field data generation and normalization, composing library plotters, UI controls, legend/export composition, and browser media recording.
-- Implement generic animated vector glyph behavior in the existing vector-field plotter module, so other library consumers receive the feature. Do not fork that plotter inside the app.
+- Implement cone glyphs in the shared vector-field plotter and a separate shared ConeIso plotter. Do not copy their geometry algorithms into the app.
 - Keep generic color palette helpers in the reusable library and export them through src/index.js. The library includes evenly spaced rainbow palettes and single-hue light-to-dark shade generation. Default light blue is visibly blue and darker than the earlier 0.78 lightness start; default shade lightness starts at 0.72 and ends at 0.38.
-- Use only the library's isosurface and vector-field plotters in this app. The app may adapt generated field records to their schemas but must not duplicate their drawing algorithms.
+- Use only the library's isosurface, vector-field, and ConeIso plotters in this app. The app may adapt generated field records to their schemas but must not duplicate their drawing algorithms.
 
 Page layout and controls
 
 - The left side is a narrow, scrollable control panel. The right side is a large visualization stage. At small widths, stack the panel above the stage and allow normal page scrolling.
 - Use a dark slate scene background and restrained cyan/blue-gray controls, thin separators, compact labels, and high-contrast focus states. Build these styles locally in the app; do not copy EmViz source or load code from outside this repository. The page may load the same pinned Three.js runtime as the Weather app.
-- Keep controls focused: the plotter checkbox list contains exactly Isosurfaces and Vector field, and they can be combined. Start with Isosurfaces enabled and Vector field disabled.
+- Keep controls focused: the plotter checkbox list contains exactly Isosurfaces, Vector field, and ConeIso, and they can be combined. Start with Isosurfaces enabled and both cone plotters disabled.
 - Isosurface options include a single opaque solid shell, multiple wireframe surfaces, and an adjustable tube radius. The solid shell and glossy tubular wireframes are enabled by default. Multiple surfaces are disabled while the solid shell is enabled; turning the solid shell off makes multiple wireframe surfaces available and enables a surface-count slider. The chosen count is evenly spread across the field-value range. Lower field values use noticeably light red or blue and higher values use dark red or blue that remain distinct from black. A tube radius of zero uses flat line wireframes; positive radii use tubular wireframes with the shared car-paint finish.
-- Vector options include static field arrows and animated cones. Vector positions share the dipole's coordinate bounds with its isosurfaces. Animated cones start at their grid-cell centers, point along the normalized local field direction, and move continuously at a velocity magnitude equal to the local field magnitude in normalized scene units. Their centers persist when the wave field refreshes and wrap through the opposite side of the coordinate bounds at grid boundaries. Cone length stays constant, while cone radius is proportional to field strength. Animated mode is a checkbox and is off by default. Animated glyphs have no shaft; retain the library's existing static arrow representation.
+- Vector field places one cone at the center of every sampled voxel. Each cone points along its local vector. Cone height scales linearly with field magnitude and cone diameter is half its height, so height is always twice diameter. Vector positions use the same scene bounds as the isosurfaces. The cone field is static between field updates; field playback updates directions and sizes.
+- ConeIso extracts the selected scalar isosurface, then places a cone at the center of each facet whose area exceeds a configurable minimum. It interpolates the vector field at each facet center and points the cone along that field. Cone height scales linearly with field magnitude and cone diameter is half its height. ConeIso draws cones only; showing the isosurface is a separate plotter operation.
 - Provide concise field and view settings only where needed: electric or magnetic component, frequency, amplitude, play/pause, reset time, and reset camera. Keep these independent of plotter-type selection.
 - Display a persistent stage legend identifying visible electric field in red, visible magnetic field in blue, normalized field magnitude, and current time phase. Selection-capable plotters show the selected field record in an accessible readout.
-- Use one metallic car-paint material treatment for solid isosurfaces, tubular wireframes, static vector arrows, and animated cones. Defaults match the reference demo's minimum Flake Sparkle (0), minimum Clearcoat Gloss (0), minimum Clearcoat Polish roughness (0.01), and metalness 1; base roughness is 0.16. No flake texture is applied. Generate and attach the softbox reflection environment to the containing Three.js Scene, including when plotters receive nested Groups. Since line materials cannot reflect the car-paint lighting, default to a small positive wireframe tube radius while keeping zero available for users who prefer flat lines. Do not draw an additional dipole source dot or DIPOLE marker on the stage or in exports.
+- Use one metallic car-paint material treatment for solid isosurfaces, tubular wireframes, and cones. Defaults match the reference demo's minimum Flake Sparkle (0), minimum Clearcoat Gloss (0), minimum Clearcoat Polish roughness (0.01), and metalness 1; base roughness is 0.16. No flake texture is applied. Generate and attach the softbox reflection environment to the containing Three.js Scene, including when plotters receive nested Groups. Since line materials cannot reflect the car-paint lighting, default to a small positive wireframe tube radius while keeping zero available for users who prefer flat lines. Do not draw an additional dipole source dot or DIPOLE marker on the stage or in exports.
 - Provide a fullscreen button. The stage can be made fullscreen without the control panel.
 
 Dipole and shared field data
@@ -37,9 +38,10 @@ Dipole and shared field data
 Plotter coverage
 
 - Isosurface: call makeIsosurfacePlotter with field magnitude data, one opaque solid shell and wireframe enabled, and a valid midrange threshold. Never render multiple transparent solid shells. When the solid shell is visible, nested surfaces must be off. When the solid shell is hidden, expose multiple wireframe surfaces and a slider for their count. Spread surface levels evenly over the scalar range and use the reusable shade generator for noticeably light-to-dark colors along the electric-red and magnetic-blue hues; blue should stay visibly blue at the light end and remain blue rather than black at the dark end. Expose threshold, independent surface and wireframe visibility, surface count, and tube-radius controls through the viewer controller. A tube radius of zero creates line wireframes; positive values create tubular wires.
-- Vector field: call makeVectorPlotter on the shared vector records. Expose static ArrowHelpers and animated cone variants. Map vector positions to the same coordinate bounds as the isosurfaces. Animated cones start at rest until selected, travel continuously in the field direction at field-strength speed, wrap at grid boundaries, and scale their radius with field strength. The wave time phase completes one cycle every 12 seconds at the default frequency.
-- The two plotter checkboxes add/remove their library plotters in the shared scene. The app composition adapter may route lifecycle calls and controller capabilities but must leave scene-object generation to the imported plotters.
-- If either plotter fails, keep the rest of the scene available and show a readable error for the failed layer.
+- Vector field: call makeVectorPlotter on the shared vector records and place one cone at every grid sample center. The maximum cone height is 0.22 scene units by default; all cone heights are proportional to local field magnitude, and diameter is half height. Map vector positions to the same coordinate bounds as the isosurfaces. The wave time phase completes one cycle every 12 seconds at the default frequency.
+- ConeIso: call makeConeIsoPlotter on the shared scalar and vector records. Extract facets at the shared shell threshold, discard facets at or below `minimumArea`, interpolate field direction at each remaining facet center, and orient one cone along that direction. Cone dimensions follow the same magnitude and 2:1 height-to-diameter rule as the Vector field plotter. Do not draw the scalar isosurface as part of ConeIso.
+- The three plotter checkboxes add/remove their library plotters in the shared scene. The app composition adapter may route lifecycle calls and controller capabilities but must leave scene-object generation to the imported plotters.
+- If any plotter fails, keep the other scene layers available and show a readable error for the failed layer.
 
 Export requirements
 
@@ -56,11 +58,12 @@ Accessibility, reliability, and deployment
 
 Acceptance criteria
 
-- The plotter choice list contains exactly Isosurfaces and Vector field. Both can be enabled at once.
+- The plotter choice list contains exactly Isosurfaces, Vector field, and ConeIso. All three can be enabled together; ConeIso is independently selectable.
 - The reusable library exports both an evenly spaced rainbow palette and an evenly spaced single-hue shade generator.
 - The electromagnetic field uses a 21³ regularly spaced sample grid.
 - Isosurfaces, one opaque solid shell, and wireframes are visible at startup. Multiple surfaces are off and disabled while the solid shell is enabled. Turning off Solid surfaces allows multiple wireframe levels and enables their count slider while keeping Wireframes visible. The count selects evenly spaced field levels; low electric and magnetic levels are noticeably light red and blue, while high levels are dark red and blue that remain distinct from black. A tube radius of zero uses lines; a positive radius creates tubes.
-- The default wave period is 12 seconds. Static vectors remain available. Vector positions align with the isosurfaces. Animated cones move continuously from their cell centers along the local vector at field-strength speed, persist through field refreshes, wrap at grid boundaries, have no shafts, and scale their radius with field strength.
+- The default wave period is 12 seconds. Vector field places a cone at every voxel center and aligns the centers with the isosurface scene bounds. Vector cones point along the local field. In both cone plotters, size scales with field magnitude and height is always twice diameter.
+- ConeIso places one cone on every isosurface facet larger than its configured minimum area. Cones are centered on facets and point along the field interpolated at each center. ConeIso does not render the isosurface.
 - Each visible layer uses its library module; no copy of the library's rendering implementation is introduced under apps/science/.
 - Screenshot and orbit-video downloads contain the view and legend, exclude all controls, and the video completes one full orbit and restores the prior view.
 - Home page no longer presents or mentions a CSV app.

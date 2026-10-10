@@ -13,6 +13,9 @@ import { createCoordinateMapper } from "../src/data/coordinate-mapping.js";
 import { createResourceRegistry } from "../src/core/resource-registry.js";
 import { createViewerWithRuntime, mount } from "../src/core/mount.js";
 import { pointCloudPlotter } from "../src/plotters/point-cloud-plotter.js";
+import { coneHeightForMagnitude } from "../src/plotters/vector-field-plotter.js";
+import { makeConeIsoPlotter, triangleArea } from "../src/plotters/cone-iso-plotter.js";
+import { makeVectorPlotter } from "../src/plotters/vector-field-plotter.js";
 import { barChartPlotter } from "../src/plotters/bar-chart-plotter.js";
 import { VisualizationError } from "../src/core/errors.js";
 import { rgbToHsl } from "../src/utils/colors.js";
@@ -51,6 +54,89 @@ test("generates evenly spaced, hue-preserving shades from light to dark", () => 
   assert.equal(blueShades.at(-1), 0x0053c2);
   assert.throws(() => generateColorShades(-1, 3), RangeError);
   assert.throws(() => generateColorShades(0xed5363, -1), RangeError);
+});
+
+test("cone plotters share magnitude-proportional sizing and ConeIso facet area math", () => {
+  const smallHeight = coneHeightForMagnitude(0.25, 1, 0.22);
+  const largeHeight = coneHeightForMagnitude(1, 1, 0.22);
+  assert.equal(smallHeight, 0.055);
+  assert.equal(largeHeight, 0.22);
+  assert.equal(smallHeight / 2, 0.0275);
+  assert.equal(largeHeight / 2, 0.11);
+  assert.equal(triangleArea([0, 0, 0], [1, 0, 0], [0, 1, 0]), 0.5);
+  assert.equal(triangleArea([0, 0, 0], [2, 0, 0], [0, 3, 0]), 3);
+  assert.equal(coneHeightForMagnitude(0, 1), 0);
+});
+
+test("vector and ConeIso plotters instance cones at samples and eligible facet centers", () => {
+  class TestGroup {
+    constructor() { this.children = []; }
+    add(object) { this.children.push(object); object.parent = this; }
+    remove(object) { this.children = this.children.filter(item => item !== object); object.parent = null; }
+  }
+  class TestVector3 {
+    constructor(x = 0, y = 0, z = 0) { this.set(x, y, z); }
+    set(x, y, z) { Object.assign(this, { x, y, z }); return this; }
+    normalize() { const length = Math.hypot(this.x, this.y, this.z) || 1; return this.set(this.x / length, this.y / length, this.z / length); }
+  }
+  class TestQuaternion { setFromUnitVectors(from, to) { this.from = from; this.to = to; return this; } }
+  class TestMatrix4 { compose(position, quaternion, scale) { Object.assign(this, { position, quaternion, scale }); return this; } }
+  class TestConeGeometry { constructor(radius, height) { Object.assign(this, { radius, height }); } dispose() {} }
+  class TestMaterial { constructor(options) { this.options = options; } dispose() {} }
+  class TestInstances {
+    constructor(geometry, material, count) { Object.assign(this, { geometry, material, count, matrices: [], instanceMatrix: {} }); }
+    setMatrixAt(index, matrix) { this.matrices[index] = { ...matrix }; }
+    dispose() {}
+  }
+  const THREE = { Group: TestGroup, Vector3: TestVector3, Quaternion: TestQuaternion, Matrix4: TestMatrix4, ConeGeometry: TestConeGeometry, MeshStandardMaterial: TestMaterial, InstancedMesh: TestInstances };
+  const scene = new TestGroup();
+  const registry = createResourceRegistry();
+  const resources = registry.createOwner("cones");
+  const context = { THREE, scene, resources, requestRender() {} };
+  const vectorMapping = { x: "x", y: "y", z: "z", u: "u", v: "v", w: "w" };
+  const vectorRows = [
+    { id: "low", x: 0, y: 0, z: 0, u: 1, v: 0, w: 0 },
+    { id: "high", x: 1, y: 1, z: 1, u: 0, v: 2, w: 0 },
+  ];
+  const vector = makeVectorPlotter(vectorMapping, 0.22, { positionBounds: [[-1, 1], [-1, 1], [-1, 1]] }).create(context, {}, vectorRows);
+  const vectorGroup = scene.children[0];
+  const vectorInstances = vectorGroup.children[0];
+  assert.equal(vectorInstances.count, vectorRows.length);
+  assert.equal(vectorInstances.geometry.radius * 2, vectorInstances.geometry.height / 2);
+  assert.equal(vectorInstances.matrices[0].scale.y, 0.11);
+  assert.equal(vectorInstances.matrices[1].scale.y, 0.22);
+  assert.equal(vectorInstances.matrices[0].position.x, -1);
+  assert.equal(vector.describeSelection({ instanceId: 1 }).id, "high");
+  vector.dispose();
+
+  const rows = [];
+  for (const x of [0, 1]) for (const y of [0, 1]) for (const z of [0, 1]) {
+    rows.push({ x, y, z, value: x, u: 0, v: 0, w: 1 });
+  }
+  const coneIso = makeConeIsoPlotter(
+    { x: "x", y: "y", z: "z", value: "value" },
+    { u: "u", v: "v", w: "w" },
+    { threshold: 0.5, minimumArea: 0, maximumHeight: 0.22 },
+  ).create(context, {}, rows);
+  const coneIsoGroup = scene.children[0];
+  const facetCones = coneIsoGroup.children[0];
+  assert.ok(coneIso.report.count > 0);
+  assert.equal(facetCones.geometry.radius * 2, facetCones.geometry.height / 2);
+  assert.equal(facetCones.count, coneIso.report.count);
+  assert.ok(facetCones.matrices.every(matrix => Math.abs(matrix.position.x) < 1e-6));
+  assert.ok(facetCones.matrices.every(matrix => matrix.quaternion.to.z === 1));
+  assert.ok(Math.abs(coneIso.describeSelection({ instanceId: 0 }).values.fieldMagnitude - 1) < 1e-9);
+  coneIso.dispose();
+
+  const filtered = makeConeIsoPlotter(
+    { x: "x", y: "y", z: "z", value: "value" },
+    { u: "u", v: "v", w: "w" },
+    { threshold: 0.5, minimumArea: 100, maximumHeight: 0.22 },
+  ).create(context, {}, rows);
+  assert.equal(filtered.report.count, 0);
+  assert.equal(scene.children[0].children.length, 0);
+  filtered.dispose();
+  resources.dispose();
 });
 
 test("rejects malformed samples, duplicate identifiers, mesh indices, and incompatible grids", () => {
