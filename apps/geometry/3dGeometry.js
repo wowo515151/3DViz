@@ -10,10 +10,96 @@ const ui = {
   list:$("#configuration-list"), size:$("#supercell-size"), sizeValue:$("#supercell-value"), sizeCaption:$("#supercell-caption"),
   count:$("#configuration-count"), title:$("#stage-heading"), subtitle:$("#stage-subheading"), total:$("#particle-total"),
   legend:$("#legend-name"), meta:$("#legend-meta"), viewport:$("#viewport"), loading:$("#loading"), error:$("#error-message"),
-  statusDot:$("#scene-status"), statusText:$("#scene-status-label"),
+  statusDot:$("#scene-status"), statusText:$("#scene-status-label"), exportImage:$("#download-image"), exportStatus:$("#export-status"),
 };
 let selectedId = "ci";
 let controller;
+
+function makeExportCanvas() {
+  const source = ui.viewport.querySelector("canvas");
+  if (!source || source.width <= 0 || source.height <= 0) {
+    throw new Error("Wait for the geometry scene to finish rendering before exporting.");
+  }
+  if (typeof HTMLCanvasElement.prototype.toBlob !== "function") {
+    throw new Error("PNG export is not supported by this browser.");
+  }
+  const scale = Math.max(1, 1600 / source.width);
+  const canvas = document.createElement("canvas");
+  canvas.width = Math.round(source.width * scale);
+  canvas.height = Math.round(source.height * scale);
+  const context = canvas.getContext("2d");
+  if (!context) throw new Error("Canvas export is not available in this browser.");
+  context.fillStyle = "#202832";
+  context.fillRect(0, 0, canvas.width, canvas.height);
+  context.drawImage(source, 0, 0, canvas.width, canvas.height);
+  drawExportLegend(context, canvas.width, canvas.height);
+  return canvas;
+}
+
+function drawExportLegend(context, width, height) {
+  const scale = width / 1200;
+  const boxWidth = 242 * scale;
+  const boxHeight = 105 * scale;
+  const x = 22 * scale;
+  const y = height - boxHeight - 20 * scale;
+  context.fillStyle = "rgba(10,16,22,.9)";
+  context.fillRect(x, y, boxWidth, boxHeight);
+  context.strokeStyle = "rgba(185,204,225,.4)";
+  context.strokeRect(x, y, boxWidth, boxHeight);
+  context.fillStyle = "#e5edf5";
+  context.font = `600 ${Math.round(12 * scale)}px system-ui`;
+  context.fillText(ui.legend.textContent.trim(), x + 12 * scale, y + 19 * scale, boxWidth - 24 * scale);
+  context.fillStyle = "#aebdca";
+  context.font = `${Math.round(9 * scale)}px ui-monospace,monospace`;
+  context.fillText(`${ui.meta.textContent.trim()} · ${ui.total.textContent.trim()}`, x + 12 * scale, y + 35 * scale, boxWidth - 24 * scale);
+  const entries = [
+    ["repeated particle position", "#63a8f4"],
+    ["neighbor connection", "#9bcff1"],
+    ["supercell bounds", "#77bce7"],
+  ];
+  entries.forEach(([label, color], index) => {
+    const rowY = y + (55 + index * 15) * scale;
+    context.fillStyle = color;
+    if (index === 0) {
+      context.beginPath();
+      context.arc(x + 16 * scale, rowY - 3 * scale, 3 * scale, 0, Math.PI * 2);
+      context.fill();
+    } else {
+      context.fillRect(x + 11 * scale, rowY - 4 * scale, 11 * scale, index === 1 ? 1 * scale : 7 * scale);
+    }
+    context.fillStyle = "#dce5ee";
+    context.font = `${Math.round(10 * scale)}px system-ui`;
+    context.fillText(label, x + 29 * scale, rowY, boxWidth - 40 * scale);
+  });
+}
+
+function downloadBlob(blob, filename) {
+  const url = URL.createObjectURL(blob);
+  const anchor = document.createElement("a");
+  anchor.href = url;
+  anchor.download = filename;
+  document.body.append(anchor);
+  try { anchor.click(); }
+  finally {
+    anchor.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 4000);
+  }
+}
+
+function downloadScreenshot() {
+  try {
+    makeExportCanvas().toBlob(blob => {
+      if (!blob) {
+        ui.exportStatus.textContent = "PNG encoding failed in this browser.";
+        return;
+      }
+      try {
+        downloadBlob(blob, `geometry-${selectedId}.png`);
+        ui.exportStatus.textContent = "PNG saved with the current geometry and legend.";
+      } catch (error) { ui.exportStatus.textContent = error.message; }
+    }, "image/png");
+  } catch (error) { ui.exportStatus.textContent = error.message; }
+}
 
 function selectConfiguration(id) {
   selectedId = id;
@@ -115,7 +201,7 @@ async function start() {
       plotter:geometryPlotter,
       data:{ configuration:CONFIGURATIONS.find(item => item.id === selectedId), supercell:Number(ui.size.value) },
       configuration:{ backgroundColor:0x202832 },
-      renderer:{ antialias:true, maxPixelRatio:1.5, powerPreference:"high-performance", toneMapping:"ACESFilmicToneMapping", toneMappingExposure:1.08 },
+      renderer:{ antialias:true, maxPixelRatio:1.5, preserveDrawingBuffer:true, powerPreference:"high-performance", toneMapping:"ACESFilmicToneMapping", toneMappingExposure:1.08 },
       camera:{ type:"perspective", position:[7.4,5.7,8.8], target:[0,0,0], fov:42 },
       controls:{ enabled:true, enableDamping:true, dampingFactor:.065, minDistance:3, maxDistance:24 },
       callbacks:{ onError(error) { ui.error.hidden = false; ui.error.textContent = error.message; updateSceneStatus(ui, "error"); } },
@@ -134,5 +220,6 @@ ui.size.addEventListener("input", () => {
   updateGeometryReadouts(ui, CONFIGURATIONS, selectedId, Number(ui.size.value));
   controller?.update({ configuration:CONFIGURATIONS.find(item => item.id === selectedId), supercell:Number(ui.size.value) });
 });
+ui.exportImage.addEventListener("click", downloadScreenshot);
 updateSceneStatus(ui, "loading");
 start();

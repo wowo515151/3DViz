@@ -6,7 +6,7 @@
   <meta name="description" content="Explore repeating geometric arrangements of particles in three dimensions." />
   <meta name="theme-color" content="#202832" />
   <title>Geometry | 3D Tiling Explorer</title>
-  <link rel="stylesheet" href="./geometry.css?v=20261011a" />
+  <link rel="stylesheet" href="./geometry.css?v=20261011b" />
 </head>
 <body>
   <div class="geometry-shell">
@@ -46,7 +46,11 @@
     <main class="stage">
       <header class="stage-header">
         <div><p class="stage-heading" id="stage-heading">BODY-CENTERED CUBIC</p><p class="stage-subheading" id="stage-subheading">CUBIC · CORNER AND BODY-CENTER POINTS</p></div>
-        <div class="status-pill" role="status" aria-live="polite"><i id="scene-status" class="status-dot" aria-hidden="true"></i><span id="scene-status-label">PREPARING GEOMETRY…</span><span id="particle-total">54 PARTICLES</span></div>
+        <div class="stage-actions">
+          <button id="download-image" class="download-button" type="button">DOWNLOAD PNG</button>
+          <span id="export-status" class="export-status" role="status" aria-live="polite"></span>
+          <div class="status-pill" aria-live="polite"><i id="scene-status" class="status-dot" aria-hidden="true"></i><span id="scene-status-label">PREPARING GEOMETRY…</span><span id="particle-total">54 PARTICLES</span></div>
+        </div>
       </header>
       <div class="scene-frame">
         <div id="viewport" aria-label="Three-dimensional repeating geometric particle arrangement" role="img">
@@ -66,6 +70,6 @@
   </div>
 
   <script type="importmap">{ "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.186.0/build/three.module.js", "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.186.0/examples/jsm/" } }</script>
-  <script type="module" src="./3dGeometry.js?v=geometry-patterns-20261011a"></script>
+  <script type="module" src="./3dGeometry.js?v=geometry-screenshot-20261011a"></script>
 </body>
 </html>
