@@ -14,8 +14,10 @@ export function makeVectorPlotter(mapping, vectorScale = 0.22, options = {}) {
     capabilities: Object.freeze(["selection"]),
     create(context, definition, initialRows) {
       const { THREE, scene, resources } = context;
-      const maximumHeight = Number(options.maximumHeight ?? vectorScale);
+      let maximumHeight = Number(options.maximumHeight ?? vectorScale);
       if (!Number.isFinite(maximumHeight) || maximumHeight <= 0) throw new Error("Maximum cone height must be a positive number.");
+      const magnitudeExponent = Number(options.magnitudeExponent ?? 1);
+      if (!Number.isFinite(magnitudeExponent) || magnitudeExponent <= 0) throw new Error("Vector magnitude exponent must be a positive number.");
       const removeLights = addSceneLights(THREE, scene, context.renderer);
       const group = new THREE.Group();
       group.name = "csv-vector-field-cones";
@@ -57,7 +59,8 @@ export function makeVectorPlotter(mapping, vectorScale = 0.22, options = {}) {
           const direction = new THREE.Vector3(...components[index]);
           const magnitude = magnitudes[index];
           const worldPosition = new THREE.Vector3(...position.map((value, axis) => mapPosition(value, axis, positionExtents)));
-          const height = coneHeightForMagnitude(magnitude, maximumMagnitude, maximumHeight);
+          const relativeMagnitude = magnitude > 0 ? Math.min(1, magnitude / maximumMagnitude) : 0;
+          const height = maximumHeight * relativeMagnitude ** magnitudeExponent;
           const scale = new THREE.Vector3(height, height, height);
           const orientation = new THREE.Quaternion();
           orientation.setFromUnitVectors(new THREE.Vector3(...UP), magnitude > 0 ? direction.normalize() : new THREE.Vector3(...UP));
@@ -89,6 +92,14 @@ export function makeVectorPlotter(mapping, vectorScale = 0.22, options = {}) {
       return {
         capabilities: ["selection"],
         update(rows) { build(rows); context.requestRender(); },
+        setMaximumHeight(value) {
+          const next = Number(value);
+          if (!Number.isFinite(next) || next <= 0) throw new Error("Maximum cone height must be a positive number.");
+          if (next === maximumHeight) return;
+          maximumHeight = next;
+          build(glyphRows);
+          context.requestRender();
+        },
         describeSelection(hit) {
           const row = glyphRows[hit.instanceId];
           return row ? { id: row.id ?? `row-${row.__rowNumber}`, label: row.label ?? `Vector sample ${row.__rowNumber ?? hit.instanceId + 1}`, values: { ...row } } : undefined;

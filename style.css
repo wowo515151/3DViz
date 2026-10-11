@@ -62,7 +62,7 @@ h1 { margin: 25px 0 20px; font-size: clamp(48px, 6.2vw, 82px); line-height: .99;
 .section-heading .eyebrow { margin-bottom: 9px; }
 h2 { margin: 0; font-size: clamp(30px, 3.5vw, 42px); letter-spacing: -.05em; font-weight: 600; }
 .section-note { max-width: 280px; margin: 0 0 4px; color: var(--muted); font-size: 12px; line-height: 1.7; }
-.app-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
+.app-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px; }
 .app-card { position: relative; min-height: 300px; padding: 23px; border: 1px solid var(--line); border-radius: 7px; background: linear-gradient(150deg, rgba(19, 34, 47, .86), rgba(10, 22, 32, .92)); transition: border-color .2s, transform .2s, background .2s; }
 .app-card--active:hover { transform: translateY(-4px); border-color: rgba(107, 227, 239, .42); background: linear-gradient(150deg, rgba(20, 43, 56, .95), rgba(10, 22, 32, .96)); }
 .card-topline { display: flex; align-items: center; justify-content: space-between; }

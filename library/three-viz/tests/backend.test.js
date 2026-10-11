@@ -109,6 +109,15 @@ test("vector and ConeIso plotters instance cones at samples and eligible facet c
   assert.equal(vector.describeSelection({ instanceId: 1 }).id, "high");
   vector.dispose();
 
+  const compressedVector = makeVectorPlotter(vectorMapping, 0.22, {
+    positionBounds: [[-1, 1], [-1, 1], [-1, 1]], magnitudeExponent: 0.2,
+  }).create(context, {}, vectorRows);
+  const compressedInstances = scene.children[0].children[0];
+  assert.ok(compressedInstances.matrices[0].scale.y > 0.11, "compression enlarges weaker samples");
+  assert.equal(compressedInstances.matrices[1].scale.y, 0.22, "the peak sample keeps the selected maximum size");
+  compressedVector.dispose();
+  assert.throws(() => makeVectorPlotter(vectorMapping, 0.22, { magnitudeExponent: 0 }).create(context, {}, vectorRows), /exponent must be a positive number/);
+
   const rows = [];
   for (const x of [0, 1]) for (const y of [0, 1]) for (const z of [0, 1]) {
     rows.push({ x, y, z, value: x, u: 0, v: 0, w: 1 });
@@ -125,6 +134,10 @@ test("vector and ConeIso plotters instance cones at samples and eligible facet c
   assert.equal(facetCones.count, coneIso.report.count);
   assert.ok(facetCones.matrices.every(matrix => Math.abs(matrix.position.x) < 1e-6));
   assert.ok(facetCones.matrices.every(matrix => matrix.quaternion.to.z === 1));
+  assert.ok(facetCones.matrices.every(matrix => Math.abs(matrix.scale.y - 0.22) < 1e-9));
+  coneIso.setMaximumHeight(0.44);
+  assert.ok(coneIsoGroup.children[0].matrices.every(matrix => Math.abs(matrix.scale.y - 0.44) < 1e-9));
+  assert.throws(() => coneIso.setMaximumHeight(0), /positive number/);
   assert.ok(Math.abs(coneIso.describeSelection({ object: facetCones, instanceId: 0 }).values.fieldMagnitude - 1) < 1e-9);
   coneIso.setLayerVisible("multiple", true);
   coneIso.setSurfaceCount(3);

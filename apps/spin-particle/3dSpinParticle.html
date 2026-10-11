@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="description" content="Explore a classically scaled N-body model using measured electron and proton properties." />
+  <meta name="theme-color" content="#202832" />
+  <title>SpinParticle | N-body Lab</title>
+  <link rel="stylesheet" href="./spin-particle.css?v=20261010h" />
+</head>
+<body>
+  <div class="spin-shell">
+    <aside class="control-panel" aria-label="SpinParticle simulation controls">
+      <a class="brand" href="../../index.html"><span class="brand-mark" aria-hidden="true">SP</span><span>SPINPARTICLE <small>N-BODY LAB</small></span></a>
+      <header class="intro-block">
+        <p class="eyebrow">CLASSICAL ELECTROMAGNETISM / 02</p>
+        <h1>Charged particles.<br />Intrinsic spin.</h1>
+        <p class="intro">Explore how charge, motion, and magnetic moment couple in a softened point-particle model.</p>
+      </header>
+
+      <section class="control-section" aria-labelledby="system-title">
+        <div class="section-label"><span id="system-title">particle system</span><span id="particle-count-label">12 bodies</span></div>
+        <div id="particle-count-controls">
+          <label class="range-label" for="particle-count">particle count <output id="particle-count-value">12</output></label>
+          <input id="particle-count" type="range" min="4" max="32" step="2" value="12" />
+        </div>
+        <label class="range-label" for="system-preset">arrangement</label>
+        <select id="system-preset" aria-label="Particle arrangement"><option value="orbit">Hydrogenic cloud</option><option value="dipole">Single electron–proton pair</option></select>
+        <p class="field-note">Protons are dark green; electrons are dark purple. The seeded cloud spreads pair centers at least 3 Å apart and begins each pair 2.4 Bohr radii apart.</p>
+      </section>
+
+      <section class="control-section" aria-labelledby="interactions-title">
+        <div class="section-label"><span id="interactions-title">interaction model</span><span>SI-derived · Å scale</span></div>
+        <label class="range-label" for="softening">softening length <output id="softening-value">0.02 Å</output></label>
+        <input id="softening" type="range" min="0.002" max="0.2" step="0.002" value="0.02" />
+        <p class="field-note">Electric and magnetic interactions use their SI-derived baseline strengths.</p>
+        <label class="range-label" for="simulation-speed">simulation speed <output id="speed-value">1.00×</output></label>
+        <input id="simulation-speed" type="range" min="0.2" max="2.5" step="0.1" value="1" />
+      </section>
+
+      <section class="control-section" aria-labelledby="playback-title">
+        <div class="section-label"><span id="playback-title">simulation</span><span id="time-readout">t = 0.000 fs</span></div>
+        <div class="button-row"><button id="play-toggle" type="button" aria-pressed="false">PLAY</button><button id="step-once" type="button">STEP</button><button id="reset-system" type="button">RESET</button></div>
+        <p id="status-note" class="field-note" role="status" aria-live="polite">READY · PAUSED</p>
+      </section>
+
+      <section class="control-section field-view-section" aria-labelledby="field-view-title">
+        <div class="section-label"><span id="field-view-title">field views</span><span>live E + B</span></div>
+        <fieldset class="field-view-list">
+          <legend class="sr-only">Choose field views</legend>
+          <label class="field-choice"><input id="field-vectors" type="checkbox" /><span>Vector field</span><small>direction + magnitude</small></label>
+          <div class="field-vector-options">
+            <label class="range-label" for="field-vector-scale">vector size <output id="field-vector-scale-value">2.5×</output></label>
+            <input id="field-vector-scale" type="range" min="0.5" max="3" step="0.1" value="2.5" />
+            <div class="field-components" aria-label="Vector field components">
+              <label><input id="field-vector-electric" type="checkbox" checked /><i class="field-swatch electric-swatch"></i>Electric field</label>
+              <label><input id="field-vector-magnetic" type="checkbox" checked /><i class="field-swatch magnetic-swatch"></i>Magnetic field</label>
+            </div>
+          </div>
+          <label class="field-choice"><input id="field-isosurfaces" type="checkbox" /><span>Isosurfaces</span><small>field magnitude shells</small></label>
+          <div class="field-nested-options">
+            <div class="field-components" aria-label="Isosurface field components">
+              <label><input id="field-surface-electric" type="checkbox" checked /><i class="field-swatch electric-swatch"></i>Electric field</label>
+              <label><input id="field-surface-magnetic" type="checkbox" checked /><i class="field-swatch magnetic-swatch"></i>Magnetic field</label>
+            </div>
+            <label class="field-subchoice"><input id="field-cone-iso" type="checkbox" checked /><span>ConeIso</span><small>field-aligned surface facets</small></label>
+            <div class="field-vector-options">
+              <label class="range-label" for="field-cone-iso-size">ConeIso vector size <output id="field-cone-iso-size-value">1.5×</output></label>
+              <input id="field-cone-iso-size" type="range" min="0.5" max="3" step="0.1" value="1.5" />
+            </div>
+            <label class="field-option"><input id="field-multiple" type="checkbox" /> Multiple surfaces</label>
+            <label class="field-option"><input id="field-solid" type="checkbox" /> Solid surfaces</label>
+            <label class="field-option"><input id="field-wireframe" type="checkbox" /> Wireframes</label>
+            <label class="range-label" for="field-surface-count">number of surfaces <output id="field-surface-count-value">5</output></label>
+            <input id="field-surface-count" type="range" min="2" max="12" step="1" value="5" />
+            <label class="range-label" for="field-resolution">field resolution <output id="field-resolution-value">21³</output></label>
+            <input id="field-resolution" type="range" min="11" max="31" step="2" value="21" />
+            <label class="range-label" for="field-threshold">shell threshold <output id="field-threshold-value">0.28</output></label>
+            <input id="field-threshold" type="range" min="0.05" max="0.75" step="0.01" value="0.28" />
+            <label class="range-label" for="field-tube-radius">tube radius <output id="field-tube-radius-value">0.006</output></label>
+            <input id="field-tube-radius" type="range" min="0" max="0.05" step="0.002" value="0.006" />
+          </div>
+        </fieldset>
+        <p class="field-note">Fields are softened quasi-static snapshots summed from every moving charge and permanent magnetic moment. Electric and magnetic components can be chosen independently for vectors and isosurfaces; vector lengths use a compressed scale so weaker field samples remain visible.</p>
+      </section>
+
+      <section class="control-section" aria-labelledby="selection-title">
+        <div class="section-label"><span id="selection-title">selected particle</span><span>click a body</span></div>
+        <p id="selection-readout" class="selection-readout" aria-live="polite">Select a particle to inspect all six model fields.</p>
+      </section>
+
+      <section class="control-section" aria-labelledby="view-title">
+        <div class="section-label"><span id="view-title">view</span><span>drag to orbit</span></div>
+        <div class="button-row"><button id="reset-view" type="button">RESET CAMERA</button><button id="fullscreen-toggle" type="button" aria-pressed="false">FULLSCREEN</button></div>
+      </section>
+
+      <section class="model-note" aria-label="Model limits">
+        <strong>MODEL SCOPE</strong>
+        <p>Particle properties and baseline couplings use CODATA 2022 values. The solver scales SI values to Å, 10⁶ m/s, and 0.1 fs for numerical stability. Hydrogenic preset orbits are classical initial conditions, not quantum states. Softening is an artificial length scale; radiation, retardation, induced electric fields, and relativistic effects are omitted.</p>
+      </section>
+      <footer class="panel-footer"><span>3DVIZ BETA LAB</span><br /><a href="../../README.md">Repository notes</a><br /><a href="https://www.linkedin.com/in/warren-harding-29a0a673/" target="_blank" rel="noopener noreferrer">Contact the Developer</a></footer>
+    </aside>
+
+    <main class="stage" id="stage">
+      <header class="stage-header">
+        <div><p class="stage-heading">SPINPARTICLE / PAIRWISE INTERACTIONS</p><p class="stage-subheading" id="stage-subheading">N-BODY · CODATA 2022 · POSITION IN Å · TIME IN fs</p></div>
+        <div class="status-pill"><i id="status-dot" class="status-dot"></i><span id="stage-status">PAUSED</span></div>
+      </header>
+      <div class="scene-frame">
+        <div id="viewport" aria-label="Three-dimensional interacting charged particles and magnetic moments" role="img">
+          <div id="loading" class="loading">PREPARING PARTICLE SYSTEM…</div>
+        </div>
+        <div class="scene-legend" aria-label="Particle visualization legend">
+          <strong>PARTICLE ENCODINGS</strong>
+          <span><i class="legend-dot proton-dot"></i> proton · positive charge</span>
+          <span><i class="legend-dot electron-dot"></i> electron · negative charge</span>
+          <span><i class="legend-dot moment-dot"></i> magnetic moment direction cone · fixed size</span>
+          <span><i class="legend-dot electric-dot"></i> electric field + force cones · red</span>
+          <span><i class="legend-dot magnetic-dot"></i> magnetic field + force cones · blue</span>
+          <span class="legend-meta">Force lengths scale within each type; directions show net force.</span>
+          <span class="legend-meta" id="legend-meta">12 particles · pairwise sum</span>
+        </div>
+        <p id="error-message" class="error-message" role="alert" hidden></p>
+      </div>
+      <p class="viewport-hint">DRAG TO ORBIT · SCROLL TO ZOOM · SELECT A PARTICLE · PLAY OR STEP THE SIMULATION</p>
+    </main>
+  </div>
+
+  <script type="importmap">{ "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.186.0/build/three.module.js", "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.186.0/examples/jsm/" } }</script>
+  <script type="module" src="./3dSpinParticle.js?v=20261010j"></script>
+</body>
+</html>

@@ -1,6 +1,8 @@
 # 3DViz
 
-**Status — 2026-10-09:** The repository contains a reusable Three.js plotter library plus Weather and Science demo apps. The Science lab includes a voxel-centered cone vector field and a ConeIso facet plotter. The CSV and live weather-signal development tools remain under the workspace's `Tools/` directory and import this repository's library.
+**GitHub Pages:** [wowo515151.github.io/3DViz](https://wowo515151.github.io/3DViz/)
+
+**Status — 2026-10-10:** Weather, Science, and SpinParticle are beta apps. The repository also contains a reusable Three.js plotter library. Beta status describes functioning code; it does not imply calibrated scientific results. The CSV and live weather-signal development tools remain under the workspace's `Tools/` directory and import this repository's library.
 
 3DViz is a collection of interactive 3D visualizations for science, technology, and multidimensional data. The home page is a small animated introduction with links to the available apps. It is not itself a visualization app.
 
@@ -8,27 +10,37 @@
 
 - **Weather in 3D:** open [`apps/weather/3dWeather.html`](apps/weather/3dWeather.html). It uses the public Environment and Climate Change Canada City Page Weather API. The service is experimental and may change. The page includes the source and licence attribution.
 - **Science in 3D:** open [`apps/science/3dScience.html`](apps/science/3dScience.html). It demonstrates the shared plotters with a normalized dipole electromagnetic field. Its implementation requirements are documented in [`apps/science/3dScienceSpec.txt`](apps/science/3dScienceSpec.txt).
+- **SpinParticle:** open [`apps/spin-particle/3dSpinParticle.html`](apps/spin-particle/3dSpinParticle.html). It demonstrates an N-body point-particle model initialized with CODATA electron and proton properties. SI values are converted to stable atomic-scale simulation units.
 - **Plotter library:** reusable bar, scatter, histogram, surface, trajectory, vector-field cone, ConeIso, time-slice, and isosurface plotters are included in the library. The CSV explorer UI remains a local development tool under `Tools/3dCsv/`.
 
 ## Layout
 
 - `index.html` and `style.css`: animated, responsive GitHub Pages landing page.
-- `apps/weather/`: Weather preview UI, data normalization, and the city-temperature plotter.
+- `apps/weather/`: Weather beta UI, data normalization, and the city-temperature plotter.
 - `apps/science/`: dipole-field plotter demo, application spec, and implementation task list.
+- `apps/spin-particle/`: N-body particle model, Three.js plotter adapter, science-inspired app UI, and unit tests.
 - `library/three-viz/src/`: shared browser visualization library, including its individual plotters, ConeIso facet sampling, and common wireframe/isosurface helpers.
 - `library/three-viz/tests/`: development tests for the library; not loaded by the website.
 - `LICENSE`: MIT License for this repository.
 
 The Weather app imports the library from this repository. The CSV and weather-signal tools served from the `Sites` workspace use relative paths to this same library folder. Three.js 0.186.0 and its OrbitControls addon load from the pinned jsDelivr URLs in the Weather page's import map; no Three.js source is vendored here. The library test double is local development code.
 
+SpinParticle uses the same pinned Three.js 0.186.0 runtime URLs as the other apps. It uses electron/proton mass, charge, magnetic moment, and gyromagnetic ratio values from CODATA 2022, then converts them to internal units of Å, 10⁶ m/s, and 0.1 fs. Coupling sliders scale the SI-derived Coulomb and magnetic coefficients. The hydrogenic presets are classical initial conditions rather than quantum states. Softening is artificial; the model omits retardation, radiation, induced electric fields, and relativistic effects.
+
 ## Run locally
 
-Serve the repository root with any static HTTP server, then open `/` for the landing page or `/apps/weather/3dWeather.html` for the Weather app. The browser needs network access to jsDelivr and the ECCC API for the live forecast.
+Serve the repository root with any static HTTP server, then open `/` for the landing page, `/apps/weather/3dWeather.html` for Weather, `/apps/science/3dScience.html` for Science, or `/apps/spin-particle/3dSpinParticle.html` for SpinParticle. The browser needs network access to jsDelivr for Three.js; Weather also uses the ECCC API when its snapshot is unavailable.
 
 To run the library's dependency-free tests from the repository root:
 
 ```text
 node --test library/three-viz/tests/backend.test.js
+```
+
+To run the SpinParticle unit tests:
+
+```text
+node --test apps/spin-particle/tests/*.test.js
 ```
 
 ## Attribution and contact

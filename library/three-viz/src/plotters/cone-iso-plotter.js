@@ -41,7 +41,7 @@ function sampleField(grid, worldPosition, vectorMapping) {
 
 export function makeConeIsoPlotter(mapping, vectorMapping, options = {}) {
   return Object.freeze({
-    capabilities: Object.freeze(["selection", "thresholds", "layers", "surfaceCount"]),
+    capabilities: Object.freeze(["selection", "thresholds", "layers", "surfaceCount", "scaling"]),
     create(context, definition, initialRows) {
       const { THREE, scene, resources } = context;
       const removeLights = addSceneLights(THREE, scene, context.renderer);
@@ -49,7 +49,7 @@ export function makeConeIsoPlotter(mapping, vectorMapping, options = {}) {
       group.name = "cone-iso-plotter";
       scene.add(group);
       const minimumArea = Number(options.minimumArea ?? 0.002);
-      const maximumHeight = Number(options.maximumHeight ?? 0.22);
+      let maximumHeight = Number(options.maximumHeight ?? 0.22);
       if (!Number.isFinite(minimumArea) || minimumArea < 0) throw new Error("Minimum facet area must be a finite, nonnegative number.");
       if (!Number.isFinite(maximumHeight) || maximumHeight <= 0) throw new Error("Maximum cone height must be a positive number.");
       const geometry = resources.track(new THREE.ConeGeometry(0.25, 1, options.radialSegments ?? 12));
@@ -125,12 +125,20 @@ export function makeConeIsoPlotter(mapping, vectorMapping, options = {}) {
 
       build();
       return {
-        capabilities: ["selection", "thresholds", "layers", "surfaceCount"],
+        capabilities: ["selection", "thresholds", "layers", "surfaceCount", "scaling"],
         update(nextRows) { rows = nextRows; build(); context.requestRender(); },
         setThreshold(value) {
           const next = Number(value);
           if (!Number.isFinite(next)) throw new Error("ConeIso threshold must be numeric.");
           threshold = next;
+          build();
+          context.requestRender();
+        },
+        setMaximumHeight(value) {
+          const next = Number(value);
+          if (!Number.isFinite(next) || next <= 0) throw new Error("Maximum ConeIso vector size must be a positive number.");
+          if (next === maximumHeight) return;
+          maximumHeight = next;
           build();
           context.requestRender();
         },

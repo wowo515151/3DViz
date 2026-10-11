@@ -2,7 +2,7 @@
 
 Purpose
 
-This folder is the local, reviewable content for the public wowo515151/3DViz repository. It bundles the shared Three.js plotter library source and the Weather preview app in one self-contained repository. The CSV and weather-signal development tools remain under the sibling `Tools/` folder and import the library by relative path.
+This folder is the local, reviewable content for the public wowo515151/3DViz repository. It bundles the shared Three.js plotter library source and the Weather, Science, and SpinParticle beta apps in one self-contained repository. The CSV and weather-signal development tools remain under the sibling `Tools/` folder and import the library by relative path.
 
 Tree
 
@@ -12,6 +12,7 @@ Tree
 - style.css: responsive landing page styling and reduced-motion handling.
 - apps/weather/: runnable 3D Weather UI and its local application modules.
 - apps/science/: runnable electromagnetic field lab, app specification, and implementation tasks.
+- apps/spin-particle/: SI-to-atomic-scale N-body component, CODATA electron/proton presets, Three.js plotter, UI, and dependency-free unit tests.
 - library/three-viz/src/: browser library modules, with one file per plotter, ConeIso facet sampling, and shared wireframe/isosurface helpers.
 - library/three-viz/tests/: library development tests; not loaded by the site.
 - library/three-viz/package.json: native ES module metadata for local test execution.
@@ -22,11 +23,14 @@ Paths
 - Weather app: /apps/weather/3dWeather.html
 - Weather app imports the shared library from ../../library/three-viz/src/index.js.
 - Science app composes isosurface, vector-cone, and ConeIso plotters from ../../library/three-viz/src/index.js and keeps its dipole data model in the app folder.
+- SpinParticle app composes the pairwise particle model with the shared mount lifecycle and keeps particle physics in apps/spin-particle/spin-particle.js.
 
 Release notes
 
 - Only repository contents belong here; workspace planning, review, and traffic records remain outside the repository.
 - `library/three-viz/` is the canonical plotter library in this repository.
 - Three.js 0.186.0 loads from pinned jsDelivr runtime URLs; its source is not bundled.
+- GitHub Pages project URL: https://wowo515151.github.io/3DViz/.
+- SpinParticle uses the repository's existing pinned Three.js 0.186.0 runtime; no Three.js source is vendored.
 - CSV and weather signal tools consume plotter modules from this repository through sibling workspace paths. They are local development tools and are not hosted by this repository.
 - Human visual review and explicit approval are required before public upload.
