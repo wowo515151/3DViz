@@ -94,6 +94,15 @@
         <div class="button-row"><button id="reset-view" type="button">RESET CAMERA</button><button id="fullscreen-toggle" type="button" aria-pressed="false">FULLSCREEN</button></div>
       </section>
 
+      <section class="control-section" aria-labelledby="export-title">
+        <div class="section-label"><span id="export-title">export view</span><span>scene + legend</span></div>
+        <div class="button-row export-row">
+          <button id="download-image" type="button">DOWNLOAD PNG</button>
+          <button id="download-video" type="button">DOWNLOAD 360° VIDEO</button>
+        </div>
+        <p id="export-status" class="field-note" role="status" aria-live="polite">Exports include the particle scene, visible fields, and legend.</p>
+      </section>
+
       <section class="model-note" aria-label="Model limits">
         <strong>MODEL SCOPE</strong>
         <p>Particle properties and baseline couplings use CODATA 2022 values. The solver scales SI values to Å, 10⁶ m/s, and 0.1 fs for numerical stability. Hydrogenic preset orbits are classical initial conditions, not quantum states. Softening is an artificial length scale; radiation, retardation, induced electric fields, and relativistic effects are omitted.</p>
@@ -127,6 +136,6 @@
   </div>
 
   <script type="importmap">{ "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.186.0/build/three.module.js", "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.186.0/examples/jsm/" } }</script>
-  <script type="module" src="./3dSpinParticle.js?v=20261010j"></script>
+  <script type="module" src="./3dSpinParticle.js?v=20261010k"></script>
 </body>
 </html>

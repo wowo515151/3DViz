@@ -27,6 +27,8 @@ Each component is normalized independently to make its shape visible. Select a f
 
 Every particle also shows its net electric-force cone (red) and net magnetic-force cone (blue). Electric cones contain the Coulomb contribution; magnetic cones contain Lorentz and magnetic-energy-gradient contributions. Cone lengths are normalized independently within each force type, with the strongest force reaching 0.4 Å, so lengths compare particles for the same force type rather than electric force against magnetic force. Each cone base sits at its particle's surface and points along its net force.
 
+The **Download PNG** button saves the visualization canvas with a compact legend and the current simulation time. **Download 360° Video** records a 12-second WebM camera orbit of the current scene, includes the same legend in every frame, and restores the starting camera pose when recording ends. Exports omit the app controls. Video export requires browser support for canvas capture and WebM recording.
+
 The field grid spans ±5.5 Å to cover both presets. The vector-size sliders scale vector-field and ConeIso arrows independently; vector peak height defaults to 0.5 Å and uses a compressed magnitude scale to keep weaker arrows visible, while ConeIso peak height defaults to 0.33 Å. The shared isosurface plotter's ±2.5 output bounds are expanded to match the field grid.
 
 ## Interactions and limits

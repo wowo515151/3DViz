@@ -16,10 +16,12 @@ const ui = {
   fieldConeIsoSize:$("#field-cone-iso-size"), fieldConeIsoSizeValue:$("#field-cone-iso-size-value"),
   fieldThreshold:$("#field-threshold"), fieldThresholdValue:$("#field-threshold-value"), fieldTubeRadius:$("#field-tube-radius"), fieldTubeRadiusValue:$("#field-tube-radius-value"),
   play:$("#play-toggle"), step:$("#step-once"), reset:$("#reset-system"), time:$("#time-readout"), selection:$("#selection-readout"), legend:$("#legend-meta"),
+  exportImage:$("#download-image"), exportVideo:$("#download-video"), exportStatus:$("#export-status"),
 };
 let controller;
 let particles = [];
 let running = false;
+let recordingOrbit = false;
 
 function setError(message = "") {
   ui.error.hidden = !message;
@@ -66,6 +68,206 @@ function updateReadouts(elapsed = 0, particleCount = particles.length) {
   ui.countValue.textContent = String(particleCount);
   ui.countLabel.textContent = `${particleCount} bodies`;
   ui.legend.textContent = `${particleCount} particles · pairwise sum`;
+}
+
+function setExportStatus(message, error = false) {
+  ui.exportStatus.textContent = message;
+  ui.exportStatus.style.color = error ? "#ffb4bc" : "";
+}
+
+function visibleExportLegend() {
+  const entries = [
+    ["proton · positive charge", "#287a48"],
+    ["electron · negative charge", "#7042a0"],
+    ["magnetic moment direction", "#8bd9d0"],
+    ["electric force cones", "#ed5363"],
+    ["magnetic force cones", "#529cff"],
+  ];
+  if (ui.fieldVectors.checked && ui.fieldVectorElectric.checked) entries.push(["electric vector field", "#ed5363"]);
+  if (ui.fieldVectors.checked && ui.fieldVectorMagnetic.checked) entries.push(["magnetic vector field", "#529cff"]);
+  if (ui.fieldIsosurfaces.checked && ui.fieldSurfaceElectric.checked) entries.push(["electric isosurfaces", "#ed5363"]);
+  if (ui.fieldIsosurfaces.checked && ui.fieldSurfaceMagnetic.checked) entries.push(["magnetic isosurfaces", "#529cff"]);
+  return entries;
+}
+
+function drawExportLegend(context, width, height) {
+  const scale = width / 1200;
+  const entries = visibleExportLegend();
+  const boxWidth = 300 * scale;
+  const boxHeight = (62 + entries.length * 19) * scale;
+  const x = 22 * scale;
+  const y = height - boxHeight - 20 * scale;
+  context.fillStyle = "rgba(10,16,22,.9)";
+  context.fillRect(x, y, boxWidth, boxHeight);
+  context.strokeStyle = "rgba(185,204,225,.4)";
+  context.strokeRect(x, y, boxWidth, boxHeight);
+  context.fillStyle = "#e5edf5";
+  context.font = `600 ${Math.round(13 * scale)}px system-ui`;
+  context.fillText("SPINPARTICLE · N-BODY", x + 13 * scale, y + 20 * scale);
+  context.fillStyle = "#aebdca";
+  context.font = `${Math.round(11 * scale)}px ui-monospace,monospace`;
+  context.fillText(`${particles.length} PARTICLES · ${ui.time.textContent.toUpperCase()}`, x + 13 * scale, y + 38 * scale);
+  entries.forEach(([label, color], index) => {
+    const rowY = y + (56 + index * 19) * scale;
+    context.fillStyle = color;
+    context.beginPath();
+    context.arc(x + 18 * scale, rowY - 3 * scale, 4 * scale, 0, Math.PI * 2);
+    context.fill();
+    context.fillStyle = "#dce5ee";
+    context.font = `${Math.round(11 * scale)}px system-ui`;
+    context.fillText(label, x + 30 * scale, rowY);
+  });
+}
+
+function makeExportCanvas() {
+  const source = ui.viewport.querySelector("canvas");
+  if (!source || source.width <= 0 || source.height <= 0) {
+    throw new Error("Wait for the particle scene to finish rendering before exporting.");
+  }
+  if (typeof HTMLCanvasElement.prototype.toBlob !== "function") {
+    throw new Error("PNG and video canvas export are not supported by this browser.");
+  }
+  const scale = Math.max(1, 1600 / source.width);
+  const canvas = document.createElement("canvas");
+  canvas.width = Math.round(source.width * scale);
+  canvas.height = Math.round(source.height * scale);
+  const context = canvas.getContext("2d");
+  if (!context) throw new Error("Canvas export is not available in this browser.");
+  context.fillStyle = "#202832";
+  context.fillRect(0, 0, canvas.width, canvas.height);
+  context.drawImage(source, 0, 0, canvas.width, canvas.height);
+  drawExportLegend(context, canvas.width, canvas.height);
+  return canvas;
+}
+
+function downloadBlob(blob, filename) {
+  const url = URL.createObjectURL(blob);
+  const anchor = document.createElement("a");
+  anchor.href = url;
+  anchor.download = filename;
+  document.body.append(anchor);
+  try { anchor.click(); }
+  finally {
+    anchor.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 4000);
+  }
+}
+
+function downloadScreenshot() {
+  try {
+    makeExportCanvas().toBlob(blob => {
+      if (!blob) {
+        setExportStatus("PNG encoding failed in this browser.", true);
+        return;
+      }
+      try {
+        downloadBlob(blob, "spinparticle-nbody.png");
+        setExportStatus("PNG saved with the visible field and particle legend.");
+      } catch (error) { setExportStatus(error.message, true); }
+    }, "image/png");
+  } catch (error) { setExportStatus(error.message, true); }
+}
+
+function downloadOrbitVideo() {
+  const recorderType = ["video/webm;codecs=vp9", "video/webm;codecs=vp8", "video/webm"]
+    .find(type => window.MediaRecorder?.isTypeSupported?.(type));
+  if (!window.MediaRecorder || typeof HTMLCanvasElement.prototype.captureStream !== "function" || !recorderType) {
+    setExportStatus("360° video capture is not supported by this browser.", true);
+    return;
+  }
+  if (!controller) {
+    setExportStatus("Wait for the particle scene to finish rendering first.", true);
+    return;
+  }
+  if (recordingOrbit) return;
+
+  let canvas;
+  let stream;
+  let recorder;
+  let pose;
+  try {
+    canvas = makeExportCanvas();
+    pose = controller.getCameraPose();
+    stream = canvas.captureStream(30);
+    recorder = new MediaRecorder(stream, { mimeType:recorderType, videoBitsPerSecond:5_000_000 });
+  } catch (error) {
+    stream?.getTracks().forEach(track => track.stop());
+    setExportStatus(error.message, true);
+    return;
+  }
+
+  const targetController = controller;
+  const offsetX = pose.position[0] - pose.target[0];
+  const offsetZ = pose.position[2] - pose.target[2];
+  const initialAngle = Math.atan2(offsetX, offsetZ);
+  const durationMs = 12000;
+  const chunks = [];
+  let startedAt;
+  recordingOrbit = true;
+  ui.exportImage.disabled = true;
+  ui.exportVideo.disabled = true;
+  setExportStatus("Recording one 360° camera orbit…");
+  recorder.ondataavailable = event => { if (event.data?.size) chunks.push(event.data); };
+  recorder.onerror = () => {
+    setExportStatus("The browser stopped video recording unexpectedly.", true);
+    try { if (recorder.state !== "inactive") recorder.stop(); }
+    catch (error) { setExportStatus(error.message, true); }
+  };
+  recorder.onstop = () => {
+    let restoreError;
+    try { targetController.setCameraPose(pose); }
+    catch (error) { restoreError = error; }
+    finally {
+      stream.getTracks().forEach(track => track.stop());
+      recordingOrbit = false;
+      ui.exportImage.disabled = false;
+      ui.exportVideo.disabled = false;
+    }
+    if (!chunks.length) {
+      setExportStatus(restoreError ? `Video ended; camera restore failed: ${restoreError.message}` : "The browser produced no video frames.", true);
+      return;
+    }
+    try {
+      downloadBlob(new Blob(chunks, { type:"video/webm" }), "spinparticle-360-orbit.webm");
+      setExportStatus(restoreError
+        ? `360° WebM saved, but the camera could not be restored: ${restoreError.message}`
+        : "360° WebM saved with the visible field and particle legend.", Boolean(restoreError));
+    } catch (error) { setExportStatus(error.message, true); }
+  };
+
+  try { recorder.start(250); }
+  catch (error) {
+    stream.getTracks().forEach(track => track.stop());
+    recordingOrbit = false;
+    ui.exportImage.disabled = false;
+    ui.exportVideo.disabled = false;
+    setExportStatus(error.message, true);
+    return;
+  }
+  const drawFrame = now => {
+    if (!recordingOrbit) return;
+    if (startedAt === undefined) startedAt = now;
+    const fraction = Math.min(1, (now - startedAt) / durationMs);
+    try {
+      targetController.setOrbitAngle(initialAngle + fraction * Math.PI * 2);
+      const context = canvas.getContext("2d");
+      const source = ui.viewport.querySelector("canvas");
+      if (!context || !source) throw new Error("The particle scene disappeared during video capture.");
+      context.drawImage(source, 0, 0, canvas.width, canvas.height);
+      drawExportLegend(context, canvas.width, canvas.height);
+    } catch (error) {
+      setExportStatus(error.message, true);
+      if (recorder.state !== "inactive") recorder.stop();
+      return;
+    }
+    if (fraction < 1) requestAnimationFrame(drawFrame);
+    else if (recorder.state !== "inactive") recorder.stop();
+  };
+  try { requestAnimationFrame(drawFrame); }
+  catch (error) {
+    setExportStatus(error.message, true);
+    if (recorder.state !== "inactive") recorder.stop();
+  }
 }
 
 function setRunning(value) {
@@ -123,7 +325,7 @@ async function start() {
         onFrame:(elapsed, count) => updateReadouts(elapsed, count),
       },
       configuration:{ backgroundColor:0x202832 },
-      renderer:{ antialias:true, maxPixelRatio:1.5, powerPreference:"high-performance", toneMapping:"ACESFilmicToneMapping", toneMappingExposure:1.08 },
+      renderer:{ antialias:true, maxPixelRatio:1.5, preserveDrawingBuffer:true, powerPreference:"high-performance", toneMapping:"ACESFilmicToneMapping", toneMappingExposure:1.08 },
       camera:{ type:"perspective", modes:["perspective", "orthographic"], position:cameraPosition, target:[0,0,0], fov:42, orthographicHeight:12 },
       controls:{ enabled:true, enableDamping:true, dampingFactor:0.065, minDistance:5, maxDistance:32 },
       callbacks:{
@@ -200,6 +402,8 @@ ui.fieldTubeRadius.addEventListener("input", () => {
 });
 
 $("#reset-view").addEventListener("click", () => controller?.resetView());
+ui.exportImage.addEventListener("click", downloadScreenshot);
+ui.exportVideo.addEventListener("click", downloadOrbitVideo);
 $("#fullscreen-toggle").addEventListener("click", async () => {
   try {
     if (document.fullscreenElement === $("#stage")) await document.exitFullscreen();

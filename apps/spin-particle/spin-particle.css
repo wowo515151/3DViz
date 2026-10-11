@@ -38,6 +38,8 @@ select{width:100%;min-height:32px;padding:5px 8px;border:1px solid rgba(152,216,
 .electric-swatch{background:var(--electric)}
 .magnetic-swatch{background:var(--magnetic)}
 .button-row{display:flex;gap:7px}
+.export-row{flex-wrap:wrap}
+.export-row button:last-child{flex-basis:100%}
 button{min-height:32px;padding:6px 9px;border:1px solid rgba(152,216,255,.25);border-radius:2px;background:rgba(83,148,185,.09);color:#dceaf5;font:10px var(--mono);letter-spacing:.045em;cursor:pointer;transition:background .15s,border-color .15s}
 button:hover:not(:disabled){background:rgba(95,184,236,.18);border-color:rgba(152,216,255,.55)}
 button:disabled{opacity:.45;cursor:not-allowed}
