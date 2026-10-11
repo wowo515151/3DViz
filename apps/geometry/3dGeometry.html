@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="description" content="Explore repeating geometric arrangements of particles in three dimensions." />
+  <meta name="theme-color" content="#202832" />
+  <title>Geometry | 3D Tiling Explorer</title>
+  <link rel="stylesheet" href="./geometry.css?v=20261011a" />
+</head>
+<body>
+  <div class="geometry-shell">
+    <aside class="control-panel" aria-label="Geometry viewer controls">
+      <a class="brand" href="../../index.html"><span class="brand-mark" aria-hidden="true">G</span><span>GEOMETRY <small>3D TILING EXPLORER</small></span></a>
+      <header class="intro-block">
+        <p class="eyebrow">REPEATING STRUCTURES / 04</p>
+        <h1>Space, filled<br />with patterns.</h1>
+        <p class="intro">Explore how simple particle positions repeat to build three-dimensional geometric arrangements.</p>
+      </header>
+
+      <aside class="crystal-notice" aria-label="About the crystal geometry models" role="note">
+        <strong>These are common geometric forms seen in crystals.</strong>
+        <p>They are idealized lattice arrangements and structure motifs—not external crystal shapes or models of specific materials, atom types, or calibrated bond lengths.</p>
+        <small>References: <a href="https://www.iucr.org/who-we-are/commissions/commission-on-crystallographic-nomenclature/published-reports/bravais" target="_blank" rel="noopener noreferrer">IUCr lattice naming</a> · <a href="https://openstax.org/books/chemistry/pages/10-6-lattice-structures-in-crystalline-solids" target="_blank" rel="noopener noreferrer">OpenStax lattices</a> · <a href="https://www.iza-structure.org/databases/DatabaseHelp_Structures.php" target="_blank" rel="noopener noreferrer">IZA frameworks</a> · <a href="https://pmc.ncbi.nlm.nih.gov/articles/PMC3895978/" target="_blank" rel="noopener noreferrer">Tetragonal channel topology</a></small>
+      </aside>
+
+      <section class="control-section" aria-labelledby="supercell-title">
+        <div class="section-label"><span id="supercell-title">supercell</span><span id="supercell-caption">3 × 3 × 3</span></div>
+        <label class="range-label" for="supercell-size">repeat unit <output id="supercell-value">3 × 3 × 3</output></label>
+        <input id="supercell-size" type="range" min="1" max="6" step="1" value="3" />
+        <p class="field-note">Each step adds another translated copy along all three lattice directions.</p>
+      </section>
+
+      <section class="control-section configuration-section" aria-labelledby="configuration-title">
+        <div class="section-label"><span id="configuration-title">configurations</span><span id="configuration-count">23 forms</span></div>
+        <div id="configuration-list" class="configuration-list" aria-label="Geometric configurations"></div>
+      </section>
+
+      <section class="model-note" aria-label="How to read the scene">
+        <strong>READ THE SCENE</strong>
+          <p>Blue spheres mark repeated points; fine lines connect nearby particles across the pattern's three-dimensional directions. The outline marks the full supercell. Configurations are geometric patterns, not specific materials or molecules.</p>
+      </section>
+      <footer class="panel-footer"><span>3DVIZ · GEOMETRY</span><br /><a href="../../README.md">Repository notes</a></footer>
+    </aside>
+
+    <main class="stage">
+      <header class="stage-header">
+        <div><p class="stage-heading" id="stage-heading">BODY-CENTERED CUBIC</p><p class="stage-subheading" id="stage-subheading">CUBIC · CORNER AND BODY-CENTER POINTS</p></div>
+        <div class="status-pill" role="status" aria-live="polite"><i id="scene-status" class="status-dot" aria-hidden="true"></i><span id="scene-status-label">PREPARING GEOMETRY…</span><span id="particle-total">54 PARTICLES</span></div>
+      </header>
+      <div class="scene-frame">
+        <div id="viewport" aria-label="Three-dimensional repeating geometric particle arrangement" role="img">
+          <div id="loading" class="loading">PREPARING GEOMETRY…</div>
+        </div>
+        <div class="scene-legend" aria-label="Geometry legend">
+          <strong id="legend-name">BODY-CENTERED CUBIC</strong>
+          <span><i class="legend-dot"></i> repeated particle position</span>
+          <span><i class="bond-key"></i> neighbor connection</span>
+          <span><i class="cell-key"></i> supercell bounds</span>
+          <span class="legend-meta" id="legend-meta">3 × 3 × 3 supercell · 54 points</span>
+        </div>
+        <p id="error-message" class="error-message" role="alert" hidden></p>
+      </div>
+      <p class="viewport-hint">DRAG TO ORBIT · SCROLL TO ZOOM · SELECT A CONFIGURATION · RESIZE THE SUPERCELL</p>
+    </main>
+  </div>
+
+  <script type="importmap">{ "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.186.0/build/three.module.js", "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.186.0/examples/jsm/" } }</script>
+  <script type="module" src="./3dGeometry.js?v=geometry-patterns-20261011a"></script>
+</body>
+</html>
