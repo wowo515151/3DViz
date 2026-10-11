@@ -24,8 +24,8 @@ test("plotter creates, animates, selects, resets, and disposes a particle scene"
   const magneticForceCones=group.children.find(child=>child.name==="magnetic-force-cones");
   assert.equal(markers.count,2);
   assert.equal(momentCones.count,2,"one moment cone slot is created per particle");
-  assert.ok(momentCones.matrices.every(matrix=>matrix.scale.y===0.32),"moment cones keep a compact fixed direction-only size");
-  assert.ok(Math.abs(momentCones.matrices[0].position.z-0.33)<1e-12,"moment cone bases start on the sphere surface");
+  assert.ok(momentCones.matrices.every(matrix=>matrix.scale.y===0.22),"moment cones use a smaller compact fixed direction-only size");
+  assert.ok(Math.abs(momentCones.matrices[0].position.z-0.28)<1e-12,"moment cone bases start on the sphere surface");
   assert.equal(electricForceCones.count,2,"one electric-force cone slot is created per particle");
   assert.equal(magneticForceCones.count,2,"one magnetic-force cone slot is created per particle");
   assert.ok(electricForceCones.matrices.some(matrix=>matrix.scale.y>0),"nonzero electric forces draw cones");

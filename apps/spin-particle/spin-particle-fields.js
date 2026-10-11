@@ -1,6 +1,8 @@
 import { SIMULATION_UNITS, SI_CONSTANTS } from "./spin-particle-si.js";
+import { validateSpinParticles } from "./spin-particle.js";
 
 const MU0_OVER_4PI = SI_CONSTANTS.vacuumPermeability / (4 * Math.PI);
+// Convert the normalized point-charge E field and magnetic fields back into SI.
 const E_FIELD_UNIT = (1 / (4 * Math.PI * SI_CONSTANTS.vacuumPermittivity)) * SIMULATION_UNITS.charge / SIMULATION_UNITS.length ** 2;
 const B_FIELD_UNIT = MU0_OVER_4PI * SIMULATION_UNITS.charge * SIMULATION_UNITS.velocity / SIMULATION_UNITS.length ** 2;
 
@@ -15,6 +17,7 @@ export function sampleParticleFields(particles, {
   magneticCouplingScale = 1,
 } = {}) {
   if (!Array.isArray(particles) || particles.length === 0) throw new TypeError("At least one particle is required to sample fields.");
+  validateSpinParticles(particles);
   if (!Number.isSafeInteger(resolution) || resolution < 3 || resolution > 31) throw new RangeError("Field resolution must be an integer from 3 to 31.");
   if (!Number.isFinite(extent) || extent <= 0 || !Number.isFinite(softening) || softening <= 0) throw new RangeError("Field extent and softening must be positive and finite.");
   if (![electricCouplingScale, magneticCouplingScale].every(value => Number.isFinite(value) && value >= 0)) throw new RangeError("Field couplings must be nonnegative and finite.");
@@ -36,6 +39,9 @@ export function sampleParticleFields(particles, {
           const inverseR = 1 / Math.sqrt(r2), inverseR3 = inverseR / r2;
           const inverseR5 = inverseR3 / r2;
           const charge = particle.charge;
+          // E = (1/(4πε0)) q r/r³, with the same softened denominator as dynamics.
+          // Reference: OpenStax University Physics Vol. 2, §5.3 Coulomb's law,
+          // https://openstax.org/books/university-physics-volume-2/pages/5-3-coulombs-law
           const eScale = electricCouplingScale * charge * inverseR3;
           ex += eScale * rx; ey += eScale * ry; ez += eScale * rz;
 
@@ -43,6 +49,9 @@ export function sampleParticleFields(particles, {
           const qvx = vy * rz - vz * ry, qvy = vz * rx - vx * rz, qvz = vx * ry - vy * rx;
           const moment = particle.magneticMoment;
           const momentDotR = moment[0] * rx + moment[1] * ry + moment[2] * rz;
+          // Quasi-static Biot–Savart point-charge and point-dipole superposition;
+          // radiation and retardation are outside this solver's model.
+          // Reference: MIT OCW 8.02, Ch. 9 §9.5, linked in spin-particle.js.
           const bScale = magneticCouplingScale;
           const bDipoleScale = bScale * SIMULATION_UNITS.magneticMoment /
             (SIMULATION_UNITS.charge * SIMULATION_UNITS.velocity * SIMULATION_UNITS.length);
@@ -52,6 +61,9 @@ export function sampleParticleFields(particles, {
           bz += bMotionScale * qvz * inverseR3 + bDipoleScale * (3 * rz * momentDotR * inverseR5 - moment[2] * inverseR3);
         }
         const eMagnitude = Math.hypot(ex, ey, ez), bMagnitude = Math.hypot(bx, by, bz);
+        if (![ex, ey, ez, bx, by, bz, eMagnitude, bMagnitude].every(Number.isFinite)) {
+          throw new RangeError("Sampled field magnitudes exceeded the finite numeric range.");
+        }
         electricPeak = Math.max(electricPeak, eMagnitude);
         magneticPeak = Math.max(magneticPeak, bMagnitude);
         rows.push({
@@ -65,18 +77,23 @@ export function sampleParticleFields(particles, {
   }
   const electricScale = Math.max(electricPeak, Number.MIN_VALUE);
   const magneticScale = Math.max(magneticPeak, Number.MIN_VALUE);
-  return rows.map(row => ({
-    ...row,
-    ex:row.electricX / electricScale, ey:row.electricY / electricScale, ez:row.electricZ / electricScale,
-    bx:row.magneticX / magneticScale, by:row.magneticY / magneticScale, bz:row.magneticZ / magneticScale,
-    electricMagnitude:row.electricMagnitude / electricScale,
-    magneticMagnitude:row.magneticMagnitude / magneticScale,
-    electricMagnitudeVPerM:row.electricMagnitude *
-      E_FIELD_UNIT,
-    electricX_VPerM:row.electricX * E_FIELD_UNIT, electricY_VPerM:row.electricY * E_FIELD_UNIT, electricZ_VPerM:row.electricZ * E_FIELD_UNIT,
-    magneticMagnitudeTesla:row.magneticMagnitude * B_FIELD_UNIT,
-    magneticX_Tesla:row.magneticX * B_FIELD_UNIT, magneticY_Tesla:row.magneticY * B_FIELD_UNIT, magneticZ_Tesla:row.magneticZ * B_FIELD_UNIT,
-  }));
+  return rows.map(row => {
+    const result = {
+      ...row,
+      ex:row.electricX / electricScale, ey:row.electricY / electricScale, ez:row.electricZ / electricScale,
+      bx:row.magneticX / magneticScale, by:row.magneticY / magneticScale, bz:row.magneticZ / magneticScale,
+      electricMagnitude:row.electricMagnitude / electricScale,
+      magneticMagnitude:row.magneticMagnitude / magneticScale,
+      electricMagnitudeVPerM:row.electricMagnitude * E_FIELD_UNIT,
+      electricX_VPerM:row.electricX * E_FIELD_UNIT, electricY_VPerM:row.electricY * E_FIELD_UNIT, electricZ_VPerM:row.electricZ * E_FIELD_UNIT,
+      magneticMagnitudeTesla:row.magneticMagnitude * B_FIELD_UNIT,
+      magneticX_Tesla:row.magneticX * B_FIELD_UNIT, magneticY_Tesla:row.magneticY * B_FIELD_UNIT, magneticZ_Tesla:row.magneticZ * B_FIELD_UNIT,
+    };
+    if (Object.values(result).some(value => typeof value === "number" && !Number.isFinite(value))) {
+      throw new RangeError("Converted field magnitudes exceeded the finite numeric range.");
+    }
+    return result;
+  });
 }
 
 export function fieldRowsForComponent(rows, component) {

@@ -1,7 +1,10 @@
 import { createSpinParticle } from "./spin-particle.js";
 
-// CODATA 2022 values. Positions are shown in angstroms, masses in electron-mass
-// units, and time in 0.1 fs units inside the numerical solver.
+// CODATA 2022 values; constants in this table are sourced from NIST's CODATA
+// 2022 adjustment and its recommended values/tables:
+// https://tsapps.nist.gov/publication/get_pdf.cfm?pub_id=958143
+// Positions are shown in angstroms, masses in electron-mass units, and time in
+// 0.1 fs units inside the numerical solver.
 export const SI_CONSTANTS = Object.freeze({
   elementaryCharge: 1.602176634e-19,
   electronMass: 9.1093837139e-31,
@@ -26,6 +29,9 @@ export const SIMULATION_UNITS = Object.freeze({
 });
 
 const coulombConstant = 1 / (4 * Math.PI * SI_CONSTANTS.vacuumPermittivity);
+// These coefficients are SI Coulomb and magnetic-force constants multiplied by
+// the selected unit scales so F/(m L/T²) is dimensionless. The underlying laws
+// are referenced beside the pair kernels in spin-particle.js.
 export const SI_INTERACTION_COUPLING = Object.freeze({
   electric: coulombConstant * SIMULATION_UNITS.charge ** 2 * SIMULATION_UNITS.time ** 2 /
     (SIMULATION_UNITS.mass * SIMULATION_UNITS.length ** 3),
@@ -124,6 +130,9 @@ export function makeHydrogenicPreset(count = 12, arrangement = "cloud") {
   const totalMass = electronMass + protonMass;
   const reducedMass = electronMass * protonMass / totalMass;
   const separation = 2.4 * bohrRadius;
+  // Two-body Coulomb circular orbit: k e²/r² = μ_red v_rel²/r, so
+  // v_rel = v_B sqrt(m_e/μ_red) sqrt(a_0/r). The formula derives from
+  // Coulomb's law (OpenStax §5.3; URL in spin-particle.js) and centripetal motion.
   const relativeSpeed = electronBohrSpeed * Math.sqrt(electronMass / reducedMass) * Math.sqrt(bohrRadius / separation);
   const random = seededRandom(0x51A7 + count + (arrangement === "dipole" ? 0xD1B : 0));
   const centersAngstrom = makeAtomCenters(count / 2, arrangement, random);

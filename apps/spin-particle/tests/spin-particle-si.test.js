@@ -9,7 +9,7 @@ import {
   toSIValues,
   toSimulationParticle,
 } from "../spin-particle-si.js";
-import { stepParticles } from "../spin-particle.js";
+import { computeParticleInteractions, stepParticles } from "../spin-particle.js";
 
 const closeRelative = (actual, expected, tolerance = 1e-12) => {
   assert.ok(Math.abs(actual - expected) <= Math.abs(expected) * tolerance, `${actual} should match ${expected}`);
@@ -79,6 +79,53 @@ test("SI-derived Coulomb and magnetic coefficients are dimensionless in the chos
   assert.ok(SI_INTERACTION_COUPLING.magnetic > 2.8e-5 && SI_INTERACTION_COUPLING.magnetic < 2.9e-5);
   assert.equal(SIMULATION_UNITS.length, 1e-10);
   assert.equal(SIMULATION_UNITS.time, 1e-16);
+});
+
+test("unit-scaled solver Coulomb force converts back to the SI point-charge force", () => {
+  const proton = toSimulationParticle({
+    id:"p", position:[0,0,0], velocity:[0,0,0], mass:SI_CONSTANTS.protonMass,
+    charge:SI_CONSTANTS.elementaryCharge, magneticMoment:[0,0,0], gyromagneticRatio:SI_CONSTANTS.protonGyromagneticRatio,
+  });
+  const electron = toSimulationParticle({
+    id:"e", position:[1e-10,0,0], velocity:[0,0,0], mass:SI_CONSTANTS.electronMass,
+    charge:-SI_CONSTANTS.elementaryCharge, magneticMoment:[0,0,0], gyromagneticRatio:SI_CONSTANTS.electronGyromagneticRatio,
+  });
+  const normalized = computeParticleInteractions([proton,electron], {
+    softening:0, electricCoupling:SI_INTERACTION_COUPLING.electric, magneticCoupling:SI_INTERACTION_COUPLING.magnetic,
+  }).electricForces[1][0];
+  const siForce = normalized * SIMULATION_UNITS.mass * SIMULATION_UNITS.length / SIMULATION_UNITS.time ** 2;
+  const coulombForce = SI_CONSTANTS.elementaryCharge ** 2 /
+    (4 * Math.PI * SI_CONSTANTS.vacuumPermittivity * 1e-20);
+  assert.ok(Math.abs(siForce + coulombForce) / coulombForce < 1e-12);
+});
+
+test("unit-scaled magnetic Lorentz force and spin-precession rate match SI scales", () => {
+  const proton = toSimulationParticle({
+    id:"p", position:[0,0,0], velocity:[0,SIMULATION_UNITS.velocity,0], mass:SI_CONSTANTS.protonMass,
+    charge:SI_CONSTANTS.elementaryCharge, magneticMoment:[0,0,0], gyromagneticRatio:SI_CONSTANTS.protonGyromagneticRatio,
+  });
+  const electron = toSimulationParticle({
+    id:"e", position:[SIMULATION_UNITS.length,0,0], velocity:[SIMULATION_UNITS.velocity,0,0], mass:SI_CONSTANTS.electronMass,
+    charge:-SI_CONSTANTS.elementaryCharge, magneticMoment:[0,0,0], gyromagneticRatio:SI_CONSTANTS.electronGyromagneticRatio,
+  });
+  const normalizedForce = computeParticleInteractions([proton,electron], {
+    electricCoupling:0, magneticCoupling:SI_INTERACTION_COUPLING.magnetic, softening:0,
+  }).magneticForces[1][1];
+  const forceUnit = SIMULATION_UNITS.mass * SIMULATION_UNITS.length / SIMULATION_UNITS.time ** 2;
+  const siForce = normalizedForce * forceUnit;
+  const expectedLorentzForce = -SI_CONSTANTS.vacuumPermeability / (4*Math.PI) *
+    SI_CONSTANTS.elementaryCharge ** 2 * SIMULATION_UNITS.velocity ** 2 / SIMULATION_UNITS.length ** 2;
+  assert.ok(Math.abs(siForce - expectedLorentzForce) / expectedLorentzForce < 1e-12);
+
+  const electronSim = toSimulationParticle({
+    id:"g", position:[0,0,0], velocity:[0,0,0], mass:SI_CONSTANTS.electronMass,
+    charge:-SI_CONSTANTS.elementaryCharge, magneticMoment:[0,0,0], gyromagneticRatio:SI_CONSTANTS.electronGyromagneticRatio,
+  });
+  const magneticFieldUnit = SI_CONSTANTS.vacuumPermeability / (4*Math.PI) *
+    SI_CONSTANTS.elementaryCharge * SIMULATION_UNITS.velocity / SIMULATION_UNITS.length ** 2;
+  const normalizedPrecessionScale = electronSim.gyromagneticRatio * SI_INTERACTION_COUPLING.magnetic;
+  const siPrecessionScale = SI_CONSTANTS.electronGyromagneticRatio * magneticFieldUnit * SIMULATION_UNITS.time;
+  closeRelative(normalizedPrecessionScale, siPrecessionScale);
 });
 
 test("cloud creates the requested pairs and dipole layout creates one complete pair", () => {

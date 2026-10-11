@@ -87,6 +87,10 @@ function magneticFieldAt(target, source, options) {
   const distance = Math.sqrt(safeDenominator(squaredDistance));
   const inverseCube = 1 / distance ** 3;
   const inverseFifth = inverseCube / (distance * distance);
+  // Quasi-static moving-point-charge field B = μ0/(4π) q(v×r)/r³;
+  // dipole field below is its standard point-dipole form. Softening replaces r² by r²+a².
+  // References: MIT OCW 8.02, Ch. 9 §9.5 (moving charge and dipole fields),
+  // https://ocw.mit.edu/courses/8-02-physics-ii-electricity-and-magnetism-spring-2007/378f66ab154c54f34f58ab72fbcf9414_ch9sourc_b_field.pdf
   const fromCharge = multiply(cross(source.velocity, r), options.magneticCoupling * source.charge * inverseCube);
   const projection = dot(source.magneticMoment, r);
   const fromDipole = multiply(subtract(multiply(r, 3 * projection * inverseFifth), multiply(source.magneticMoment, inverseCube)), options.magneticCoupling);
@@ -101,6 +105,10 @@ function dipoleGradientForce(r, targetMoment, sourceMoment, options) {
   const targetProjection = dot(targetMoment, r);
   const sourceProjection = dot(sourceMoment, r);
   const mutualProjection = dot(targetMoment, sourceMoment);
+  // Differentiate μ_target·B_dipole with respect to r: F = ∇(μ·B),
+  // using U = -μ·B and ∇·B = 0. The softened kernel is differentiated consistently.
+  // Reference: MIT OCW 8.02T, Ch. 8, magnetic dipole force and energy,
+  // https://ocw.mit.edu/courses/8-02t-electricity-and-magnetism-spring-2005/90510e513af27a2dde30b890a61bbcd1_ch8magneti_field.pdf
   const first = multiply(add(multiply(targetMoment, sourceProjection), multiply(sourceMoment, targetProjection)), 3 * inverseFifth);
   const second = multiply(r, -15 * targetProjection * sourceProjection * inverseSeventh);
   const third = multiply(r, 3 * mutualProjection * inverseFifth);
@@ -112,6 +120,8 @@ function chargeFieldGradientForce(r, targetMoment, sourceCharge, sourceVelocity,
   const distance = Math.sqrt(safeDenominator(squaredDistance));
   const inverseCube = 1 / distance ** 3;
   const inverseFifth = inverseCube / squaredDistance;
+  // Differentiate μ_target·B_moving-charge; the same source-field convention is
+  // given in MIT OCW 8.02, Ch. 9 §9.5 (URL in magneticFieldAt above).
   const numerator = dot(targetMoment, cross(sourceVelocity, r));
   const numeratorGradient = cross(targetMoment, sourceVelocity);
   const gradient = subtract(multiply(numeratorGradient, inverseCube), multiply(r, 3 * numerator * inverseFifth));
@@ -138,9 +148,13 @@ export function computeParticleInteractions(particles, interaction = {}) {
       const field = magneticFieldAt(target, source, options);
       magneticFields[i] = add(magneticFields[i], field);
 
-      // Coulomb force is the normalized-unit analogue of k q_i q_j r_hat/r^2.
+      // Coulomb force is k q_i q_j r/r³ (softened here with r²+a²).
+      // Reference: OpenStax University Physics Vol. 2, §5.3,
+      // https://openstax.org/books/university-physics-volume-2/pages/5-3-coulombs-law
       const electricForce = multiply(r, options.electricCoupling * target.charge * source.charge * inverseCube);
-      // Moving charges and permanent dipoles both source B; a moving charge feels q v x B.
+      // Lorentz force q(v×B), plus magnetic-energy-gradient forces on the fixed dipole.
+      // References: OpenStax Ch. 11 key equations (Lorentz force and dipole energy),
+      // https://openstax.org/books/university-physics-volume-2/pages/11-key-equations
       const magneticLorentzForce = multiply(cross(target.velocity, field), target.charge);
       const fieldGradientForce = add(
         chargeFieldGradientForce(r, target.magneticMoment, source.charge, source.velocity, options),
@@ -161,8 +175,14 @@ export function computeParticleInteractions(particles, interaction = {}) {
 function derivative(particles, interaction) {
   const { forces, magneticFields } = computeParticleInteractions(particles, interaction);
   return particles.map((particle, index) => ({
+    // Newton's equations are dx/dt = v and dv/dt = ΣF/m.
+    // Reference: OpenStax Physics, §4.3 Newton's Second Law,
+    // https://openstax.org/books/physics/pages/4-3-newtons-second-law-of-motion
     position: particle.velocity,
     velocity: multiply(forces[index], 1 / particle.mass),
+    // Apply the requested semiclassical precession law dμ/dt = γ(μ×B).
+    // Its torque convention τ=μ×B is listed in OpenStax Ch. 11 key equations;
+    // the explicit gyromagnetic conversion/sign follows the SpinParticle specification.
     magneticMoment: multiply(cross(particle.magneticMoment, magneticFields[index]), particle.gyromagneticRatio),
   }));
 }
@@ -201,6 +221,9 @@ export function stepParticles(particles, { dt, substeps = 1, ...interaction } = 
   const step = dt / substeps;
   let current = particles.map(cloneParticle);
   for (let iteration = 0; iteration < substeps; iteration += 1) {
+    // Classical four-stage, fourth-order Runge–Kutta integration (RK4).
+    // Reference: MIT OCW 18.03SC, Numerical Methods / Better Methods,
+    // https://ocw.mit.edu/courses/18-03sc-differential-equations-fall-2011/resources/better-methods/
     const k1 = derivative(current, options);
     const k2 = derivative(stage(current, k1, step / 2), options);
     const k3 = derivative(stage(current, k2, step / 2), options);
@@ -214,17 +237,22 @@ export function stepParticles(particles, { dt, substeps = 1, ...interaction } = 
 export function createSpinParticleSystem(particles, interaction = {}) {
   validateSpinParticles(particles);
   const options = normalizeInteraction(interaction);
-  let current = particles.map(cloneParticle);
+  const initialParticles = particles.map(cloneParticle);
+  let current = initialParticles.map(cloneParticle);
   let elapsedTime = 0;
   return Object.freeze({
     get particles() { return current.map(cloneParticle); },
     get elapsedTime() { return elapsedTime; },
     step(dt, substeps = 1) {
-      current = stepParticles(current, { ...options, dt, substeps });
-      elapsedTime += dt;
+      if (!finite(dt) || dt <= 0) throw new RangeError("dt must be positive and finite.");
+      const nextElapsedTime = elapsedTime + dt;
+      if (!finite(nextElapsedTime)) throw new RangeError("elapsed time exceeded the finite numeric range.");
+      const nextParticles = stepParticles(current, { ...options, dt, substeps });
+      current = nextParticles;
+      elapsedTime = nextElapsedTime;
       return current.map(cloneParticle);
     },
-    reset(nextParticles = particles) {
+    reset(nextParticles = initialParticles) {
       validateSpinParticles(nextParticles);
       current = nextParticles.map(cloneParticle);
       elapsedTime = 0;

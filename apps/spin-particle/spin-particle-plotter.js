@@ -13,7 +13,7 @@ const FIELD_EXTENT = 5.5;
 const SHARED_ISOSURFACE_HALF_EXTENT = 2.5;
 const FIELD_SURFACE_SCALE = FIELD_EXTENT / SHARED_ISOSURFACE_HALF_EXTENT;
 const MAX_FORCE_ARROW_LENGTH = 0.4;
-const MOMENT_CONE_LENGTH = 0.32;
+const MOMENT_CONE_LENGTH = 0.22;
 
 export const spinParticlePlotter = Object.freeze({
   capabilities:Object.freeze(["animation", "selection"]),

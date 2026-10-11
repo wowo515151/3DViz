@@ -47,6 +47,21 @@ test("opposite charges accelerate toward one another and like charges repel", ()
   assert.ok(repulsion[1][0] > 0);
 });
 
+test("softened Coulomb force matches its analytic vector and action–reaction pair", () => {
+  const r = [0.7, -0.2, 0.4];
+  const softening = 0.3;
+  const coupling = 1.7;
+  const particles = [
+    createSpinParticle({ id:"target", position:r, charge:2 }),
+    createSpinParticle({ id:"source", charge:-3 }),
+  ];
+  const { electricForces } = computeParticleInteractions(particles, { softening, electricCoupling:coupling, magneticCoupling:0 });
+  const denominator = (r.reduce((sum, value) => sum + value * value, softening ** 2)) ** 1.5;
+  const expected = r.map(value => coupling * 2 * -3 * value / denominator);
+  expected.forEach((value, axis) => assert.ok(Math.abs(value - electricForces[0][axis]) < 1e-12));
+  electricForces[0].forEach((value, axis) => assert.ok(Math.abs(value + electricForces[1][axis]) < 1e-12));
+});
+
 test("moving charge and magnetic moment contribute magnetic fields", () => {
   const observer = createSpinParticle({ id:"observer", position:[0,1,0] });
   const movingCharge = createSpinParticle({ id:"charge", position:[0,0,0], velocity:[1,0,0], charge:1 });
@@ -55,6 +70,25 @@ test("moving charge and magnetic moment contribute magnetic fields", () => {
   const dipole = createSpinParticle({ id:"dipole", position:[0,0,0], magneticMoment:[0,0,1] });
   const dipoleField = computeParticleInteractions([observer, dipole]).magneticFields[0];
   assert.ok(dipoleField[2] < 0);
+});
+
+test("magnetic dipole and moving-charge force gradients match finite differences of μ·B", () => {
+  const interaction = { softening:0.23, electricCoupling:0, magneticCoupling:0.8 };
+  const target = createSpinParticle({ id:"target", position:[0.63,-0.41,0.28], magneticMoment:[0.4,-0.7,0.2] });
+  const source = createSpinParticle({ id:"source", velocity:[0.3,0.8,-0.5], charge:-0.9, magneticMoment:[-0.2,0.5,0.6] });
+  const force = computeParticleInteractions([target, source], interaction).magneticForces[0];
+  const energyLike = position => {
+    const shifted = { ...target, position };
+    const field = computeParticleInteractions([shifted, source], interaction).magneticFields[0];
+    return target.magneticMoment.reduce((sum, value, axis) => sum + value * field[axis], 0);
+  };
+  const h = 1e-5;
+  force.forEach((value, axis) => {
+    const plus = target.position.slice(); plus[axis] += h;
+    const minus = target.position.slice(); minus[axis] -= h;
+    const derivative = (energyLike(plus) - energyLike(minus)) / (2 * h);
+    assert.ok(Math.abs(value - derivative) < 2e-8, `axis ${axis}: analytic ${value}, finite difference ${derivative}`);
+  });
 });
 
 test("moving charges and magnetic dipoles produce nonzero pair forces", () => {
@@ -130,6 +164,24 @@ test("the system steps, tracks elapsed time, and resets from a clean copy", () =
   system.reset(pair());
   assert.equal(system.elapsedTime, 0);
   assert.deepEqual(system.particles.map(p => p.position), [[-1,0,0],[1,0,0]]);
+});
+
+test("reset is insulated from later edits to the caller's original particle array", () => {
+  const original = pair();
+  const system = createSpinParticleSystem(original, { electricCoupling:0, magneticCoupling:0 });
+  original[0].position[0] = 500;
+  original[0].magneticMoment[1] = 800;
+  system.reset();
+  assert.equal(system.particles[0].position[0], -1);
+  assert.equal(system.particles[0].magneticMoment[1], 0);
+});
+
+test("elapsed time overflow leaves system state and time unchanged", () => {
+  const system = createSpinParticleSystem([createSpinParticle({ id:"still" })], { electricCoupling:0, magneticCoupling:0 });
+  system.step(Number.MAX_VALUE);
+  assert.throws(() => system.step(Number.MAX_VALUE), /elapsed time exceeded/);
+  assert.equal(system.elapsedTime, Number.MAX_VALUE);
+  assert.deepEqual(system.particles[0].position, [0,0,0]);
 });
 
 test("rejects non-positive timesteps and invalid softening", () => {
