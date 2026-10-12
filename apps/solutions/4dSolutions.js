@@ -1049,6 +1049,11 @@ function componentRows(rows, component, positionOffset = [0, 0, 0]) {
   return rows.map(row => ({ ...row, u: row[`${prefix}x`], v: row[`${prefix}y`], w: row[`${prefix}z`], vectorPositionOffset: positionOffset }));
 }
 
+function translateRows(rows, offset) {
+  if (offset.every(component => component === 0)) return rows;
+  return rows.map(row => ({ ...row, x: row.x + offset[0], y: row.y + offset[1], z: row.z + offset[2] }));
+}
+
 function updateLegend() {
   const solution = SOLUTIONS.find(item => item.id === state.solution);
   const curvedReference = hasCurvedReference(solution.id);
@@ -1190,8 +1195,8 @@ function makeFieldPlotter() {
         updateSurfaceVisibility();
         if (refreshSurfaces && hasSampledField(state.solution)) {
           const surfaceRows = fieldRows(state.solution, activeTime, state.surfaceResolution);
-          const electricRows = magnitudeRows(surfaceRows, "electric");
-          const magneticRows = magnitudeRows(surfaceRows, "magnetic");
+          const electricRows = magnitudeRows(translateRows(surfaceRows, [-separation, 0, 0]), "electric");
+          const magneticRows = magnitudeRows(translateRows(surfaceRows, [separation, 0, 0]), "magnetic");
           try { eIsoPlot.update(electricRows); } catch { /* some exact fields have no shell at the selected level */ }
           try { bIsoPlot.update(magneticRows); } catch { /* some exact fields have no shell at the selected level */ }
           if (state.coneIso) {
