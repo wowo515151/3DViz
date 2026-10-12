@@ -14,6 +14,7 @@ Tree
 - apps/science/: runnable electromagnetic field lab, app specification, and implementation tasks.
 - apps/spin-particle/: SI-to-atomic-scale N-body component, CODATA electron/proton presets, Three.js plotter, UI, and dependency-free unit tests.
 - apps/geometry/: interactive geometric configuration catalog, shared-shading instanced-sphere plotter, and supercell selector. It presents common geometric forms seen in crystals, not specific chemicals.
+- apps/solutions/: searchable 43-entry Maxwell/Einstein–Maxwell catalog with general representations, named families, live flat-space samples, and isosurface controls.
 - library/three-viz/src/: browser library modules, with one file per plotter, ConeIso facet sampling, and shared wireframe/isosurface helpers.
 - library/three-viz/tests/: library development tests; not loaded by the site.
 - library/three-viz/package.json: native ES module metadata for local test execution.
@@ -26,6 +27,7 @@ Paths
 - Science app composes isosurface, vector-cone, and ConeIso plotters from ../../library/three-viz/src/index.js and keeps its dipole data model in the app folder.
 - SpinParticle app composes the pairwise particle model with the shared mount lifecycle and keeps particle physics in apps/spin-particle/spin-particle.js.
 - Geometry app composes a custom instanced-sphere plotter with the shared viewer lifecycle and defines repeating lattice motifs in apps/geometry/3dGeometry.js.
+- 4D Solutions app indexes general analytic representations and named exact Maxwell and Einstein–Maxwell families. Six flat-space entries display time slices with shared vector and isosurface plotters; the remaining symbolic entries include formulas and references without implying an implemented field sampler or curved-geometry renderer.
 
 Release notes
 

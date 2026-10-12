@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="description" content="Explore exact analytic electromagnetic wave solutions across spacetime." />
+  <meta name="theme-color" content="#202832" />
+  <title>4D Solutions | Electromagnetic Wave Atlas</title>
+  <link rel="stylesheet" href="./4dSolutions.css?v=20261012a" />
+</head>
+<body>
+  <div class="solutions-shell">
+    <aside class="control-panel" aria-label="Electromagnetic solution catalog">
+      <a class="brand" href="../../index.html"><span class="brand-mark" aria-hidden="true">4D</span><span>FIELD ATLAS <small>EXACT MAXWELL SOLUTIONS</small></span></a>
+      <header class="intro-block">
+        <p class="eyebrow">ELECTROMAGNETICS / 05</p>
+        <h1>Waves through<br />spacetime.</h1>
+        <p class="intro">Explore analytic electric and magnetic fields as they evolve across the four coordinates <span class="coordinate-tag">(t, x, y, z)</span>.</p>
+      </header>
+
+      <aside class="scope-note" role="note">
+          <strong>A curated atlas</strong>
+        <p>Maxwell’s equations have an infinite-dimensional solution space. This searchable catalog includes general analytic representations and named families; six flat-space fields have live samplers, while the other entries show formulas and sources.</p>
+      </aside>
+
+      <section class="control-section" aria-labelledby="families-title">
+        <div class="section-label"><span id="families-title">solution families</span><span id="solution-count">catalog</span></div>
+        <label class="sr-only" for="solution-search">Search exact solution families</label>
+        <input id="solution-search" class="solution-search" type="search" placeholder="Search names, families, equations…" autocomplete="off" />
+        <div id="solution-list" class="solution-list" aria-label="Choose an electromagnetic solution"></div>
+      </section>
+
+      <section class="control-section" aria-labelledby="time-title">
+        <div class="section-label"><span id="time-title">spacetime slice</span><span id="time-readout">t = 0.00</span></div>
+        <label class="range-label" for="time-slider">time coordinate t <output id="time-value">0.00</output></label>
+        <input id="time-slider" type="range" min="-6.28" max="6.28" step="0.04" value="0" />
+        <div class="button-row"><button id="play-toggle" type="button" aria-pressed="false" disabled>PLAY TIME</button><button id="reset-time" type="button">RESET</button></div>
+        <p class="field-note">Units use c = 1. Move the slider to inspect successive spatial slices of each spacetime field.</p>
+      </section>
+
+      <section class="control-section" aria-labelledby="controls-title">
+        <div class="section-label"><span id="controls-title">display</span><span>field vectors</span></div>
+        <label class="range-label" for="density">sample density <output id="density-value">11³</output></label>
+        <input id="density" type="range" min="7" max="15" step="2" value="11" />
+        <fieldset class="component-list"><legend class="sr-only">Visible field components</legend>
+          <label><input id="show-electric" type="checkbox" checked><i class="legend-dot electric-dot"></i> Electric field E</label>
+          <label><input id="show-magnetic" type="checkbox" checked><i class="legend-dot magnetic-dot"></i> Magnetic field B</label>
+        </fieldset>
+      </section>
+
+      <section class="control-section" aria-labelledby="iso-title">
+        <div class="section-label"><span id="iso-title">isosurfaces</span><span>field magnitude</span></div>
+        <label class="component-list iso-toggle"><input id="show-isosurfaces" type="checkbox" checked> Show E/B magnitude surfaces</label>
+        <label class="range-label" for="iso-threshold">single-shell threshold <output id="iso-threshold-value">0.34</output></label>
+        <input id="iso-threshold" type="range" min="0.05" max="0.95" step="0.01" value="0.34" />
+        <fieldset class="component-list iso-options"><legend class="sr-only">Isosurface appearance</legend>
+          <label><input id="iso-solid" type="checkbox" checked> Solid shell</label>
+          <label><input id="iso-wireframe" type="checkbox" checked> Wireframes</label>
+          <label><input id="iso-multiple" type="checkbox"> Multiple nested wireframes</label>
+        </fieldset>
+        <label class="range-label" for="iso-count">number of surfaces <output id="iso-count-value">5</output></label>
+        <input id="iso-count" type="range" min="2" max="12" step="1" value="5" disabled />
+        <label class="range-label" for="iso-resolution">surface tessellation <output id="iso-resolution-value">11³</output></label>
+        <input id="iso-resolution" type="range" min="11" max="31" step="2" value="11" />
+        <label class="range-label" for="iso-radius">wire tube radius <output id="iso-radius-value">0.006</output></label>
+        <input id="iso-radius" type="range" min="0" max="0.05" step="0.002" value="0.006" />
+        <p class="field-note" id="iso-note">Surfaces show normalized |E| and |B|. Set tube radius to 0 for flat wire lines.</p>
+      </section>
+
+      <section class="model-note" aria-label="How to read the scene">
+        <strong>READ THE SCENE</strong>
+        <p>Red cones show E; blue cones show B. Cone direction follows the local field direction. Surface colors match each component. Cone lengths and surface magnitudes are normalized separately for visibility.</p>
+      </section>
+      <footer class="panel-footer"><span>3DVIZ · SOLUTION ATLAS</span><br /><a href="../../README.md">Repository notes</a></footer>
+    </aside>
+
+    <main class="stage" id="stage">
+      <header class="stage-header">
+        <div><p class="stage-heading" id="stage-heading">PLANE WAVE</p><p class="stage-subheading" id="stage-subheading">SOURCE-FREE · NULL · c = 1</p></div>
+        <div class="status-pill"><i id="status-dot" class="status-dot"></i><span id="status-text" role="status" aria-live="polite">PREPARING SCENE</span></div>
+      </header>
+      <div class="scene-frame">
+        <div id="viewport" aria-label="Three-dimensional spatial slice of an analytic electromagnetic field" role="img"><div id="loading" class="loading">PREPARING SPACETIME SLICE…</div></div>
+        <div class="scene-legend" aria-label="Field legend">
+          <strong id="legend-title">PLANE WAVE · t = 0.00</strong>
+          <span id="legend-electric"><i class="legend-dot electric-dot"></i> E · electric field</span>
+          <span id="legend-magnetic"><i class="legend-dot magnetic-dot"></i> B · magnetic field</span>
+          <span class="legend-meta" id="legend-meta">x, y, z at fixed t · normalized cone lengths</span>
+        </div>
+        <p id="error-message" class="error-message" role="alert" hidden></p>
+      </div>
+      <div class="equation-panel" aria-live="polite">
+        <div class="equation-copy"><p class="eyebrow" id="solution-kind">VACUUM PLANE WAVE</p><h2 id="solution-title">Circularly polarized plane wave</h2><p id="solution-description"></p><div class="equation-block"><span>ANALYTIC FORM · c = 1</span><code id="equation"></code></div><div class="maxwell-note"><span>4D MAXWELL EQUATIONS</span><code>∂μF<sup>μν</sup> = J<sup>ν</sup> · ∂μ⋆F<sup>μν</sup> = 0</code></div><p class="solution-caveat" id="solution-caveat"></p><a id="source-link" href="#" target="_blank" rel="noopener noreferrer">Open reference ↗</a></div>
+        <div class="spacetime-mark" aria-label="Four coordinate axes: time, x, y, z"><span class="axis axis-t">t</span><span class="axis axis-x">x</span><span class="axis axis-y">y</span><span class="axis axis-z">z</span><i class="axis-origin"></i><small>3 SPACE + TIME</small></div>
+      </div>
+      <p class="viewport-hint">DRAG TO ORBIT · SCROLL TO ZOOM · SCRUB TIME TO MOVE THROUGH THE 4D FIELD</p>
+    </main>
+  </div>
+  <script type="importmap">{ "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.186.0/build/three.module.js", "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.186.0/examples/jsm/" } }</script>
+  <script type="module" src="./4dSolutions.js?v=20261012a"></script>
+</body>
+</html>
