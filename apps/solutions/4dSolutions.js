@@ -752,6 +752,20 @@ function makeFieldPlotter() {
             updateSurfaceVisibility();
             updateConeIsoCount();
           }
+          if (["surface", "wireframe", "multiple"].includes(id)) {
+            for (const plot of [eIsoPlot, bIsoPlot]) {
+              try { plot.setLayerVisible(id, visible); } catch { /* a constant component has no isosurface */ }
+            }
+            if (id === "multiple") {
+              state.nested = Boolean(visible);
+              if (state.coneIso) {
+                for (const plot of [eConeIsoPlot, bConeIsoPlot]) {
+                  try { plot.setLayerVisible(id, visible); } catch { /* a constant component has no ConeIso surface */ }
+                }
+              }
+              updateConeIsoCount();
+            }
+          }
           context.requestRender();
         },
         setThreshold(value) {
@@ -765,20 +779,6 @@ function makeFieldPlotter() {
           }
           state.threshold = Number(value);
           updateConeIsoCount();
-        },
-        setLayer(id, visible) {
-          for (const plot of [eIsoPlot, bIsoPlot]) {
-            try { plot.setLayerVisible(id, visible); } catch { /* a constant component has no isosurface */ }
-          }
-          if (id === "multiple") {
-            state.nested = Boolean(visible);
-            if (state.coneIso) {
-              for (const plot of [eConeIsoPlot, bConeIsoPlot]) {
-                try { plot.setLayerVisible(id, visible); } catch { /* a constant component has no ConeIso surface */ }
-              }
-            }
-            updateConeIsoCount();
-          }
         },
         setTubeRadius(value) { eIsoPlot.setTubeRadius(value); bIsoPlot.setTubeRadius(value); state.tubeRadius = Number(value); },
         setConeIsoSize(value) {
@@ -927,17 +927,17 @@ $("#iso-solid").addEventListener("change", event => {
   if (event.target.checked) $("#iso-multiple").checked = false;
   $("#iso-multiple").disabled = event.target.checked;
   $("#iso-count").disabled = event.target.checked || !$("#iso-multiple").checked;
-  state.controller?.setLayer("surface", event.target.checked);
-  state.controller?.setLayer("multiple", $("#iso-multiple").checked);
+  state.controller?.setLayerVisible("surface", event.target.checked);
+  state.controller?.setLayerVisible("multiple", $("#iso-multiple").checked);
 });
-$("#iso-wireframe").addEventListener("change", event => state.controller?.setLayer("wireframe", event.target.checked));
+$("#iso-wireframe").addEventListener("change", event => state.controller?.setLayerVisible("wireframe", event.target.checked));
 $("#iso-multiple").addEventListener("change", event => {
   if (event.target.checked) {
     $("#iso-solid").checked = false;
-    state.controller?.setLayer("surface", false);
+    state.controller?.setLayerVisible("surface", false);
   }
   $("#iso-count").disabled = !event.target.checked;
-  state.controller?.setLayer("multiple", event.target.checked);
+  state.controller?.setLayerVisible("multiple", event.target.checked);
 });
 $("#iso-count").addEventListener("input", event => {
   state.surfaceCount = Number(event.target.value);
