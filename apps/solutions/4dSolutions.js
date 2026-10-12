@@ -4,7 +4,7 @@ const $ = selector => document.querySelector(selector);
 const RANGE = 2.5;
 const DEFAULT_RESOLUTION = 11;
 const COLORS = Object.freeze({ electric: 0xed5363, magnetic: 0x529cff });
-const ISO_OPTIONS = Object.freeze({ threshold: 0.34, nested: false, surfaceCount: 5, tubeRadius: 0.006, wireframe: true, surfaceVisible: true });
+const ISO_OPTIONS = Object.freeze({ threshold: 0.34, nested: false, surfaceCount: 5, tubeRadius: 0.006, wireframe: false, surfaceVisible: true });
 const CONE_ISO_OPTIONS = Object.freeze({ threshold: 0.34, nested: false, surfaceCount: 5, minimumArea: 0.002, maximumHeight: 0.24 });
 
 function symbolicFamily({ id, symbol, name, short, category, description, equation, caveat, source }) {
@@ -543,7 +543,7 @@ const SAMPLE_DESCRIPTIONS = Object.freeze({
 });
 const CURVED_REFERENCES = new Set(["rn", "kn", "wald", "melvin", "br", "charged-nariai", "plebanski-hacyan", "mp", "iwp", "emwave", "bell-szekeres", "robinson-trautman", "weyl-electrovac", "pd", "cmetric", "ernst-accelerating", "magnetized-black-hole", "harrison", "kn-ads"]);
 
-const state = { controller: undefined, solution: "hopfion", time: 0, resolution: DEFAULT_RESOLUTION, surfaceResolution: 11, playing: false, electric: true, magnetic: true, isosurfaces: true, electricSurface: true, magneticSurface: true, coneIso: false, coneIsoSize: CONE_ISO_OPTIONS.maximumHeight, threshold: ISO_OPTIONS.threshold, nested: false, surfaceCount: ISO_OPTIONS.surfaceCount, tubeRadius: ISO_OPTIONS.tubeRadius, solidSurface: true, wireframes: true };
+const state = { controller: undefined, solution: "hopfion", time: 0, resolution: DEFAULT_RESOLUTION, surfaceResolution: 11, playing: false, electric: true, magnetic: true, isosurfaces: true, electricSurface: true, magneticSurface: true, coneIso: false, coneIsoSize: CONE_ISO_OPTIONS.maximumHeight, threshold: ISO_OPTIONS.threshold, nested: false, surfaceCount: ISO_OPTIONS.surfaceCount, tubeRadius: ISO_OPTIONS.tubeRadius, solidSurface: true, wireframes: false };
 
 function complexAdd(a, b) { return [a[0] + b[0], a[1] + b[1]]; }
 function complexSub(a, b) { return [a[0] - b[0], a[1] - b[1]]; }
