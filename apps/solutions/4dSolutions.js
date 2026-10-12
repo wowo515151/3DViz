@@ -456,12 +456,26 @@ const SAMPLE_MODELS = Object.freeze({
   bateman: "hopfion",
   conformal: "hopfion",
   ranada: "hopfion",
+  "torus-knots": "hopfion",
+  "complex-source": "complex-source",
   "multipole-radiation": "dipole",
   lienard: "coulomb",
   "harmonic-static": "harmonic-static",
   "uniform-electric": "uniform-electric",
   evanescent: "evanescent",
   rn: "rn",
+  kn: "rn",
+  "robinson-trautman": "rn",
+  "weyl-electrovac": "rn",
+  mp: "mp",
+  iwp: "mp",
+  emwave: "plane",
+  pd: "rn",
+  cmetric: "rn",
+  "ernst-accelerating": "rn",
+  "magnetized-black-hole": "rn",
+  harrison: "rn",
+  "kn-ads": "rn",
   melvin: "melvin",
   br: "br",
   "charged-nariai": "br",
@@ -478,12 +492,26 @@ const SAMPLE_DESCRIPTIONS = Object.freeze({
   bateman: "Hopfion null-field member",
   conformal: "Hopfion null-field member",
   ranada: "Hopfion linked-field member",
+  "torus-knots": "Hopfion linked-field member (p = q = 1)",
+  "complex-source": "complex-shifted Coulomb field with a ring singularity",
   "multipole-radiation": "retarded electric dipole (l = 1) member",
   lienard: "static point-charge member (charge at rest)",
   "harmonic-static": "source-free electrostatic quadrupole",
   "uniform-electric": "constant crossed E/B field",
   evanescent: "TE evanescent mode with complex wavevector",
   rn: "static dyonic Reissner–Nordström exterior",
+  kn: "non-rotating Reissner–Nordström member (a = 0)",
+  "robinson-trautman": "static Reissner–Nordström member",
+  "weyl-electrovac": "spherical Reissner–Nordström member",
+  mp: "single-centre Majumdar–Papapetrou extremal solution",
+  iwp: "single-centre real-harmonic Majumdar–Papapetrou member",
+  emwave: "circularly polarized Einstein–Maxwell plane-wave member",
+  pd: "non-rotating Reissner–Nordström member",
+  cmetric: "zero-acceleration Reissner–Nordström limit",
+  "ernst-accelerating": "zero-acceleration Reissner–Nordström limit",
+  "magnetized-black-hole": "zero-external-field Reissner–Nordström member",
+  harrison: "identity transformation of a Reissner–Nordström seed",
+  "kn-ads": "zero-rotation, zero-cosmological-constant Reissner–Nordström member",
   melvin: "Bonnor–Melvin magnetic universe",
   br: "uniform Bertotti–Robinson electric field",
   "charged-nariai": "uniform local electric field member",
@@ -610,6 +638,26 @@ function solutionField(id, x, y, z, t) {
 
   if (model === "br") return { ex: 0, ey: 0, ez: 1, bx: 0, by: 0, bz: 0 };
 
+  if (model === "mp") {
+    // One-centre MP in isotropic radius rho; the orthonormal field is M/(rho+M)^2.
+    const mass = 1, rho = Math.hypot(x, y, z);
+    if (rho < 0.12) return { ex: 0, ey: 0, ez: 0, bx: 0, by: 0, bz: 0 };
+    const scale = mass / ((rho + mass) * (rho + mass) * rho);
+    return { ex: x * scale, ey: y * scale, ez: z * scale, bx: 0, by: 0, bz: 0 };
+  }
+
+  if (model === "complex-source") {
+    // Complex Coulomb potential with z shifted by i*a; remove samples at its ring singularity.
+    const a = 0.9, q = [x * x + y * y + z * z - a * a, -2 * a * z];
+    const qMagnitude = Math.hypot(q[0], q[1]);
+    if (qMagnitude < 0.05) return { ex: 0, ey: 0, ez: 0, bx: 0, by: 0, bz: 0 };
+    const rootImaginarySign = q[1] < 0 ? -1 : 1;
+    const root = [Math.sqrt(Math.max(0, (qMagnitude + q[0]) / 2)), rootImaginarySign * Math.sqrt(Math.max(0, (qMagnitude - q[0]) / 2))];
+    const inverseCube = complexInverse(complexPower(root, 3));
+    const components = [complexMul([x, 0], inverseCube), complexMul([y, 0], inverseCube), complexMul([z, -a], inverseCube)];
+    return { ex: components[0][0], ey: components[1][0], ez: components[2][0], bx: components[0][1], by: components[1][1], bz: components[2][1] };
+  }
+
   // Catalogued families without a validated sample model are reference-only.
   if (model !== "hopfion") {
     return { ex: 0, ey: 0, ez: 0, bx: 0, by: 0, bz: 0 };
@@ -677,6 +725,7 @@ function hasComponentMagnitudeVariation(id, component) {
   if (!hasSpatialMagnitudeVariation(id)) return false;
   const model = SAMPLE_MODELS[id] ?? id;
   if (model === "coulomb") return component === "electric";
+  if (model === "mp") return component === "electric";
   if (model === "harmonic-static") return component === "electric";
   if (model === "melvin") return component === "magnetic";
   return true;
