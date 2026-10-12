@@ -1118,7 +1118,11 @@ function makeFieldPlotter() {
       const axes = context.resources.track(new THREE.AxesHelper(2.8));
       axes.name = "spatial-coordinate-axes";
       scene.add(axes);
-      const vectorOptions = { maximumHeight: 0.24, positionBounds: [[-2.5, 2.5], [-2.5, 2.5], [-2.5, 2.5]] };
+      const vectorOptions = {
+        maximumHeight: 0.24,
+        magnitudeExponent: 0.35,
+        positionBounds: [[-2.5, 2.5], [-2.5, 2.5], [-2.5, 2.5]],
+      };
       const electricGroup = new THREE.Group();
       const magneticGroup = new THREE.Group();
       const electricVectorGroup = new THREE.Group();
