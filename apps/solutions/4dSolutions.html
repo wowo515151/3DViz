@@ -6,7 +6,7 @@
   <meta name="description" content="Explore exact analytic electromagnetic wave solutions across spacetime." />
   <meta name="theme-color" content="#202832" />
   <title>4D Solutions | Electromagnetic Wave Atlas</title>
-  <link rel="stylesheet" href="./4dSolutions.css?v=20261012f" />
+  <link rel="stylesheet" href="./4dSolutions.css?v=20261012g" />
 </head>
 <body>
   <div class="solutions-shell">
@@ -42,32 +42,33 @@
         <div class="section-label"><span id="controls-title">display</span><span>field vectors</span></div>
         <label class="range-label" for="density">sample density <output id="density-value">11³</output></label>
         <input id="density" type="range" min="7" max="15" step="2" value="11" />
-        <fieldset class="component-list"><legend class="sr-only">Visible field components</legend>
-          <label><input id="show-electric" type="checkbox" checked><i class="legend-dot electric-dot"></i> Electric field E</label>
-          <label><input id="show-magnetic" type="checkbox" checked><i class="legend-dot magnetic-dot"></i> Magnetic field B</label>
+        <label class="component-list iso-toggle"><input id="show-field-vectors" type="checkbox"> Show field vectors</label>
+        <fieldset class="component-list field-components"><legend>Vector components</legend>
+          <label><input id="show-electric" type="checkbox"><i class="legend-dot electric-dot"></i> Electric field E</label>
+          <label><input id="show-magnetic" type="checkbox"><i class="legend-dot magnetic-dot"></i> Magnetic field B</label>
         </fieldset>
       </section>
 
       <section class="control-section" aria-labelledby="iso-title">
         <div class="section-label"><span id="iso-title">isosurfaces</span><span>field magnitude</span></div>
-        <label class="component-list iso-toggle"><input id="show-isosurfaces" type="checkbox" checked> Show magnitude surfaces</label>
+        <label class="component-list iso-toggle"><input id="show-isosurfaces" type="checkbox"> Show solid/wireframe surfaces</label>
         <fieldset class="component-list iso-components"><legend>Surface components</legend>
           <label><input id="show-electric-isosurface" type="checkbox" checked><i class="legend-dot electric-dot"></i> Electric |E|</label>
           <label><input id="show-magnetic-isosurface" type="checkbox" checked><i class="legend-dot magnetic-dot"></i> Magnetic |B|</label>
         </fieldset>
-        <label class="component-list iso-toggle"><input id="show-cone-iso" type="checkbox"> ConeIso · field-aligned facet cones</label>
+        <label class="component-list iso-toggle"><input id="show-cone-iso" type="checkbox" checked> ConeIso · field-aligned facet cones</label>
         <p id="cone-iso-count" class="field-note" aria-live="polite">Enable ConeIso to see its cone count.</p>
         <label class="range-label" for="cone-iso-size">ConeIso vector size <output id="cone-iso-size-value">0.24</output></label>
         <input id="cone-iso-size" type="range" min="0.05" max="0.6" step="0.01" value="0.24" />
         <label class="range-label" for="iso-threshold">single-shell threshold <output id="iso-threshold-value">0.34</output></label>
         <input id="iso-threshold" type="range" min="0.05" max="0.95" step="0.01" value="0.34" />
         <fieldset class="component-list iso-options"><legend class="sr-only">Isosurface appearance</legend>
-          <label><input id="iso-solid" type="checkbox" checked> Solid shell</label>
+          <label><input id="iso-solid" type="checkbox"> Solid shell</label>
           <label><input id="iso-wireframe" type="checkbox"> Wireframes</label>
-          <label><input id="iso-multiple" type="checkbox"> Multiple nested wireframes</label>
+          <label><input id="iso-multiple" type="checkbox"> Multiple nested surfaces</label>
         </fieldset>
-        <label class="range-label" for="iso-count">number of surfaces <output id="iso-count-value">5</output></label>
-        <input id="iso-count" type="range" min="2" max="12" step="1" value="5" disabled />
+        <label class="range-label" for="iso-count">number of surfaces <output id="iso-count-value">3</output></label>
+        <input id="iso-count" type="range" min="2" max="12" step="1" value="3" disabled />
         <label class="range-label" for="iso-resolution">surface tessellation <output id="iso-resolution-value">11³</output></label>
         <input id="iso-resolution" type="range" min="11" max="31" step="2" value="11" />
         <label class="range-label" for="iso-radius">wire tube radius <output id="iso-radius-value">0.006</output></label>
@@ -114,6 +115,6 @@
     </main>
   </div>
   <script type="importmap">{ "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.186.0/build/three.module.js", "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.186.0/examples/jsm/" } }</script>
-  <script type="module" src="./4dSolutions.js?v=20261012a"></script>
+  <script type="module" src="./4dSolutions.js?v=20261012b"></script>
 </body>
 </html>

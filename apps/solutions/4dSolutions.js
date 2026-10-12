@@ -4,8 +4,8 @@ const $ = selector => document.querySelector(selector);
 const RANGE = 2.5;
 const DEFAULT_RESOLUTION = 11;
 const COLORS = Object.freeze({ electric: 0xed5363, magnetic: 0x529cff });
-const ISO_OPTIONS = Object.freeze({ threshold: 0.34, nested: false, surfaceCount: 5, tubeRadius: 0.006, wireframe: false, surfaceVisible: true });
-const CONE_ISO_OPTIONS = Object.freeze({ threshold: 0.34, nested: false, surfaceCount: 5, minimumArea: 0.002, maximumHeight: 0.24 });
+const ISO_OPTIONS = Object.freeze({ threshold: 0.34, nested: false, surfaceCount: 3, tubeRadius: 0.006, wireframe: false, surfaceVisible: false });
+const CONE_ISO_OPTIONS = Object.freeze({ threshold: 0.34, nested: false, surfaceCount: 3, minimumArea: 0.002, maximumHeight: 0.24 });
 
 function symbolicFamily({ id, symbol, name, short, category, description, equation, caveat, source }) {
   return {
@@ -543,7 +543,7 @@ const SAMPLE_DESCRIPTIONS = Object.freeze({
 });
 const CURVED_REFERENCES = new Set(["rn", "kn", "wald", "melvin", "br", "charged-nariai", "plebanski-hacyan", "mp", "iwp", "emwave", "bell-szekeres", "robinson-trautman", "weyl-electrovac", "pd", "cmetric", "ernst-accelerating", "magnetized-black-hole", "harrison", "kn-ads"]);
 
-const state = { controller: undefined, solution: "hopfion", time: 0, resolution: DEFAULT_RESOLUTION, surfaceResolution: 11, playing: false, electric: true, magnetic: true, isosurfaces: true, electricSurface: true, magneticSurface: true, coneIso: false, coneIsoSize: CONE_ISO_OPTIONS.maximumHeight, threshold: ISO_OPTIONS.threshold, nested: false, surfaceCount: ISO_OPTIONS.surfaceCount, tubeRadius: ISO_OPTIONS.tubeRadius, solidSurface: true, wireframes: false };
+const state = { controller: undefined, solution: "hopfion", time: 0, resolution: DEFAULT_RESOLUTION, surfaceResolution: 11, playing: false, electric: false, magnetic: false, isosurfaces: false, electricSurface: true, magneticSurface: true, coneIso: true, coneIsoSize: CONE_ISO_OPTIONS.maximumHeight, threshold: ISO_OPTIONS.threshold, nested: false, surfaceCount: ISO_OPTIONS.surfaceCount, tubeRadius: ISO_OPTIONS.tubeRadius, solidSurface: false, wireframes: false };
 
 function complexAdd(a, b) { return [a[0] + b[0], a[1] + b[1]]; }
 function complexSub(a, b) { return [a[0] - b[0], a[1] - b[1]]; }
@@ -1081,6 +1081,17 @@ function translateRows(rows, offset) {
   return rows.map(row => ({ ...row, x: row.x + offset[0], y: row.y + offset[1], z: row.z + offset[2] }));
 }
 
+function updateFieldVectorToggle() {
+  const electricAvailable = hasComponentField(state.solution, "electric");
+  const magneticAvailable = hasComponentField(state.solution, "magnetic");
+  const availableCount = Number(electricAvailable) + Number(magneticAvailable);
+  const enabledCount = Number(electricAvailable && state.electric) + Number(magneticAvailable && state.magnetic);
+  const toggle = $("#show-field-vectors");
+  toggle.disabled = availableCount === 0;
+  toggle.checked = availableCount > 0 && enabledCount === availableCount;
+  toggle.indeterminate = enabledCount > 0 && enabledCount < availableCount;
+}
+
 function updateLegend() {
   const solution = SOLUTIONS.find(item => item.id === state.solution);
   const curvedReference = hasCurvedReference(solution.id);
@@ -1102,6 +1113,7 @@ function updateLegend() {
   $("#show-magnetic").disabled = !magneticFieldAvailable;
   $("#show-electric").checked = electricFieldAvailable && state.electric;
   $("#show-magnetic").checked = magneticFieldAvailable && state.magnetic;
+  updateFieldVectorToggle();
   $("#stage-heading").textContent = solution.name.toUpperCase();
   $("#stage-subheading").textContent = solution.subheading;
   $("#solution-kind").textContent = solution.kind;
@@ -1116,10 +1128,10 @@ function updateLegend() {
   $("#iso-note").textContent = referenceOnly
     ? "No live field preview is available for this entry yet; its formulas and sources are shown below. Choose a catalog entry marked LIVE FIELD to inspect vectors and isosurfaces."
     : !hasSpatialMagnitudeVariation(solution.id)
-      ? "This exact sample has spatially constant field magnitude, so no magnitude isosurface exists. Available field vectors remain visible; absent components are disabled."
+      ? "This exact sample has spatially constant field magnitude, so no magnitude isosurface exists. Field vectors can be enabled here; absent components are disabled."
       : SAMPLE_DESCRIPTIONS[solution.id]
-        ? `Live preview: ${SAMPLE_DESCRIPTIONS[solution.id]}. ${curvedReference ? "The field is shown in a local orthonormal frame; spacetime curvature is not drawn. " : ""}Available component surfaces can be configured independently; unsupported components stay disabled. Multiple nested wireframes turns off the solid shell; its surface count is set below. ConeIso aligns cones with the field; set tube radius to 0 for flat wires.`
-      : "Available E and B surfaces can be configured independently. Multiple nested wireframes turns off the solid shell; its surface count is set below. ConeIso places field-aligned cones on shell facets; set tube radius to 0 for flat wire lines.";
+        ? `Live preview: ${SAMPLE_DESCRIPTIONS[solution.id]}. ${curvedReference ? "The field is shown in a local orthonormal frame; spacetime curvature is not drawn. " : ""}Available component surfaces can be configured independently; unsupported components stay disabled. Multiple nested surfaces replaces the single shell with nested surfaces for standard surfaces and ConeIso; set the surface count below. ConeIso aligns cones with the field; set tube radius to 0 for flat wires.`
+      : "Available E and B surfaces can be configured independently. Multiple nested surfaces replaces the single shell with nested surfaces for standard surfaces and ConeIso; set the surface count below. ConeIso places field-aligned cones on shell facets; set tube radius to 0 for flat wire lines.";
   const electricIsoAvailable = hasComponentMagnitudeVariation(solution.id, "electric");
   const magneticIsoAvailable = hasComponentMagnitudeVariation(solution.id, "magnetic");
   const isoAvailable = electricIsoAvailable || magneticIsoAvailable;
@@ -1220,8 +1232,8 @@ function makeFieldPlotter() {
         const magneticAvailable = hasComponentMagnitudeVariation(state.solution, "magnetic");
         electricIsoGroup.visible = electricAvailable && state.isosurfaces && state.electricSurface;
         magneticIsoGroup.visible = magneticAvailable && state.isosurfaces && state.magneticSurface;
-        electricConeIsoGroup.visible = electricAvailable && state.isosurfaces && state.coneIso && state.electricSurface;
-        magneticConeIsoGroup.visible = magneticAvailable && state.isosurfaces && state.coneIso && state.magneticSurface;
+        electricConeIsoGroup.visible = electricAvailable && state.coneIso && state.electricSurface;
+        magneticConeIsoGroup.visible = magneticAvailable && state.coneIso && state.magneticSurface;
       };
       const refresh = (refreshSurfaces = true) => {
         rows = fieldRows(state.solution, activeTime, state.resolution);
@@ -1299,10 +1311,9 @@ function makeFieldPlotter() {
             }
             if (id === "multiple") {
               state.nested = Boolean(visible);
-              if (state.coneIso) {
-                for (const plot of [eConeIsoPlot, bConeIsoPlot]) {
-                  try { plot.setLayerVisible(id, visible); } catch { /* a constant component has no ConeIso surface */ }
-                }
+              // The library plotters generate hue-matched light-to-dark shades for nested levels.
+              for (const plot of [eConeIsoPlot, bConeIsoPlot]) {
+                try { plot.setLayerVisible(id, visible); } catch { /* a constant component has no ConeIso surface */ }
               }
               updateConeIsoCount();
             }
@@ -1569,6 +1580,12 @@ $("#iso-radius").addEventListener("input", event => {
   state.tubeRadius = Number(event.target.value);
   $("#iso-radius-value").textContent = state.tubeRadius.toFixed(3);
   state.controller?.setTubeRadius(state.tubeRadius);
+});
+$("#show-field-vectors").addEventListener("change", event => {
+  const visible = event.target.checked;
+  state.controller?.setLayerVisible("electric", visible);
+  state.controller?.setLayerVisible("magnetic", visible);
+  updateLegend();
 });
 $("#show-electric").addEventListener("change", event => { state.controller?.setLayerVisible("electric", event.target.checked); updateLegend(); });
 $("#show-magnetic").addEventListener("change", event => { state.controller?.setLayerVisible("magnetic", event.target.checked); updateLegend(); });
