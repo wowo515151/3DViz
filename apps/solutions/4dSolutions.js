@@ -487,6 +487,7 @@ const SAMPLE_MODELS = Object.freeze({
   supertoroidal: "supertoroidal",
   xwave: "xwave-finite-spectrum",
   "flying-focus": "flying-focus",
+  "weber-beams": "weber",
 });
 const SAMPLED_FIELDS = new Set(Object.keys(SAMPLE_MODELS));
 const SAMPLE_DESCRIPTIONS = Object.freeze({
@@ -530,6 +531,7 @@ const SAMPLE_DESCRIPTIONS = Object.freeze({
   supertoroidal: "α = 2 finite-energy supertoroidal pulse",
   xwave: "three-frequency exact Bessel-mode superposition on one superluminal cone",
   "flying-focus": "Lorentz-boosted complex-source field with its peak moving at 0.65c along +z",
+  "weber-beams": "symmetric non-paraxial Weber mode (separation parameter a = 0)",
 });
 const CURVED_REFERENCES = new Set(["rn", "kn", "wald", "melvin", "br", "charged-nariai", "plebanski-hacyan", "mp", "iwp", "emwave", "bell-szekeres", "robinson-trautman", "weyl-electrovac", "pd", "cmetric", "ernst-accelerating", "magnetized-black-hole", "harrison", "kn-ads"]);
 
@@ -615,6 +617,30 @@ function jetInv(a) {
 function jetExp(a) {
   return jetUnary(a, cjExp, cjExp, cjExp, cjExp);
 }
+function cjSqrt(a) {
+  const radius = Math.hypot(a[0], a[1]);
+  return [Math.sqrt(Math.max(0, (radius + a[0]) / 2)), Math.sign(a[1] || 1) * Math.sqrt(Math.max(0, (radius - a[0]) / 2))];
+}
+function jetSqrt(a) {
+  const inverseRoot = x => cjInv(cjSqrt(x));
+  return jetUnary(a, cjSqrt,
+    x => cjScale(inverseRoot(x), 0.5),
+    x => cjScale(cjMul(cjMul(inverseRoot(x), inverseRoot(x)), inverseRoot(x)), -0.25),
+    x => cjScale(cjMul(cjMul(cjMul(cjMul(inverseRoot(x), inverseRoot(x)), inverseRoot(x)), inverseRoot(x)), inverseRoot(x)), 0.375));
+}
+function jetPart(a, part) {
+  const take = x => cj(x[part], 0);
+  return { v: take(a.v), d: a.d.map(take), h: a.h.map(row => row.map(take)), t: a.t.map(plane => plane.map(row => row.map(take))) };
+}
+function jetHypergeometric1F1(a, b, z) {
+  let sum = jet(cj(1)), term = jet(cj(1));
+  for (let n = 1; n <= 90; n += 1) {
+    term = jetScale(jetMul(term, z), (a + n - 1) / ((b + n - 1) * n));
+    sum = jetAdd(sum, term);
+    if (n > 24 && Math.hypot(...term.v) < 2e-15) break;
+  }
+  return sum;
+}
 function jetDiv(a, b) { return jetMul(a, jetInv(b)); }
 function jetPowInt(a, n) { let result = jet(cj(1)); for (let i = 0; i < n; i += 1) result = jetMul(result, a); return result; }
 
@@ -664,6 +690,31 @@ function scalarPulse(model, x, y, z, t) {
   return jetDiv(jetMul(jetDiv(jet(cj(q1)), q), jetExp(jetScale(s, -1 / q3))), jetPowInt(sPlus, 2));
 }
 
+function weberScalar(x, z, t) {
+  // Exact separated Helmholtz mode at a=0. 1F1 is evaluated by its
+  // convergent entire power series, with derivatives carried by the jets.
+  const X = jet(cj(x), 0), Z = jet(cj(z), 2), T = jet(cj(t), 3), I = jet(cj(0, 1));
+  if (Math.hypot(x, z) < 1e-5) return jet(cj(0));
+  const parabolic = jetSqrt(jetScale(jetAdd(X, jetMul(I, Z)), 2));
+  const eta = jetPart(parabolic, 0), xi = jetPart(parabolic, 1), sigma = Math.SQRT2;
+  const p = s => {
+    const scaled = jetScale(s, sigma), square = jetPowInt(scaled, 2);
+    const phase = jetScale(square, -0.25);
+    const arg = jetScale(jetMul(I, square), 0.5);
+    const common = jetExp(jetMul(I, phase));
+    const p0 = jetMul(common, jetHypergeometric1F1(0.25, 0.5, arg));
+    const p1 = jetMul(jetMul(scaled, common), jetHypergeometric1F1(0.75, 1.5, arg));
+    return [p0, p1];
+  };
+  const [p0x, p1x] = p(xi), [p0e, p1e] = p(eta);
+  const gammaQuarterSquared = 13.1450571459, gammaThreeQuarterSquared = 1.5016460945;
+  const transverse = jetScale(jetAdd(
+    jetScale(jetMul(p0x, p0e), gammaQuarterSquared),
+    jetScale(jetMul(I, jetMul(p1x, p1e)), 2 * gammaThreeQuarterSquared),
+  ), 1 / (2 * Math.PI));
+  return jetMul(transverse, jetExp(jetScale(jetMul(I, T), -1)));
+}
+
 function solutionField(id, x, y, z, t) {
   const model = SAMPLE_MODELS[id] ?? id;
   if (model === "plane") {
@@ -710,6 +761,7 @@ function solutionField(id, x, y, z, t) {
     const scalar = scalarPulse(model, x, y, z, t);
     return model === "supertoroidal" ? supertoroidalHertzLift(scalar) : hertzTEFromScalar(scalar);
   }
+  if (model === "weber") return hertzTEFromScalar(weberScalar(x, z, t));
   if (model === "dipole") {
     const r = Math.hypot(x, y, z);
     if (r < 0.48) return { ex: 0, ey: 0, ez: 0, bx: 0, by: 0, bz: 0 };
@@ -871,7 +923,7 @@ function hasSampledField(id) {
 }
 
 function isTimeDependent(id) {
-  return ["plane", "bessel", "dipole", "hopfion", "evanescent", "spherical", "focus-wave", "focused-doughnut", "supertoroidal", "xwave-finite-spectrum", "flying-focus"].includes(SAMPLE_MODELS[id] ?? id);
+  return ["plane", "bessel", "dipole", "hopfion", "evanescent", "spherical", "focus-wave", "focused-doughnut", "supertoroidal", "xwave-finite-spectrum", "flying-focus", "weber"].includes(SAMPLE_MODELS[id] ?? id);
 }
 
 function isReferenceOnly(id) {
