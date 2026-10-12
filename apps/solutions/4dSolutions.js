@@ -70,10 +70,10 @@ const SOLUTIONS = Object.freeze([
     subheading: "MINKOWSKI · SOURCE-FREE · STATIC",
   },
   {
-    id: "rn", symbol: "Q/r²", name: "Reissner–Nordström", short: "charged spherical electrovacuum · curved spacetime",
+    id: "rn", symbol: "Q,P/r²", name: "Reissner–Nordström family", short: "static dyonic spherical electrovacuum · curved spacetime",
     kind: "EINSTEIN–MAXWELL ELECTROVACUUM", heading: "Reissner–Nordström exterior",
-    description: "A static, spherically symmetric charged black-hole exterior solving the coupled Einstein–Maxwell equations. The electric field is radial in the local static orthonormal frame.",
-    equation: "ds² = −f dt² + f⁻¹ dr² + r²dΩ²\nf = 1−2M/r+Q²/r²\nF = (Q/r²) dt∧dr",
+    description: "The static spherically symmetric Einstein–Maxwell black-hole family includes electric or magnetic charge and a cosmological constant. The radial electric and magnetic fields are written in a standard exterior gauge.",
+    equation: "ds² = −f dt² + f⁻¹ dr² + r²dΩ²\nf = 1−2M/r+(Q²+P²)/r²−Λr²/3\nF = (Q/r²)dt∧dr + P sinθ dθ∧dφ",
     caveat: "Curved-spacetime catalog entry. This viewer does not solve geodesics or render the curved metric; the displayed scene is a flat coordinate-space field illustration.",
     source: "https://arxiv.org/abs/gr-qc/0609096",
     subheading: "CURVED SPACETIME · EINSTEIN–MAXWELL · STATIC",
