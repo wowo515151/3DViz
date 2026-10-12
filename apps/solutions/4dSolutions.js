@@ -221,12 +221,20 @@ const SOLUTIONS = Object.freeze([
     source: "https://www.jstage.jst.go.jp/article/jpsj1946/60/2/60_2_450/_article/-char/ja",
   }),
   symbolicFamily({
-    id: "weber", symbol: "Uₚₘ", name: "Nonparaxial elegant Laguerre–Gaussian TE/TM beams", short: "closed-form exact Maxwell beam families",
+    id: "elegant-lg", symbol: "Uₚₘ", name: "Nonparaxial elegant Laguerre–Gaussian TE/TM beams", short: "closed-form exact Maxwell beam families",
     category: "Minkowski · exact vector beams",
     description: "Closed-form nonparaxial TE and TM beam solutions can be built from elegant Laguerre–Gaussian scalar Helmholtz modes. They retain longitudinal fields and arbitrary radial or azimuthal polarization order.",
     equation: "(∇²+k²)ψₚₘ = 0\nΠₑ,ₘ = polarization-vector × ψₚₘ\nE,B = exact Hertz curl operators; ψₚₘ uses spherical Bessel / Legendre modes",
     caveat: "These are full-vector solutions, distinct from the paraxial Gaussian-beam approximation commonly used in optics.",
     source: "https://doi.org/10.1364/OL.33.001563",
+  }),
+  symbolicFamily({
+    id: "weber-beams", symbol: "Wₐ(η,ξ)", name: "Weber accelerating waves", short: "parabolic-trajectory TE/TM modes · exact Helmholtz family",
+    category: "Minkowski · exact accelerating vector beams",
+    description: "Weber waves are closed-form, nonparaxial, time-harmonic solutions whose intensity peak follows a parabolic trajectory while approximately preserving its profile. Their scalar Helmholtz modes generate exact TE and TM Maxwell fields through Hertz potentials.",
+    equation: "x+iz = (η+iξ)²/2;  σ=√(2k)\nPγ(s;a)=sᵞe^(−is²/4) ₁F₁((1+2γ)/4−ia/2;(1+2γ)/2;is²/2)\nWₐ=(|Γ₁|²P₀(σξ;a)P₀(ση;−a)+2i|Γ₃|²P₁(σξ;a)P₁(ση;−a))/(2π)\nΓ₁=Γ(¼+ia/2), Γ₃=Γ(¾+ia/2);  (∂ₓ²+∂z²+k²)Wₐ=0\nΠₑ,ₘ=ẑWₐe^(−iωt);  E,B from exact Hertz curl operators",
+    caveat: "The ideal Weber beam has infinite power. Finite apertures or spectral apodization produce finite-range approximations.",
+    source: "https://arxiv.org/abs/1209.4680",
   }),
   symbolicFamily({
     id: "fwm", symbol: "FWM", name: "Focus-wave modes", short: "localized wave-equation generator · Hertz lift to Maxwell",
