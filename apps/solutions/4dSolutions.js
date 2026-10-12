@@ -488,6 +488,7 @@ const SAMPLE_MODELS = Object.freeze({
   xwave: "xwave-finite-spectrum",
   "flying-focus": "flying-focus",
   "weber-beams": "weber",
+  "exponential-beam": "whittaker-exponential",
 });
 const SAMPLED_FIELDS = new Set(Object.keys(SAMPLE_MODELS));
 const SAMPLE_DESCRIPTIONS = Object.freeze({
@@ -532,6 +533,7 @@ const SAMPLE_DESCRIPTIONS = Object.freeze({
   xwave: "three-frequency exact Bessel-mode superposition on one superluminal cone",
   "flying-focus": "Lorentz-boosted complex-source field with its peak moving at 0.65c along +z",
   "weber-beams": "symmetric non-paraxial Weber mode (separation parameter a = 0)",
+  "exponential-beam": "m = 0 Whittaker exponential beam with qz = 0.9 and τ = 1.2",
 });
 const CURVED_REFERENCES = new Set(["rn", "kn", "wald", "melvin", "br", "charged-nariai", "plebanski-hacyan", "mp", "iwp", "emwave", "bell-szekeres", "robinson-trautman", "weyl-electrovac", "pd", "cmetric", "ernst-accelerating", "magnetized-black-hole", "harrison", "kn-ads"]);
 
@@ -715,6 +717,21 @@ function weberScalar(x, z, t) {
   return jetMul(transverse, jetExp(jetScale(jetMul(I, T), -1)));
 }
 
+function whittakerExponentialField(x, y, z, t) {
+  // m=0 exact Whittaker scalar beam: chi = exp(i qz z - qz s)/(qz s).
+  const X = jet(cj(x), 0), Y = jet(cj(y), 1), Z = jet(cj(z), 2), T = jet(cj(t), 3);
+  const I = jet(cj(0, 1)), qz = 0.9, tau = 1.2;
+  const rhoSquared = jetAdd(jetMul(X, X), jetMul(Y, Y));
+  const retarded = jetAdd(T, jet(cj(0, -tau)));
+  const s = jetSqrt(jetAdd(rhoSquared, jetScale(jetPowInt(retarded, 2), -1)));
+  const qzS = jetScale(s, qz);
+  const chi = jetDiv(jetExp(jetAdd(jetMul(I, jetScale(Z, qz)), jetScale(s, -qz))), qzS);
+  const Fx = { v: cjAdd(chi.h[0][2], cjMul(I.v, chi.h[1][3])) };
+  const Fy = { v: cjAdd(chi.h[1][2], cjScale(cjMul(I.v, chi.h[0][3]), -1)) };
+  const Fz = { v: cjScale(cjAdd(chi.h[0][0], chi.h[1][1]), -1) };
+  return { ex: Fx.v[0], ey: Fy.v[0], ez: Fz.v[0], bx: Fx.v[1], by: Fy.v[1], bz: Fz.v[1] };
+}
+
 function solutionField(id, x, y, z, t) {
   const model = SAMPLE_MODELS[id] ?? id;
   if (model === "plane") {
@@ -762,6 +779,7 @@ function solutionField(id, x, y, z, t) {
     return model === "supertoroidal" ? supertoroidalHertzLift(scalar) : hertzTEFromScalar(scalar);
   }
   if (model === "weber") return hertzTEFromScalar(weberScalar(x, z, t));
+  if (model === "whittaker-exponential") return whittakerExponentialField(x, y, z, t);
   if (model === "dipole") {
     const r = Math.hypot(x, y, z);
     if (r < 0.48) return { ex: 0, ey: 0, ez: 0, bx: 0, by: 0, bz: 0 };
@@ -923,7 +941,7 @@ function hasSampledField(id) {
 }
 
 function isTimeDependent(id) {
-  return ["plane", "bessel", "dipole", "hopfion", "evanescent", "spherical", "focus-wave", "focused-doughnut", "supertoroidal", "xwave-finite-spectrum", "flying-focus", "weber"].includes(SAMPLE_MODELS[id] ?? id);
+  return ["plane", "bessel", "dipole", "hopfion", "evanescent", "spherical", "focus-wave", "focused-doughnut", "supertoroidal", "xwave-finite-spectrum", "flying-focus", "weber", "whittaker-exponential"].includes(SAMPLE_MODELS[id] ?? id);
 }
 
 function isReferenceOnly(id) {
