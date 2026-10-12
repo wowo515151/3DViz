@@ -438,10 +438,60 @@ const SOLUTIONS = Object.freeze([
   }),
 ]);
 
-const SAMPLED_FIELDS = new Set(["plane", "bessel", "dipole", "hopfion", "coulomb", "uniform"]);
+// A family entry can preview one exact member without pretending to sample every
+// arbitrary spectrum, multipole coefficient, or solution-generating parameter.
+const SAMPLE_MODELS = Object.freeze({
+  plane: "plane",
+  bessel: "bessel",
+  dipole: "dipole",
+  hopfion: "hopfion",
+  coulomb: "coulomb",
+  uniform: "uniform",
+  fourier: "plane",
+  rs: "hopfion",
+  hertz: "bessel",
+  "spherical-out": "dipole",
+  spherical: "spherical",
+  "bessel-general": "bessel",
+  bateman: "hopfion",
+  conformal: "hopfion",
+  ranada: "hopfion",
+  "multipole-radiation": "dipole",
+  lienard: "coulomb",
+  "harmonic-static": "harmonic-static",
+  "uniform-electric": "uniform-electric",
+  evanescent: "evanescent",
+  rn: "rn",
+  melvin: "melvin",
+  br: "br",
+  "charged-nariai": "br",
+  "plebanski-hacyan": "br",
+});
+const SAMPLED_FIELDS = new Set(Object.keys(SAMPLE_MODELS));
+const SAMPLE_DESCRIPTIONS = Object.freeze({
+  fourier: "single circularly polarized plane-wave mode",
+  rs: "Hopfion initial-data member",
+  hertz: "axisymmetric TE Bessel mode",
+  "spherical-out": "outgoing electric dipole (l = 1) member",
+  spherical: "regular axisymmetric TE spherical dipole (l = 1) mode",
+  "bessel-general": "axisymmetric TE Bessel mode (m = 0)",
+  bateman: "Hopfion null-field member",
+  conformal: "Hopfion null-field member",
+  ranada: "Hopfion linked-field member",
+  "multipole-radiation": "retarded electric dipole (l = 1) member",
+  lienard: "static point-charge member (charge at rest)",
+  "harmonic-static": "source-free electrostatic quadrupole",
+  "uniform-electric": "constant crossed E/B field",
+  evanescent: "TE evanescent mode with complex wavevector",
+  rn: "static dyonic Reissner–Nordström exterior",
+  melvin: "Bonnor–Melvin magnetic universe",
+  br: "uniform Bertotti–Robinson electric field",
+  "charged-nariai": "uniform local electric field member",
+  "plebanski-hacyan": "uniform local electric field member",
+});
 const CURVED_REFERENCES = new Set(["rn", "kn", "wald", "melvin", "br", "charged-nariai", "plebanski-hacyan", "mp", "iwp", "emwave", "bell-szekeres", "robinson-trautman", "weyl-electrovac", "pd", "cmetric", "ernst-accelerating", "magnetized-black-hole", "harrison", "kn-ads"]);
 
-const state = { controller: undefined, solution: "plane", time: 0, resolution: DEFAULT_RESOLUTION, surfaceResolution: 11, playing: false, electric: true, magnetic: true, isosurfaces: true, electricSurface: true, magneticSurface: true, coneIso: false, coneIsoSize: CONE_ISO_OPTIONS.maximumHeight, threshold: ISO_OPTIONS.threshold, nested: false, surfaceCount: ISO_OPTIONS.surfaceCount, tubeRadius: ISO_OPTIONS.tubeRadius, solidSurface: true, wireframes: true };
+const state = { controller: undefined, solution: "hopfion", time: 0, resolution: DEFAULT_RESOLUTION, surfaceResolution: 11, playing: false, electric: true, magnetic: true, isosurfaces: true, electricSurface: true, magneticSurface: true, coneIso: false, coneIsoSize: CONE_ISO_OPTIONS.maximumHeight, threshold: ISO_OPTIONS.threshold, nested: false, surfaceCount: ISO_OPTIONS.surfaceCount, tubeRadius: ISO_OPTIONS.tubeRadius, solidSurface: true, wireframes: true };
 
 function complexAdd(a, b) { return [a[0] + b[0], a[1] + b[1]]; }
 function complexSub(a, b) { return [a[0] - b[0], a[1] - b[1]]; }
@@ -462,11 +512,12 @@ function besselJ1(x) {
 }
 
 function solutionField(id, x, y, z, t) {
-  if (id === "plane") {
+  const model = SAMPLE_MODELS[id] ?? id;
+  if (model === "plane") {
     const phase = z - t;
     return { ex: Math.cos(phase), ey: -Math.sin(phase), ez: 0, bx: Math.sin(phase), by: Math.cos(phase), bz: 0 };
   }
-  if (id === "bessel") {
+  if (model === "bessel") {
     const kappa = 1.1, kz = 1.1, omega = Math.hypot(kappa, kz);
     const rho = Math.hypot(x, y), phase = kz * z - omega * t;
     const er = kz * kappa * besselJ1(kappa * rho) * Math.sin(phase);
@@ -475,7 +526,7 @@ function solutionField(id, x, y, z, t) {
     const invRho = rho > 1e-9 ? 1 / rho : 0;
     return { ex: er * x * invRho, ey: er * y * invRho, ez, bx: -bphi * y * invRho, by: bphi * x * invRho, bz: 0 };
   }
-  if (id === "dipole") {
+  if (model === "dipole") {
     const r = Math.hypot(x, y, z);
     if (r < 0.48) return { ex: 0, ey: 0, ez: 0, bx: 0, by: 0, bz: 0 };
     const nx = x / r, ny = y / r, nz = z / r, retarded = t - r;
@@ -490,17 +541,77 @@ function solutionField(id, x, y, z, t) {
     return { ex, ey, ez, bx: -ny * magnetic, by: nx * magnetic, bz: 0 };
   }
 
-  if (id === "coulomb") {
+  if (model === "coulomb") {
     const r = Math.hypot(x, y, z);
     if (r < 0.42) return { ex: 0, ey: 0, ez: 0, bx: 0, by: 0, bz: 0 };
     const scale = 1 / (r * r * r);
     return { ex: x * scale, ey: y * scale, ez: z * scale, bx: 0, by: 0, bz: 0 };
   }
 
-  if (id === "uniform") return { ex: 0, ey: 0, ez: 0, bx: 0, by: 0, bz: 1 };
+  if (model === "uniform") return { ex: 0, ey: 0, ez: 0, bx: 0, by: 0, bz: 1 };
+
+  if (model === "uniform-electric") return { ex: 1, ey: 0, ez: 0, bx: 0, by: 0, bz: 0.65 };
+
+  if (model === "harmonic-static") {
+    // Phi = x^2 + y^2 - 2z^2 is harmonic; E = -grad(Phi), B = 0.
+    return { ex: -2 * x, ey: -2 * y, ez: 4 * z, bx: 0, by: 0, bz: 0 };
+  }
+
+  if (model === "evanescent") {
+    // k=(i*kappa,0,kz), k^2=omega^2 and k·E=0 for the TE polarization.
+    const kappa = 0.6, kz = 1, omega = Math.sqrt(kz * kz - kappa * kappa);
+    const phase = kz * z - omega * t, amplitude = Math.exp(-kappa * x);
+    return {
+      ex: 0, ey: amplitude * Math.cos(phase), ez: 0,
+      bx: -kz / omega * amplitude * Math.cos(phase), by: 0,
+      bz: -kappa / omega * amplitude * Math.sin(phase),
+    };
+  }
+
+  if (model === "spherical") {
+    // Regular l=1 TE mode from A = curl(z_hat * j0(kr) cos(omega*t+phase)).
+    const k = 1.2, omega = k, r = Math.hypot(x, y, z), temporalPhase = omega * t + Math.PI / 3;
+    let radialSlope, hessianCorrection;
+    if (r < 1e-4) {
+      radialSlope = -k * k / 3 + (k ** 4 * r * r) / 30;
+      hessianCorrection = (k ** 4 * r * r) / 15;
+    } else {
+      const u = k * r, sin = Math.sin(u), cos = Math.cos(u);
+      const first = k * (u * cos - sin) / (u * u);
+      const second = k * k * ((2 - u * u) * sin - 2 * u * cos) / (u * u * u);
+      radialSlope = first / r;
+      hessianCorrection = second - radialSlope;
+    }
+    const electricScale = omega * Math.sin(temporalPhase) * radialSlope;
+    const magneticScale = Math.cos(temporalPhase);
+    return {
+      ex: electricScale * y, ey: -electricScale * x, ez: 0,
+      bx: magneticScale * hessianCorrection * x * z,
+      by: magneticScale * hessianCorrection * y * z,
+      bz: -magneticScale * (2 * radialSlope + hessianCorrection * (x * x + y * y)),
+    };
+  }
+
+  if (model === "rn") {
+    // Local orthonormal fields of a dyonic RN member; omit the interior of its horizon.
+    const mass = 1, electricCharge = 0.7, magneticCharge = 0.2;
+    const horizon = mass + Math.sqrt(mass * mass - electricCharge * electricCharge - magneticCharge * magneticCharge);
+    const r = Math.hypot(x, y, z);
+    if (r <= horizon * 1.015) return { ex: 0, ey: 0, ez: 0, bx: 0, by: 0, bz: 0 };
+    const scale = 1 / (r * r * r);
+    return { ex: electricCharge * x * scale, ey: electricCharge * y * scale, ez: electricCharge * z * scale, bx: magneticCharge * x * scale, by: magneticCharge * y * scale, bz: magneticCharge * z * scale };
+  }
+
+  if (model === "melvin") {
+    // B measured in the static orthonormal frame for A_phi=B0*rho^2/(2 Lambda).
+    const b0 = 1, lambda = 1 + b0 * b0 * (x * x + y * y) / 4;
+    return { ex: 0, ey: 0, ez: 0, bx: 0, by: 0, bz: b0 / (lambda * lambda) };
+  }
+
+  if (model === "br") return { ex: 0, ey: 0, ez: 1, bx: 0, by: 0, bz: 0 };
 
   // Catalogued families without a validated sample model are reference-only.
-  if (id !== "hopfion") {
+  if (model !== "hopfion") {
     return { ex: 0, ey: 0, ez: 0, bx: 0, by: 0, bz: 0 };
   }
 
@@ -559,12 +670,15 @@ function isReferenceOnly(id) {
 }
 
 function hasSpatialMagnitudeVariation(id) {
-  return hasSampledField(id) && !["plane", "uniform"].includes(id);
+  return hasSampledField(id) && !["plane", "uniform", "uniform-electric", "br"].includes(SAMPLE_MODELS[id] ?? id);
 }
 
 function hasComponentMagnitudeVariation(id, component) {
   if (!hasSpatialMagnitudeVariation(id)) return false;
-  if (id === "coulomb") return component === "electric";
+  const model = SAMPLE_MODELS[id] ?? id;
+  if (model === "coulomb") return component === "electric";
+  if (model === "harmonic-static") return component === "electric";
+  if (model === "melvin") return component === "magnetic";
   return true;
 }
 
@@ -592,14 +706,16 @@ function updateLegend() {
   $("#equation").textContent = solution.equation;
   $("#solution-caveat").textContent = solution.caveat;
   $("#source-link").href = solution.source;
-  $("#legend-meta").textContent = curvedReference ? "CURVED REFERENCE · METRIC RENDERING UNAVAILABLE" : referenceOnly ? "SYMBOLIC FAMILY · FIELD SAMPLER UNAVAILABLE" : "x, y, z at fixed t · normalized field display";
-  $("#iso-note").textContent = curvedReference
-    ? "This curved-spacetime field is catalogued exactly above; curved geometry rendering is not available in this view."
-    : referenceOnly
-      ? "This exact family is documented symbolically; a validated field sampler is not implemented in this viewer."
+  $("#legend-meta").textContent = referenceOnly
+    ? curvedReference ? "CURVED REFERENCE · METRIC RENDERING UNAVAILABLE" : "SYMBOLIC FAMILY · LIVE PREVIEW NOT AVAILABLE"
+    : curvedReference ? "CURVED FIELD · LOCAL SAMPLE · METRIC NOT DRAWN" : "x, y, z at fixed t · normalized field display";
+  $("#iso-note").textContent = referenceOnly
+    ? "No live field preview is available for this entry yet; its formulas and sources are shown below. Choose a catalog entry marked LIVE FIELD to inspect vectors and isosurfaces."
     : !hasSpatialMagnitudeVariation(solution.id)
-      ? "This solution has spatially constant field magnitude, so it has no magnitude isosurface."
-      : "Choose E and B surfaces independently. ConeIso places field-aligned cones on shell facets; set tube radius to 0 for flat wire lines.";
+      ? "This exact sample has spatially constant field magnitude, so no magnitude isosurface exists. Vector controls remain available."
+      : SAMPLE_DESCRIPTIONS[solution.id]
+        ? `Live preview: ${SAMPLE_DESCRIPTIONS[solution.id]}. ${curvedReference ? "The field is shown in a local orthonormal frame; spacetime curvature is not drawn. " : ""}Available component surfaces can be configured independently; unsupported components stay disabled. ConeIso aligns cones with the field; set tube radius to 0 for flat wires.`
+      : "Available E and B surfaces can be configured independently. ConeIso places field-aligned cones on shell facets; set tube radius to 0 for flat wire lines.";
   const electricIsoAvailable = hasComponentMagnitudeVariation(solution.id, "electric");
   const magneticIsoAvailable = hasComponentMagnitudeVariation(solution.id, "magnetic");
   const isoAvailable = electricIsoAvailable || magneticIsoAvailable;
@@ -837,14 +953,16 @@ function renderSolutionList() {
   const list = $("#solution-list");
   const query = $("#solution-search").value.trim().toLocaleLowerCase();
   const matches = SOLUTIONS.filter(solution => !query || [solution.name, solution.short, solution.kind, solution.description, solution.equation].join(" ").toLocaleLowerCase().includes(query));
-  $("#solution-count").textContent = query ? `${matches.length}/${SOLUTIONS.length} entries` : `${SOLUTIONS.length} entries`;
+  const liveCount = matches.filter(solution => hasSampledField(solution.id)).length;
+  $("#solution-count").textContent = query ? `${matches.length}/${SOLUTIONS.length} · ${liveCount} live` : `${SOLUTIONS.length} entries · ${liveCount} live`;
   const buttons = matches.map(solution => {
     const button = document.createElement("button");
     button.type = "button";
     button.className = "solution-button";
     button.dataset.solution = solution.id;
     button.setAttribute("aria-pressed", String(solution.id === state.solution));
-    button.innerHTML = `<span class="solution-symbol" aria-hidden="true">${solution.symbol}</span><span><strong>${solution.name}</strong><small>${solution.short}</small></span><span aria-hidden="true">↗</span>`;
+    const badge = hasSampledField(solution.id) ? "LIVE FIELD" : "SYMBOLIC";
+    button.innerHTML = `<span class="solution-symbol" aria-hidden="true">${solution.symbol}</span><span><strong>${solution.name}</strong><small>${solution.short}</small></span><span class="sample-badge ${hasSampledField(solution.id) ? "sampled" : "reference"}">${badge}</span>`;
     button.addEventListener("click", () => {
       if (isReferenceOnly(solution.id) && state.playing) {
         state.controller?.pause();

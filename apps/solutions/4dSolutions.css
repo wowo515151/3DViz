@@ -15,3 +15,4 @@
 .button-row button:disabled{opacity:.55;cursor:wait}
 .solution-search{display:block;width:100%;margin:0 0 9px;padding:8px 9px;border:1px solid rgba(184,163,255,.22);border-radius:2px;background:rgba(10,13,22,.62);color:var(--ink);font-size:10px}.solution-search::placeholder{color:#85849a}.solution-search:focus{border-color:rgba(184,163,255,.62)}.solution-empty{margin:5px 0;color:var(--muted);font-size:10px}
 .iso-components legend{margin:0 0 5px;color:#a69eb9;font:9px var(--mono);letter-spacing:.06em;text-transform:uppercase}
+.sample-badge{font:7px var(--mono);letter-spacing:.02em;white-space:nowrap}.sample-badge.sampled{color:#8de0b8}.sample-badge.reference{color:#77788d}
