@@ -1,10 +1,11 @@
-import { mount, makeVectorPlotter, makeIsosurfacePlotter } from "../../library/three-viz/src/index.js?v=20261012a";
+import { mount, makeVectorPlotter, makeIsosurfacePlotter, makeConeIsoPlotter } from "../../library/three-viz/src/index.js?v=20261012a";
 
 const $ = selector => document.querySelector(selector);
 const RANGE = 2.5;
 const DEFAULT_RESOLUTION = 11;
 const COLORS = Object.freeze({ electric: 0xed5363, magnetic: 0x529cff });
 const ISO_OPTIONS = Object.freeze({ threshold: 0.34, nested: false, surfaceCount: 5, tubeRadius: 0.006, wireframe: true, surfaceVisible: true });
+const CONE_ISO_OPTIONS = Object.freeze({ threshold: 0.34, nested: false, surfaceCount: 5, minimumArea: 0.002, maximumHeight: 0.24 });
 
 function symbolicFamily({ id, symbol, name, short, category, description, equation, caveat, source }) {
   return {
@@ -220,7 +221,7 @@ const SOLUTIONS = Object.freeze([
     source: "https://www.jstage.jst.go.jp/article/jpsj1946/60/2/60_2_450/_article/-char/ja",
   }),
   symbolicFamily({
-    id: "weber", symbol: "Dν(x)", name: "Nonparaxial elegant Laguerre–Gaussian TE/TM beams", short: "closed-form exact Maxwell beam families",
+    id: "weber", symbol: "Uₚₘ", name: "Nonparaxial elegant Laguerre–Gaussian TE/TM beams", short: "closed-form exact Maxwell beam families",
     category: "Minkowski · exact vector beams",
     description: "Closed-form nonparaxial TE and TM beam solutions can be built from elegant Laguerre–Gaussian scalar Helmholtz modes. They retain longitudinal fields and arbitrary radial or azimuthal polarization order.",
     equation: "(∇²+k²)ψₚₘ = 0\nΠₑ,ₘ = polarization-vector × ψₚₘ\nE,B = exact Hertz curl operators; ψₚₘ uses spherical Bessel / Legendre modes",
@@ -432,7 +433,7 @@ const SOLUTIONS = Object.freeze([
 const SAMPLED_FIELDS = new Set(["plane", "bessel", "dipole", "hopfion", "coulomb", "uniform"]);
 const CURVED_REFERENCES = new Set(["rn", "kn", "wald", "melvin", "br", "charged-nariai", "plebanski-hacyan", "mp", "iwp", "emwave", "bell-szekeres", "robinson-trautman", "weyl-electrovac", "pd", "cmetric", "ernst-accelerating", "magnetized-black-hole", "harrison", "kn-ads"]);
 
-const state = { controller: undefined, solution: "plane", time: 0, resolution: DEFAULT_RESOLUTION, surfaceResolution: 11, playing: false, electric: true, magnetic: true, isosurfaces: true, threshold: ISO_OPTIONS.threshold, nested: false, surfaceCount: ISO_OPTIONS.surfaceCount, tubeRadius: ISO_OPTIONS.tubeRadius, solidSurface: true, wireframes: true };
+const state = { controller: undefined, solution: "plane", time: 0, resolution: DEFAULT_RESOLUTION, surfaceResolution: 11, playing: false, electric: true, magnetic: true, isosurfaces: true, electricSurface: true, magneticSurface: true, coneIso: false, coneIsoSize: CONE_ISO_OPTIONS.maximumHeight, threshold: ISO_OPTIONS.threshold, nested: false, surfaceCount: ISO_OPTIONS.surfaceCount, tubeRadius: ISO_OPTIONS.tubeRadius, solidSurface: true, wireframes: true };
 
 function complexAdd(a, b) { return [a[0] + b[0], a[1] + b[1]]; }
 function complexSub(a, b) { return [a[0] - b[0], a[1] - b[1]]; }
@@ -530,7 +531,11 @@ function magnitudeRows(rows, component) {
   const prefix = component === "electric" ? "e" : "b";
   const magnitudes = rows.map(row => Math.hypot(row[`${prefix}x`], row[`${prefix}y`], row[`${prefix}z`]));
   const peak = Math.max(...magnitudes, 1e-12);
-  return rows.map((row, index) => ({ id: row.id, label: row.label, x: row.x, y: row.y, z: row.z, value: magnitudes[index] / peak }));
+  return rows.map((row, index) => ({
+    ...row,
+    value: magnitudes[index] / peak,
+    u: row[`${prefix}x`], v: row[`${prefix}y`], w: row[`${prefix}z`],
+  }));
 }
 
 function hasCurvedReference(id) {
@@ -547,6 +552,12 @@ function isReferenceOnly(id) {
 
 function hasSpatialMagnitudeVariation(id) {
   return hasSampledField(id) && !["plane", "uniform"].includes(id);
+}
+
+function hasComponentMagnitudeVariation(id, component) {
+  if (!hasSpatialMagnitudeVariation(id)) return false;
+  if (id === "coulomb") return component === "electric";
+  return true;
 }
 
 function componentRows(rows, component) {
@@ -580,9 +591,15 @@ function updateLegend() {
       ? "This exact family is documented symbolically; a validated field sampler is not implemented in this viewer."
     : !hasSpatialMagnitudeVariation(solution.id)
       ? "This solution has spatially constant field magnitude, so it has no magnitude isosurface."
-      : "Surfaces show normalized |E| and |B|. Set tube radius to 0 for flat wire lines.";
-  const isoAvailable = hasSpatialMagnitudeVariation(solution.id);
+      : "Choose E and B surfaces independently. ConeIso places field-aligned cones on shell facets; set tube radius to 0 for flat wire lines.";
+  const electricIsoAvailable = hasComponentMagnitudeVariation(solution.id, "electric");
+  const magneticIsoAvailable = hasComponentMagnitudeVariation(solution.id, "magnetic");
+  const isoAvailable = electricIsoAvailable || magneticIsoAvailable;
   $("#show-isosurfaces").disabled = !isoAvailable;
+  $("#show-electric-isosurface").disabled = !electricIsoAvailable;
+  $("#show-magnetic-isosurface").disabled = !magneticIsoAvailable;
+  $("#show-cone-iso").disabled = !isoAvailable;
+  $("#cone-iso-size").disabled = !isoAvailable;
   $("#iso-threshold").disabled = !isoAvailable;
   $("#iso-solid").disabled = !isoAvailable;
   $("#iso-wireframe").disabled = !isoAvailable;
@@ -618,13 +635,17 @@ function makeFieldPlotter() {
       const magneticVectorGroup = new THREE.Group();
       const electricIsoGroup = new THREE.Group();
       const magneticIsoGroup = new THREE.Group();
+      const electricConeIsoGroup = new THREE.Group();
+      const magneticConeIsoGroup = new THREE.Group();
       electricGroup.name = "electric-field-layer";
       magneticGroup.name = "magnetic-field-layer";
       electricIsoGroup.name = "electric-isosurfaces";
       magneticIsoGroup.name = "magnetic-isosurfaces";
-      electricGroup.add(electricVectorGroup, electricIsoGroup);
-      magneticGroup.add(magneticVectorGroup, magneticIsoGroup);
-      scene.add(electricGroup, magneticGroup);
+      electricConeIsoGroup.name = "electric-cone-isosurfaces";
+      magneticConeIsoGroup.name = "magnetic-cone-isosurfaces";
+      electricGroup.add(electricVectorGroup);
+      magneticGroup.add(magneticVectorGroup);
+      scene.add(electricGroup, magneticGroup, electricIsoGroup, magneticIsoGroup, electricConeIsoGroup, magneticConeIsoGroup);
       const electric = makeVectorPlotter({ x: "x", y: "y", z: "z", u: "u", v: "v", w: "w" }, 0.24, { ...vectorOptions, color: COLORS.electric });
       const magnetic = makeVectorPlotter({ x: "x", y: "y", z: "z", u: "u", v: "v", w: "w" }, 0.24, { ...vectorOptions, color: COLORS.magnetic });
       const ePlot = electric.create({ ...context, scene: electricVectorGroup }, { configuration: {} }, componentRows(initial.rows, "electric"));
@@ -635,27 +656,58 @@ function makeFieldPlotter() {
         .create({ ...context, scene: electricIsoGroup }, { configuration: {} }, magnitudeRows(isoInitialRows, "electric"));
       const bIsoPlot = makeIsosurfacePlotter(isoMapping, { ...ISO_OPTIONS, color: COLORS.magnetic, wireframeColor: COLORS.magnetic })
         .create({ ...context, scene: magneticIsoGroup }, { configuration: {} }, magnitudeRows(isoInitialRows, "magnetic"));
+      const vectorMapping = { x: "x", y: "y", z: "z", u: "u", v: "v", w: "w" };
+      const eConeIsoPlot = makeConeIsoPlotter(isoMapping, vectorMapping, { ...CONE_ISO_OPTIONS, color: COLORS.electric })
+        .create({ ...context, scene: electricConeIsoGroup }, { configuration: {} }, magnitudeRows(isoInitialRows, "electric"));
+      const bConeIsoPlot = makeConeIsoPlotter(isoMapping, vectorMapping, { ...CONE_ISO_OPTIONS, color: COLORS.magnetic })
+        .create({ ...context, scene: magneticConeIsoGroup }, { configuration: {} }, magnitudeRows(isoInitialRows, "magnetic"));
       let rows = initial.rows;
       let activeTime = initial.time;
       let elapsed = 0;
       let surfaceElapsed = 0;
+      const updateConeIsoCount = () => {
+        if (!hasComponentMagnitudeVariation(state.solution, "electric") && !hasComponentMagnitudeVariation(state.solution, "magnetic")) {
+          $("#cone-iso-count").textContent = "This entry has no spatially varying sampled field.";
+          return;
+        }
+        if (!state.coneIso) {
+          $("#cone-iso-count").textContent = "Enable ConeIso to see its cone count.";
+          return;
+        }
+        const electricCount = state.electricSurface && hasComponentMagnitudeVariation(state.solution, "electric") ? (eConeIsoPlot.report?.count ?? 0) : 0;
+        const magneticCount = state.magneticSurface && hasComponentMagnitudeVariation(state.solution, "magnetic") ? (bConeIsoPlot.report?.count ?? 0) : 0;
+        $("#cone-iso-count").textContent = `ConeIso cones · E ${electricCount.toLocaleString()} · B ${magneticCount.toLocaleString()}`;
+      };
+      const updateSurfaceVisibility = () => {
+        const electricAvailable = hasComponentMagnitudeVariation(state.solution, "electric");
+        const magneticAvailable = hasComponentMagnitudeVariation(state.solution, "magnetic");
+        electricIsoGroup.visible = electricAvailable && state.isosurfaces && state.electricSurface;
+        magneticIsoGroup.visible = magneticAvailable && state.isosurfaces && state.magneticSurface;
+        electricConeIsoGroup.visible = electricAvailable && state.isosurfaces && state.coneIso && state.electricSurface;
+        magneticConeIsoGroup.visible = magneticAvailable && state.isosurfaces && state.coneIso && state.magneticSurface;
+      };
       const refresh = (refreshSurfaces = true) => {
         rows = fieldRows(state.solution, activeTime, state.resolution);
         ePlot.update(componentRows(rows, "electric"));
         bPlot.update(componentRows(rows, "magnetic"));
-        electricIsoGroup.visible = state.isosurfaces && hasSpatialMagnitudeVariation(state.solution);
-        magneticIsoGroup.visible = electricIsoGroup.visible;
+        updateSurfaceVisibility();
         if (refreshSurfaces && hasSampledField(state.solution)) {
           const surfaceRows = fieldRows(state.solution, activeTime, state.surfaceResolution);
-          try { eIsoPlot.update(magnitudeRows(surfaceRows, "electric")); } catch { /* some exact fields have no shell at the selected level */ }
-          try { bIsoPlot.update(magnitudeRows(surfaceRows, "magnetic")); } catch { /* some exact fields have no shell at the selected level */ }
+          const electricRows = magnitudeRows(surfaceRows, "electric");
+          const magneticRows = magnitudeRows(surfaceRows, "magnetic");
+          try { eIsoPlot.update(electricRows); } catch { /* some exact fields have no shell at the selected level */ }
+          try { bIsoPlot.update(magneticRows); } catch { /* some exact fields have no shell at the selected level */ }
+          if (state.coneIso) {
+            try { eConeIsoPlot.update(electricRows); } catch { /* no electric facet at the selected level */ }
+            try { bConeIsoPlot.update(magneticRows); } catch { /* no magnetic facet at the selected level */ }
+          }
+          updateConeIsoCount();
         }
         context.requestRender();
       };
       electricGroup.visible = state.electric;
       magneticGroup.visible = state.magnetic;
-      electricIsoGroup.visible = state.isosurfaces && hasSpatialMagnitudeVariation(state.solution);
-      magneticIsoGroup.visible = electricIsoGroup.visible;
+      updateSurfaceVisibility();
       return {
         capabilities: ["time", "animation", "layers", "thresholds", "tubeRadius", "surfaceCount"],
         update(next) {
@@ -675,26 +727,75 @@ function makeFieldPlotter() {
         setLayerVisible(id, visible) {
           if (id === "electric") { state.electric = Boolean(visible); electricGroup.visible = state.electric; }
           if (id === "magnetic") { state.magnetic = Boolean(visible); magneticGroup.visible = state.magnetic; }
-          if (id === "isosurfaces") { state.isosurfaces = Boolean(visible); electricIsoGroup.visible = state.isosurfaces && hasSpatialMagnitudeVariation(state.solution); magneticIsoGroup.visible = electricIsoGroup.visible; }
+          if (id === "isosurfaces") { state.isosurfaces = Boolean(visible); updateSurfaceVisibility(); }
+          if (id === "electric-isosurface") { state.electricSurface = Boolean(visible); updateSurfaceVisibility(); updateConeIsoCount(); }
+          if (id === "magnetic-isosurface") { state.magneticSurface = Boolean(visible); updateSurfaceVisibility(); updateConeIsoCount(); }
+          if (id === "coneIso") {
+            state.coneIso = Boolean(visible);
+            if (state.coneIso && hasSampledField(state.solution)) {
+              const surfaceRows = fieldRows(state.solution, activeTime, state.surfaceResolution);
+              try {
+                eConeIsoPlot.update(magnitudeRows(surfaceRows, "electric"));
+                eConeIsoPlot.setThreshold(state.threshold);
+                eConeIsoPlot.setSurfaceCount(state.surfaceCount);
+                eConeIsoPlot.setMaximumHeight(state.coneIsoSize);
+                eConeIsoPlot.setLayerVisible("multiple", state.nested);
+              } catch { /* no valid electric facets at the current threshold */ }
+              try {
+                bConeIsoPlot.update(magnitudeRows(surfaceRows, "magnetic"));
+                bConeIsoPlot.setThreshold(state.threshold);
+                bConeIsoPlot.setSurfaceCount(state.surfaceCount);
+                bConeIsoPlot.setMaximumHeight(state.coneIsoSize);
+                bConeIsoPlot.setLayerVisible("multiple", state.nested);
+              } catch { /* no valid magnetic facets at the current threshold */ }
+            }
+            updateSurfaceVisibility();
+            updateConeIsoCount();
+          }
           context.requestRender();
         },
         setThreshold(value) {
           for (const plot of [eIsoPlot, bIsoPlot]) {
             try { plot.setThreshold(value); } catch { /* constant-magnitude components have no shell threshold */ }
           }
+          if (state.coneIso) {
+            for (const plot of [eConeIsoPlot, bConeIsoPlot]) {
+              try { plot.setThreshold(value); } catch { /* no ConeIso facets at the selected threshold */ }
+            }
+          }
           state.threshold = Number(value);
+          updateConeIsoCount();
         },
         setLayer(id, visible) {
           for (const plot of [eIsoPlot, bIsoPlot]) {
             try { plot.setLayerVisible(id, visible); } catch { /* a constant component has no isosurface */ }
           }
+          if (id === "multiple") {
+            state.nested = Boolean(visible);
+            if (state.coneIso) {
+              for (const plot of [eConeIsoPlot, bConeIsoPlot]) {
+                try { plot.setLayerVisible(id, visible); } catch { /* a constant component has no ConeIso surface */ }
+              }
+            }
+            updateConeIsoCount();
+          }
         },
         setTubeRadius(value) { eIsoPlot.setTubeRadius(value); bIsoPlot.setTubeRadius(value); state.tubeRadius = Number(value); },
+        setConeIsoSize(value) {
+          state.coneIsoSize = Number(value);
+          if (state.coneIso) { eConeIsoPlot.setMaximumHeight(value); bConeIsoPlot.setMaximumHeight(value); }
+        },
         setSurfaceCount(value) {
           for (const plot of [eIsoPlot, bIsoPlot]) {
             try { plot.setSurfaceCount(value); } catch { /* a constant component has no isosurface */ }
           }
+          if (state.coneIso) {
+            for (const plot of [eConeIsoPlot, bConeIsoPlot]) {
+              try { plot.setSurfaceCount(value); } catch { /* no ConeIso surface at the selected threshold */ }
+            }
+          }
           state.surfaceCount = Number(value);
+          updateConeIsoCount();
         },
         updateFrame(frame) {
           elapsed += frame.deltaSeconds;
@@ -715,7 +816,9 @@ function makeFieldPlotter() {
           bPlot.dispose();
           eIsoPlot.dispose();
           bIsoPlot.dispose();
-          scene.remove(electricGroup, magneticGroup);
+          eConeIsoPlot.dispose();
+          bConeIsoPlot.dispose();
+          scene.remove(electricGroup, magneticGroup, electricIsoGroup, magneticIsoGroup, electricConeIsoGroup, magneticConeIsoGroup);
         },
       };
     },
@@ -806,6 +909,14 @@ $("#iso-resolution").addEventListener("input", event => {
   state.controller?.update({ solution: state.solution, time: state.time, resolution: state.resolution, surfaceResolution: state.surfaceResolution });
 });
 $("#show-isosurfaces").addEventListener("change", event => state.controller?.setLayerVisible("isosurfaces", event.target.checked));
+$("#show-electric-isosurface").addEventListener("change", event => state.controller?.setLayerVisible("electric-isosurface", event.target.checked));
+$("#show-magnetic-isosurface").addEventListener("change", event => state.controller?.setLayerVisible("magnetic-isosurface", event.target.checked));
+$("#show-cone-iso").addEventListener("change", event => state.controller?.setLayerVisible("coneIso", event.target.checked));
+$("#cone-iso-size").addEventListener("input", event => {
+  state.coneIsoSize = Number(event.target.value);
+  $("#cone-iso-size-value").textContent = state.coneIsoSize.toFixed(2);
+  state.controller?.setConeIsoSize(state.coneIsoSize);
+});
 $("#iso-threshold").addEventListener("input", event => {
   state.threshold = Number(event.target.value);
   $("#iso-threshold-value").textContent = state.threshold.toFixed(2);

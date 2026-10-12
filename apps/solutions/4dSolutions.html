@@ -50,7 +50,15 @@
 
       <section class="control-section" aria-labelledby="iso-title">
         <div class="section-label"><span id="iso-title">isosurfaces</span><span>field magnitude</span></div>
-        <label class="component-list iso-toggle"><input id="show-isosurfaces" type="checkbox" checked> Show E/B magnitude surfaces</label>
+        <label class="component-list iso-toggle"><input id="show-isosurfaces" type="checkbox" checked> Show magnitude surfaces</label>
+        <fieldset class="component-list iso-components"><legend>Surface components</legend>
+          <label><input id="show-electric-isosurface" type="checkbox" checked><i class="legend-dot electric-dot"></i> Electric |E|</label>
+          <label><input id="show-magnetic-isosurface" type="checkbox" checked><i class="legend-dot magnetic-dot"></i> Magnetic |B|</label>
+        </fieldset>
+        <label class="component-list iso-toggle"><input id="show-cone-iso" type="checkbox"> ConeIso · field-aligned facet cones</label>
+        <p id="cone-iso-count" class="field-note" aria-live="polite">Enable ConeIso to see its cone count.</p>
+        <label class="range-label" for="cone-iso-size">ConeIso vector size <output id="cone-iso-size-value">0.24</output></label>
+        <input id="cone-iso-size" type="range" min="0.05" max="0.6" step="0.01" value="0.24" />
         <label class="range-label" for="iso-threshold">single-shell threshold <output id="iso-threshold-value">0.34</output></label>
         <input id="iso-threshold" type="range" min="0.05" max="0.95" step="0.01" value="0.34" />
         <fieldset class="component-list iso-options"><legend class="sr-only">Isosurface appearance</legend>
@@ -97,6 +105,6 @@
     </main>
   </div>
   <script type="importmap">{ "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.186.0/build/three.module.js", "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.186.0/examples/jsm/" } }</script>
-  <script type="module" src="./4dSolutions.js?v=20261012d"></script>
+  <script type="module" src="./4dSolutions.js?v=20261012e"></script>
 </body>
 </html>
