@@ -479,12 +479,14 @@ const SAMPLE_MODELS = Object.freeze({
   "kn-ads": "rn",
   melvin: "melvin",
   br: "br",
+  "bell-szekeres": "br",
   "charged-nariai": "br",
   "plebanski-hacyan": "br",
   fwm: "focus-wave",
   doughnut: "focused-doughnut",
   supertoroidal: "supertoroidal",
   xwave: "xwave-finite-spectrum",
+  "flying-focus": "flying-focus",
 });
 const SAMPLED_FIELDS = new Set(Object.keys(SAMPLE_MODELS));
 const SAMPLE_DESCRIPTIONS = Object.freeze({
@@ -520,12 +522,14 @@ const SAMPLE_DESCRIPTIONS = Object.freeze({
   "kn-ads": "zero-rotation, zero-cosmological-constant Reissner–Nordström member",
   melvin: "Bonnor–Melvin magnetic universe",
   br: "uniform Bertotti–Robinson electric field",
+  "bell-szekeres": "Bell–Szekeres interaction region, locally Bertotti–Robinson",
   "charged-nariai": "uniform local electric field member",
   "plebanski-hacyan": "uniform local electric field member",
   fwm: "exact Brittingham focus-wave scalar lifted to a TE Maxwell field",
   doughnut: "α = 1 Hellwarth–Nouchi focused-doughnut pulse",
   supertoroidal: "α = 2 finite-energy supertoroidal pulse",
   xwave: "three-frequency exact Bessel-mode superposition on one superluminal cone",
+  "flying-focus": "Lorentz-boosted complex-source field with its peak moving at 0.65c along +z",
 });
 const CURVED_REFERENCES = new Set(["rn", "kn", "wald", "melvin", "br", "charged-nariai", "plebanski-hacyan", "mp", "iwp", "emwave", "bell-szekeres", "robinson-trautman", "weyl-electrovac", "pd", "cmetric", "ernst-accelerating", "magnetized-black-hole", "harrison", "kn-ads"]);
 
@@ -627,6 +631,18 @@ function supertoroidalHertzLift(scalar) {
   return { ex: e[0][0], ey: e[1][0], ez: e[2][0], bx: b[0][0], by: b[1][0], bz: b[2][0] };
 }
 
+function complexSourceField(x, y, z) {
+  // Complex Coulomb potential with z shifted by i*a; omit its ring singularity.
+  const a = 0.9, q = [x * x + y * y + z * z - a * a, -2 * a * z];
+  const qMagnitude = Math.hypot(q[0], q[1]);
+  if (qMagnitude < 0.05) return { ex: 0, ey: 0, ez: 0, bx: 0, by: 0, bz: 0 };
+  const rootImaginarySign = q[1] < 0 ? -1 : 1;
+  const root = [Math.sqrt(Math.max(0, (qMagnitude + q[0]) / 2)), rootImaginarySign * Math.sqrt(Math.max(0, (qMagnitude - q[0]) / 2))];
+  const inverseCube = complexInverse(complexPower(root, 3));
+  const components = [complexMul([x, 0], inverseCube), complexMul([y, 0], inverseCube), complexMul([z, -a], inverseCube)];
+  return { ex: components[0][0], ey: components[1][0], ez: components[2][0], bx: components[0][1], by: components[1][1], bz: components[2][1] };
+}
+
 function scalarPulse(model, x, y, z, t) {
   const X = jet(cj(x), 0), Y = jet(cj(y), 1), Z = jet(cj(z), 2), T = jet(cj(t), 3);
   const I = jet(cj(0, 1));
@@ -679,6 +695,16 @@ function solutionField(id, x, y, z, t) {
       bx -= bphi * y * invRho; by += bphi * x * invRho;
     }
     return { ex, ey, ez, bx, by, bz: 0 };
+  }
+  if (model === "flying-focus") {
+    // Lorentz transform of an exact complex-source Maxwell field. The source
+    // centre moves at v along +z, so its localized intensity peak follows it.
+    const velocity = 0.65, gamma = 1 / Math.sqrt(1 - velocity * velocity);
+    const rest = complexSourceField(x, y, gamma * (z - velocity * t));
+    return {
+      ex: gamma * (rest.ex + velocity * rest.by), ey: gamma * (rest.ey - velocity * rest.bx), ez: rest.ez,
+      bx: gamma * (rest.bx - velocity * rest.ey), by: gamma * (rest.by + velocity * rest.ex), bz: rest.bz,
+    };
   }
   if (["focus-wave", "focused-doughnut", "supertoroidal"].includes(model)) {
     const scalar = scalarPulse(model, x, y, z, t);
@@ -787,17 +813,7 @@ function solutionField(id, x, y, z, t) {
     return { ex: x * scale, ey: y * scale, ez: z * scale, bx: 0, by: 0, bz: 0 };
   }
 
-  if (model === "complex-source") {
-    // Complex Coulomb potential with z shifted by i*a; remove samples at its ring singularity.
-    const a = 0.9, q = [x * x + y * y + z * z - a * a, -2 * a * z];
-    const qMagnitude = Math.hypot(q[0], q[1]);
-    if (qMagnitude < 0.05) return { ex: 0, ey: 0, ez: 0, bx: 0, by: 0, bz: 0 };
-    const rootImaginarySign = q[1] < 0 ? -1 : 1;
-    const root = [Math.sqrt(Math.max(0, (qMagnitude + q[0]) / 2)), rootImaginarySign * Math.sqrt(Math.max(0, (qMagnitude - q[0]) / 2))];
-    const inverseCube = complexInverse(complexPower(root, 3));
-    const components = [complexMul([x, 0], inverseCube), complexMul([y, 0], inverseCube), complexMul([z, -a], inverseCube)];
-    return { ex: components[0][0], ey: components[1][0], ez: components[2][0], bx: components[0][1], by: components[1][1], bz: components[2][1] };
-  }
+  if (model === "complex-source") return complexSourceField(x, y, z);
 
   // Catalogued families without a validated sample model are reference-only.
   if (model !== "hopfion") {
@@ -855,7 +871,7 @@ function hasSampledField(id) {
 }
 
 function isTimeDependent(id) {
-  return ["plane", "bessel", "dipole", "hopfion", "evanescent", "spherical", "focus-wave", "focused-doughnut", "supertoroidal", "xwave-finite-spectrum"].includes(SAMPLE_MODELS[id] ?? id);
+  return ["plane", "bessel", "dipole", "hopfion", "evanescent", "spherical", "focus-wave", "focused-doughnut", "supertoroidal", "xwave-finite-spectrum", "flying-focus"].includes(SAMPLE_MODELS[id] ?? id);
 }
 
 function isReferenceOnly(id) {
