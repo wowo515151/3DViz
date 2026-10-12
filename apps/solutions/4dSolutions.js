@@ -1407,6 +1407,83 @@ function renderSolutionList() {
   list.replaceChildren(...buttons);
 }
 
+function makeExportCanvas() {
+  const source = $("#viewport canvas");
+  if (!source || !source.width || !source.height) throw new Error("Wait for the 3D scene to finish rendering before exporting.");
+  const scale = Math.max(1, 1600 / source.width);
+  const canvas = document.createElement("canvas");
+  canvas.width = Math.round(source.width * scale);
+  canvas.height = Math.round(source.height * scale);
+  const context = canvas.getContext("2d");
+  if (!context) throw new Error("PNG export is not available in this browser.");
+  context.fillStyle = "#202832";
+  context.fillRect(0, 0, canvas.width, canvas.height);
+  context.drawImage(source, 0, 0, canvas.width, canvas.height);
+  drawExportLegend(context, canvas, source, scale);
+  return canvas;
+}
+
+function drawExportLegend(context, canvas, source, exportScale) {
+  const pixelScale = (source.width / Math.max(1, source.clientWidth)) * exportScale;
+  const padding = 12 * pixelScale;
+  const lineHeight = 18 * pixelScale;
+  const title = $("#legend-title").textContent.trim();
+  const meta = $("#legend-meta").textContent.trim();
+  const entries = [
+    ...(!$("#legend-electric").hidden ? [["E · electric field", "#ed5363"]] : []),
+    ...(!$("#legend-magnetic").hidden ? [["B · magnetic field", "#529cff"]] : []),
+  ];
+  const boxWidth = 285 * pixelScale;
+  const boxHeight = padding * 2 + 14 * pixelScale + lineHeight * (entries.length + 1) + 10 * pixelScale;
+  const x = 16 * pixelScale;
+  const y = canvas.height - boxHeight - 16 * pixelScale;
+  context.fillStyle = "rgba(12,16,26,.88)";
+  context.fillRect(x, y, boxWidth, boxHeight);
+  context.strokeStyle = "rgba(182,202,222,.35)";
+  context.strokeRect(x, y, boxWidth, boxHeight);
+  context.fillStyle = "#eeeaff";
+  context.font = `600 ${Math.round(9 * pixelScale)}px Consolas, monospace`;
+  context.fillText(title, x + padding, y + padding + 9 * pixelScale, boxWidth - padding * 2);
+  context.fillStyle = "#c6d2de";
+  context.font = `${Math.round(10 * pixelScale)}px system-ui`;
+  entries.forEach(([label, color], index) => {
+    const rowY = y + padding + 14 * pixelScale + (index + 1) * lineHeight;
+    context.fillStyle = color;
+    context.beginPath(); context.arc(x + padding + 4 * pixelScale, rowY - 4 * pixelScale, 4 * pixelScale, 0, Math.PI * 2); context.fill();
+    context.fillStyle = "#c6d2de";
+    context.fillText(label, x + padding + 14 * pixelScale, rowY, boxWidth - padding * 2 - 14 * pixelScale);
+  });
+  context.fillStyle = "#a3a1b4";
+  context.font = `${Math.round(8 * pixelScale)}px Consolas, monospace`;
+  context.fillText(meta, x + padding, y + boxHeight - padding, boxWidth - padding * 2);
+}
+
+function downloadBlob(blob, filename) {
+  const url = URL.createObjectURL(blob);
+  const anchor = document.createElement("a");
+  anchor.href = url;
+  anchor.download = filename;
+  document.body.append(anchor);
+  try { anchor.click(); }
+  finally {
+    anchor.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 4000);
+  }
+}
+
+function downloadScreenshot() {
+  const status = $("#export-status");
+  try {
+    makeExportCanvas().toBlob(blob => {
+      if (!blob) { status.textContent = "PNG encoding failed in this browser."; return; }
+      try {
+        downloadBlob(blob, `4d-solutions-${state.solution}.png`);
+        status.textContent = "PNG saved with the current field view and legend.";
+      } catch (error) { status.textContent = error.message; }
+    }, "image/png");
+  } catch (error) { status.textContent = error.message; }
+}
+
 async function start() {
   renderSolutionList();
   updateLegend();
@@ -1508,6 +1585,7 @@ $("#details-toggle").addEventListener("click", event => {
   button.textContent = expanded ? "SHOW DETAILS" : "HIDE DETAILS";
   $("#stage").dataset.detailsHidden = String(expanded);
 });
+$("#download-image").addEventListener("click", downloadScreenshot);
 $("#reset-time").addEventListener("click", () => {
   state.time = 0;
   $("#time-slider").value = "0";

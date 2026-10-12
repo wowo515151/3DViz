@@ -75,6 +75,12 @@
         <p class="field-note" id="iso-note">Surfaces show normalized |E| and |B|. Set tube radius to 0 for flat wire lines.</p>
       </section>
 
+      <section class="control-section" aria-labelledby="export-title">
+        <div class="section-label"><span id="export-title">export view</span><span>scene + legend</span></div>
+        <button id="download-image" class="download-button" type="button">DOWNLOAD PNG</button>
+        <p id="export-status" class="field-note" role="status" aria-live="polite">Export the current field view with its legend.</p>
+      </section>
+
       <section class="model-note" aria-label="How to read the scene">
         <strong>READ THE SCENE</strong>
         <p>Red cones show E; blue cones show B. Cone direction follows the local field direction. Radial E/B glyphs and shells are slightly separated in dyonic samples to keep both visible. Surface colors match each component. Cone lengths use a compressed magnitude scale for visibility; surface magnitudes are normalized separately.</p>
@@ -108,6 +114,6 @@
     </main>
   </div>
   <script type="importmap">{ "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.186.0/build/three.module.js", "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.186.0/examples/jsm/" } }</script>
-  <script type="module" src="./4dSolutions.js?v=20261012z"></script>
+  <script type="module" src="./4dSolutions.js?v=20261012a"></script>
 </body>
 </html>
