@@ -18,6 +18,14 @@ export function makeVectorPlotter(mapping, vectorScale = 0.22, options = {}) {
       if (!Number.isFinite(maximumHeight) || maximumHeight <= 0) throw new Error("Maximum cone height must be a positive number.");
       const magnitudeExponent = Number(options.magnitudeExponent ?? 1);
       if (!Number.isFinite(magnitudeExponent) || magnitudeExponent <= 0) throw new Error("Vector magnitude exponent must be a positive number.");
+      const positionOffsetFor = row => {
+        const requested = typeof options.positionOffset === "function" ? options.positionOffset(row) : options.positionOffset;
+        const offset = requested ?? [0, 0, 0];
+        if (!Array.isArray(offset) || offset.length !== 3 || offset.some(component => !Number.isFinite(component))) {
+          throw new Error("Vector position offset must contain three finite numbers.");
+        }
+        return offset;
+      };
       const removeLights = addSceneLights(THREE, scene, context.renderer);
       const group = new THREE.Group();
       group.name = "csv-vector-field-cones";
@@ -59,6 +67,7 @@ export function makeVectorPlotter(mapping, vectorScale = 0.22, options = {}) {
           const direction = new THREE.Vector3(...components[index]);
           const magnitude = magnitudes[index];
           const worldPosition = new THREE.Vector3(...position.map((value, axis) => mapPosition(value, axis, positionExtents)));
+          worldPosition.add(new THREE.Vector3(...positionOffsetFor(usable[index].row)));
           const relativeMagnitude = magnitude > 0 ? Math.min(1, magnitude / maximumMagnitude) : 0;
           const height = maximumHeight * relativeMagnitude ** magnitudeExponent;
           const scale = new THREE.Vector3(height, height, height);

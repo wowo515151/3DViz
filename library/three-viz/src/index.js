@@ -25,7 +25,7 @@ export { makeScatterPlotter } from './plotters/scatter-plotter.js';
 export { makeSurfacePlotter } from './plotters/surface-plotter.js?v=car-paint-20261010a';
 export { makeHistogramPlotter } from './plotters/histogram-plotter.js';
 export { makeTrajectoryPlotter } from './plotters/trajectory-plotter.js';
-export { makeVectorPlotter, coneHeightForMagnitude } from './plotters/vector-field-plotter.js?v=cone-plotters-20261010d';
+export { makeVectorPlotter, coneHeightForMagnitude } from './plotters/vector-field-plotter.js?v=cone-plotters-20261012a';
 export { makeTimeSlicePlotter } from './plotters/time-slice-plotter.js';
 export { makeIsosurfacePlotter } from './plotters/isosurface-plotter.js?v=car-paint-shades-20261010v';
 export { makeConeIsoPlotter, triangleArea } from './plotters/cone-iso-plotter.js?v=cone-plotters-20261010d';

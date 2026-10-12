@@ -1,4 +1,4 @@
-import { mount, makeVectorPlotter, makeIsosurfacePlotter, makeConeIsoPlotter } from "../../library/three-viz/src/index.js?v=20261012a";
+import { mount, makeVectorPlotter, makeIsosurfacePlotter, makeConeIsoPlotter } from "../../library/three-viz/src/index.js?v=20261012b";
 
 const $ = selector => document.querySelector(selector);
 const RANGE = 2.5;
@@ -1044,9 +1044,9 @@ function hasComponentMagnitudeVariation(id, component) {
   return true;
 }
 
-function componentRows(rows, component) {
+function componentRows(rows, component, positionOffset = [0, 0, 0]) {
   const prefix = component === "electric" ? "e" : "b";
-  return rows.map(row => ({ ...row, u: row[`${prefix}x`], v: row[`${prefix}y`], w: row[`${prefix}z`] }));
+  return rows.map(row => ({ ...row, u: row[`${prefix}x`], v: row[`${prefix}y`], w: row[`${prefix}z`], vectorPositionOffset: positionOffset }));
 }
 
 function updateLegend() {
@@ -1121,6 +1121,7 @@ function makeFieldPlotter() {
       const vectorOptions = {
         maximumHeight: 0.24,
         magnitudeExponent: 0.35,
+        positionOffset: row => row.vectorPositionOffset,
         positionBounds: [[-2.5, 2.5], [-2.5, 2.5], [-2.5, 2.5]],
       };
       const electricGroup = new THREE.Group();
@@ -1182,8 +1183,10 @@ function makeFieldPlotter() {
       };
       const refresh = (refreshSurfaces = true) => {
         rows = fieldRows(state.solution, activeTime, state.resolution);
-        ePlot.update(componentRows(rows, "electric"));
-        bPlot.update(componentRows(rows, "magnetic"));
+        const radialDyonicSample = (SAMPLE_MODELS[state.solution] ?? state.solution) === "rn";
+        const separation = radialDyonicSample ? 0.055 : 0;
+        ePlot.update(componentRows(rows, "electric", [-separation, 0, 0]));
+        bPlot.update(componentRows(rows, "magnetic", [separation, 0, 0]));
         updateSurfaceVisibility();
         if (refreshSurfaces && hasSampledField(state.solution)) {
           const surfaceRows = fieldRows(state.solution, activeTime, state.surfaceResolution);
