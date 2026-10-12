@@ -481,6 +481,10 @@ const SAMPLE_MODELS = Object.freeze({
   br: "br",
   "charged-nariai": "br",
   "plebanski-hacyan": "br",
+  fwm: "focus-wave",
+  doughnut: "focused-doughnut",
+  supertoroidal: "supertoroidal",
+  xwave: "xwave-finite-spectrum",
 });
 const SAMPLED_FIELDS = new Set(Object.keys(SAMPLE_MODELS));
 const SAMPLE_DESCRIPTIONS = Object.freeze({
@@ -518,6 +522,10 @@ const SAMPLE_DESCRIPTIONS = Object.freeze({
   br: "uniform Bertotti–Robinson electric field",
   "charged-nariai": "uniform local electric field member",
   "plebanski-hacyan": "uniform local electric field member",
+  fwm: "exact Brittingham focus-wave scalar lifted to a TE Maxwell field",
+  doughnut: "α = 1 Hellwarth–Nouchi focused-doughnut pulse",
+  supertoroidal: "α = 2 finite-energy supertoroidal pulse",
+  xwave: "three-frequency exact Bessel-mode superposition on one superluminal cone",
 });
 const CURVED_REFERENCES = new Set(["rn", "kn", "wald", "melvin", "br", "charged-nariai", "plebanski-hacyan", "mp", "iwp", "emwave", "bell-szekeres", "robinson-trautman", "weyl-electrovac", "pd", "cmetric", "ernst-accelerating", "magnetized-black-hole", "harrison", "kn-ads"]);
 
@@ -541,6 +549,70 @@ function besselJ1(x) {
   return sum;
 }
 
+// Second-order complex jets keep the Hertz lift analytic: values, first
+// derivatives, and Hessians are propagated through the closed-form scalars.
+const cj = (re, im = 0) => [re, im];
+const cjAdd = (a, b) => [a[0] + b[0], a[1] + b[1]];
+const cjMul = (a, b) => [a[0] * b[0] - a[1] * b[1], a[0] * b[1] + a[1] * b[0]];
+const cjScale = (a, n) => [a[0] * n, a[1] * n];
+const cjInv = a => { const d = a[0] * a[0] + a[1] * a[1] || 1e-24; return [a[0] / d, -a[1] / d]; };
+const cjExp = a => { const e = Math.exp(a[0]); return [e * Math.cos(a[1]), e * Math.sin(a[1])]; };
+function jet(value, variable = -1) {
+  return { v: value, d: Array.from({ length: 4 }, (_, i) => cj(i === variable ? 1 : 0)), h: Array.from({ length: 4 }, () => Array.from({ length: 4 }, () => cj(0))) };
+}
+function jetAdd(a, b) {
+  return { v: cjAdd(a.v, b.v), d: a.d.map((x, i) => cjAdd(x, b.d[i])), h: a.h.map((row, i) => row.map((x, j) => cjAdd(x, b.h[i][j]))) };
+}
+function jetScale(a, scale) {
+  return { v: cjScale(a.v, scale), d: a.d.map(x => cjScale(x, scale)), h: a.h.map(row => row.map(x => cjScale(x, scale))) };
+}
+function jetMul(a, b) {
+  return {
+    v: cjMul(a.v, b.v),
+    d: a.d.map((x, i) => cjAdd(cjMul(x, b.v), cjMul(a.v, b.d[i]))),
+    h: a.h.map((row, i) => row.map((x, j) => cjAdd(cjAdd(cjMul(x, b.v), cjMul(a.d[i], b.d[j])), cjAdd(cjMul(a.d[j], b.d[i]), cjMul(a.v, b.h[i][j]))))),
+  };
+}
+function jetUnary(a, f, fp, fpp) {
+  const v = f(a.v), first = fp(a.v), second = fpp(a.v);
+  return { v, d: a.d.map(x => cjMul(first, x)), h: a.h.map((row, i) => row.map((x, j) => cjAdd(cjMul(first, x), cjMul(second, cjMul(a.d[i], a.d[j]))))) };
+}
+function jetInv(a) {
+  return jetUnary(a, cjInv, x => cjScale(cjMul(cjInv(x), cjInv(x)), -1), x => cjScale(cjMul(cjMul(cjInv(x), cjInv(x)), cjInv(x)), 2));
+}
+function jetExp(a) {
+  return jetUnary(a, cjExp, cjExp, cjExp);
+}
+function jetDiv(a, b) { return jetMul(a, jetInv(b)); }
+function jetPowInt(a, n) { let result = jet(cj(1)); for (let i = 0; i < n; i += 1) result = jetMul(result, a); return result; }
+
+function hertzTEFromScalar(scalar) {
+  const e = [scalar.h[0][2], scalar.h[1][2], cjScale(cjAdd(scalar.h[0][0], scalar.h[1][1]), -1)];
+  const b = [scalar.h[1][3], cjScale(scalar.h[0][3], -1), cj(0)];
+  return { ex: e[0][0], ey: e[1][0], ez: e[2][0], bx: b[0][0], by: b[1][0], bz: b[2][0] };
+}
+
+function scalarPulse(model, x, y, z, t) {
+  const X = jet(cj(x), 0), Y = jet(cj(y), 1), Z = jet(cj(z), 2), T = jet(cj(t), 3);
+  const I = jet(cj(0, 1));
+  const rho2 = jetAdd(jetMul(X, X), jetMul(Y, Y));
+  if (model === "focus-wave") {
+    const beta = 0.72, z0 = 1.35;
+    const denom = jetAdd(jet(cj(z0)), jetMul(I, jetAdd(Z, jetScale(T, -1))));
+    const phase = jetAdd(jetScale(jetAdd(Z, T), beta), jetScale(jetDiv(rho2, denom), -beta));
+    return jetDiv(jetExp(jetMul(I, phase)), jetScale(jetMul(I, denom), 4 * Math.PI));
+  }
+  const tau = jetAdd(Z, jetScale(T, -1));
+  const sigma = jetAdd(Z, T);
+  const q1 = 1.4, q2 = 1.0;
+  const q = jetAdd(jet(cj(q1)), jetMul(I, tau));
+  const s = jetAdd(jetDiv(rho2, q), jetScale(jetMul(I, sigma), -1));
+  const sPlus = jetAdd(s, jet(cj(q2)));
+  if (model === "focused-doughnut") return jetDiv(jet(cj(1)), jetMul(q, sPlus));
+  const q3 = 1.1;
+  return jetDiv(jetMul(jetDiv(jet(cj(q1)), q), jetExp(jetScale(s, -1 / q3))), jetPowInt(sPlus, 2));
+}
+
 function solutionField(id, x, y, z, t) {
   const model = SAMPLE_MODELS[id] ?? id;
   if (model === "plane") {
@@ -555,6 +627,26 @@ function solutionField(id, x, y, z, t) {
     const bphi = omega * kappa * besselJ1(kappa * rho) * Math.sin(phase);
     const invRho = rho > 1e-9 ? 1 / rho : 0;
     return { ex: er * x * invRho, ey: er * y * invRho, ez, bx: -bphi * y * invRho, by: bphi * x * invRho, bz: 0 };
+  }
+  if (model === "xwave-finite-spectrum") {
+    // A finite conical spectrum: each term is an exact Bessel Maxwell mode,
+    // and all share kz/omega = 1/v so the packet peak travels at fixed v.
+    const v = 1.35, rho = Math.hypot(x, y), invRho = rho > 1e-9 ? 1 / rho : 0;
+    const frequencies = [0.55, 0.95, 1.35];
+    let ex = 0, ey = 0, ez = 0, bx = 0, by = 0;
+    for (const omega of frequencies) {
+      const kz = omega / v, kappa = omega * Math.sqrt(1 - 1 / (v * v));
+      const phase = kz * z - omega * t;
+      const er = kz * kappa * besselJ1(kappa * rho) * Math.sin(phase);
+      const longitudinal = kappa * kappa * besselJ0(kappa * rho) * Math.cos(phase);
+      const bphi = omega * kappa * besselJ1(kappa * rho) * Math.sin(phase);
+      ex += er * x * invRho; ey += er * y * invRho; ez += longitudinal;
+      bx -= bphi * y * invRho; by += bphi * x * invRho;
+    }
+    return { ex, ey, ez, bx, by, bz: 0 };
+  }
+  if (["focus-wave", "focused-doughnut", "supertoroidal"].includes(model)) {
+    return hertzTEFromScalar(scalarPulse(model, x, y, z, t));
   }
   if (model === "dipole") {
     const r = Math.hypot(x, y, z);
@@ -727,7 +819,7 @@ function hasSampledField(id) {
 }
 
 function isTimeDependent(id) {
-  return ["plane", "bessel", "dipole", "hopfion", "evanescent", "spherical"].includes(SAMPLE_MODELS[id] ?? id);
+  return ["plane", "bessel", "dipole", "hopfion", "evanescent", "spherical", "focus-wave", "focused-doughnut", "supertoroidal", "xwave-finite-spectrum"].includes(SAMPLE_MODELS[id] ?? id);
 }
 
 function isReferenceOnly(id) {
