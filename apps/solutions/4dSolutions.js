@@ -459,7 +459,7 @@ const SAMPLE_MODELS = Object.freeze({
   "torus-knots": "hopfion",
   "complex-source": "complex-source",
   "multipole-radiation": "dipole",
-  lienard: "coulomb",
+  lienard: "lienard",
   "harmonic-static": "harmonic-static",
   "uniform-electric": "uniform-electric",
   evanescent: "evanescent",
@@ -505,9 +505,9 @@ const SAMPLE_DESCRIPTIONS = Object.freeze({
   conformal: "Hopfion null-field member",
   ranada: "Hopfion linked-field member",
   "torus-knots": "Hopfion linked-field member (p = q = 1)",
-  "complex-source": "complex-shifted Coulomb field with a ring singularity",
+  "complex-source": "Lorentz-boosted complex-source field with its ring singularity moving at 0.52c along +z",
   "multipole-radiation": "retarded electric dipole (l = 1) member",
-  lienard: "static point-charge member (charge at rest)",
+  lienard: "uniformly moving point charge (v = 0.58c along +z), the exact zero-acceleration Liénard–Wiechert field",
   "harmonic-static": "source-free electrostatic quadrupole",
   "uniform-electric": "constant crossed E/B field",
   evanescent: "TE evanescent mode with complex wavevector",
@@ -675,6 +675,21 @@ function complexSourceField(x, y, z) {
   const inverseCube = complexInverse(complexPower(root, 3));
   const components = [complexMul([x, 0], inverseCube), complexMul([y, 0], inverseCube), complexMul([z, -a], inverseCube)];
   return { ex: components[0][0], ey: components[1][0], ez: components[2][0], bx: components[0][1], by: components[1][1], bz: components[2][1] };
+}
+
+function boostFieldAlongZ(rest, velocity) {
+  const gamma = 1 / Math.sqrt(1 - velocity * velocity);
+  return {
+    ex: gamma * (rest.ex + velocity * rest.by), ey: gamma * (rest.ey - velocity * rest.bx), ez: rest.ez,
+    bx: gamma * (rest.bx - velocity * rest.ey), by: gamma * (rest.by + velocity * rest.ex), bz: rest.bz,
+  };
+}
+
+function coulombRestField(x, y, z) {
+  const r = Math.hypot(x, y, z);
+  if (r < 0.42) return { ex: 0, ey: 0, ez: 0, bx: 0, by: 0, bz: 0 };
+  const scale = 1 / (r * r * r);
+  return { ex: x * scale, ey: y * scale, ez: z * scale, bx: 0, by: 0, bz: 0 };
 }
 
 function scalarPulse(model, x, y, z, t) {
@@ -846,11 +861,7 @@ function solutionField(id, x, y, z, t) {
     // Lorentz transform of an exact complex-source Maxwell field. The source
     // centre moves at v along +z, so its localized intensity peak follows it.
     const velocity = 0.65, gamma = 1 / Math.sqrt(1 - velocity * velocity);
-    const rest = complexSourceField(x, y, gamma * (z - velocity * t));
-    return {
-      ex: gamma * (rest.ex + velocity * rest.by), ey: gamma * (rest.ey - velocity * rest.bx), ez: rest.ez,
-      bx: gamma * (rest.bx - velocity * rest.ey), by: gamma * (rest.by + velocity * rest.ex), bz: rest.bz,
-    };
+    return boostFieldAlongZ(complexSourceField(x, y, gamma * (z - velocity * t)), velocity);
   }
   if (["focus-wave", "focused-doughnut", "supertoroidal"].includes(model)) {
     const scalar = scalarPulse(model, x, y, z, t);
@@ -877,10 +888,14 @@ function solutionField(id, x, y, z, t) {
   }
 
   if (model === "coulomb") {
-    const r = Math.hypot(x, y, z);
-    if (r < 0.42) return { ex: 0, ey: 0, ez: 0, bx: 0, by: 0, bz: 0 };
-    const scale = 1 / (r * r * r);
-    return { ex: x * scale, ey: y * scale, ez: z * scale, bx: 0, by: 0, bz: 0 };
+    return coulombRestField(x, y, z);
+  }
+
+  if (model === "lienard") {
+    // Uniform-motion Liénard–Wiechert member, obtained by a Lorentz boost of
+    // the Coulomb solution; c=1 and charge magnitude is normalized to unity.
+    const velocity = 0.58, gamma = 1 / Math.sqrt(1 - velocity * velocity);
+    return boostFieldAlongZ(coulombRestField(x, y, gamma * (z - velocity * t)), velocity);
   }
 
   if (model === "uniform") return { ex: 0, ey: 0, ez: 0, bx: 0, by: 0, bz: 1 };
@@ -964,7 +979,11 @@ function solutionField(id, x, y, z, t) {
     return { ex: x * scale, ey: y * scale, ez: z * scale, bx: 0, by: 0, bz: 0 };
   }
 
-  if (model === "complex-source") return complexSourceField(x, y, z);
+  if (model === "complex-source") {
+    // Lorentz-boost the exact complex-source solution to make its ring move.
+    const velocity = 0.52, gamma = 1 / Math.sqrt(1 - velocity * velocity);
+    return boostFieldAlongZ(complexSourceField(x, y, gamma * (z - velocity * t)), velocity);
+  }
 
   // Catalogued families without a validated sample model are reference-only.
   if (model !== "hopfion") {
@@ -1022,7 +1041,7 @@ function hasSampledField(id) {
 }
 
 function isTimeDependent(id) {
-  return ["plane", "bessel", "dipole", "hopfion", "evanescent", "spherical", "focus-wave", "focused-doughnut", "supertoroidal", "xwave-finite-spectrum", "flying-focus", "weber", "whittaker-exponential", "rindler-te", "elegant-lg-fundamental", "accelerating-bessel"].includes(SAMPLE_MODELS[id] ?? id);
+  return ["plane", "bessel", "dipole", "hopfion", "evanescent", "spherical", "focus-wave", "focused-doughnut", "supertoroidal", "xwave-finite-spectrum", "flying-focus", "complex-source", "lienard", "weber", "whittaker-exponential", "rindler-te", "elegant-lg-fundamental", "accelerating-bessel"].includes(SAMPLE_MODELS[id] ?? id);
 }
 
 function isReferenceOnly(id) {
