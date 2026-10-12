@@ -1501,6 +1501,13 @@ $("#play-toggle").addEventListener("click", event => {
   event.currentTarget.textContent = state.playing ? "PAUSE TIME" : "PLAY TIME";
   event.currentTarget.setAttribute("aria-pressed", String(state.playing));
 });
+$("#details-toggle").addEventListener("click", event => {
+  const button = event.currentTarget;
+  const expanded = button.getAttribute("aria-expanded") === "true";
+  button.setAttribute("aria-expanded", String(!expanded));
+  button.textContent = expanded ? "SHOW DETAILS" : "HIDE DETAILS";
+  $("#stage").dataset.detailsHidden = String(expanded);
+});
 $("#reset-time").addEventListener("click", () => {
   state.time = 0;
   $("#time-slider").value = "0";
