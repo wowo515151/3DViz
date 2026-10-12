@@ -1033,8 +1033,16 @@ function hasSpatialMagnitudeVariation(id) {
   return hasSampledField(id) && !["uniform", "uniform-electric", "br"].includes(SAMPLE_MODELS[id] ?? id);
 }
 
+function hasComponentField(id, component) {
+  if (!hasSampledField(id)) return false;
+  const model = SAMPLE_MODELS[id] ?? id;
+  if (["uniform", "wald", "melvin"].includes(model)) return component === "magnetic";
+  if (["coulomb", "mp", "harmonic-static", "br"].includes(model)) return component === "electric";
+  return true;
+}
+
 function hasComponentMagnitudeVariation(id, component) {
-  if (!hasSpatialMagnitudeVariation(id)) return false;
+  if (!hasComponentField(id, component) || !hasSpatialMagnitudeVariation(id)) return false;
   const model = SAMPLE_MODELS[id] ?? id;
   if (model === "coulomb") return component === "electric";
   if (model === "mp") return component === "electric";
@@ -1067,8 +1075,14 @@ function updateLegend() {
     ? "Units use c = 1. Move the slider to inspect successive spatial slices of this time-dependent field."
     : "Static field preview: time is fixed at t = 0; use the spatial and isosurface controls to inspect it.";
   $("#legend-title").textContent = `${solution.name.toUpperCase()} · t = ${time}`;
-  $("#legend-electric").hidden = !state.electric;
-  $("#legend-magnetic").hidden = !state.magnetic;
+  const electricFieldAvailable = hasComponentField(solution.id, "electric");
+  const magneticFieldAvailable = hasComponentField(solution.id, "magnetic");
+  $("#legend-electric").hidden = !state.electric || !electricFieldAvailable;
+  $("#legend-magnetic").hidden = !state.magnetic || !magneticFieldAvailable;
+  $("#show-electric").disabled = !electricFieldAvailable;
+  $("#show-magnetic").disabled = !magneticFieldAvailable;
+  $("#show-electric").checked = electricFieldAvailable && state.electric;
+  $("#show-magnetic").checked = magneticFieldAvailable && state.magnetic;
   $("#stage-heading").textContent = solution.name.toUpperCase();
   $("#stage-subheading").textContent = solution.subheading;
   $("#solution-kind").textContent = solution.kind;
@@ -1083,7 +1097,7 @@ function updateLegend() {
   $("#iso-note").textContent = referenceOnly
     ? "No live field preview is available for this entry yet; its formulas and sources are shown below. Choose a catalog entry marked LIVE FIELD to inspect vectors and isosurfaces."
     : !hasSpatialMagnitudeVariation(solution.id)
-      ? "This exact sample has spatially constant field magnitude, so no magnitude isosurface exists. Vector controls remain available."
+      ? "This exact sample has spatially constant field magnitude, so no magnitude isosurface exists. Available field vectors remain visible; absent components are disabled."
       : SAMPLE_DESCRIPTIONS[solution.id]
         ? `Live preview: ${SAMPLE_DESCRIPTIONS[solution.id]}. ${curvedReference ? "The field is shown in a local orthonormal frame; spacetime curvature is not drawn. " : ""}Available component surfaces can be configured independently; unsupported components stay disabled. Multiple nested wireframes turns off the solid shell; its surface count is set below. ConeIso aligns cones with the field; set tube radius to 0 for flat wires.`
       : "Available E and B surfaces can be configured independently. Multiple nested wireframes turns off the solid shell; its surface count is set below. ConeIso places field-aligned cones on shell facets; set tube radius to 0 for flat wire lines.";
@@ -1091,8 +1105,12 @@ function updateLegend() {
   const magneticIsoAvailable = hasComponentMagnitudeVariation(solution.id, "magnetic");
   const isoAvailable = electricIsoAvailable || magneticIsoAvailable;
   $("#show-isosurfaces").disabled = !isoAvailable;
+  $("#show-isosurfaces").checked = isoAvailable && state.isosurfaces;
   $("#show-electric-isosurface").disabled = !electricIsoAvailable;
   $("#show-magnetic-isosurface").disabled = !magneticIsoAvailable;
+  $("#show-electric-isosurface").checked = electricIsoAvailable && state.electricSurface;
+  $("#show-magnetic-isosurface").checked = magneticIsoAvailable && state.magneticSurface;
+  $("#show-cone-iso").checked = isoAvailable && state.coneIso;
   $("#show-cone-iso").disabled = !isoAvailable;
   $("#cone-iso-size").disabled = !isoAvailable;
   $("#iso-threshold").disabled = !isoAvailable;
@@ -1188,6 +1206,8 @@ function makeFieldPlotter() {
       };
       const refresh = (refreshSurfaces = true) => {
         rows = fieldRows(state.solution, activeTime, state.resolution);
+        electricGroup.visible = hasComponentField(state.solution, "electric") && state.electric;
+        magneticGroup.visible = hasComponentField(state.solution, "magnetic") && state.magnetic;
         const radialDyonicSample = (SAMPLE_MODELS[state.solution] ?? state.solution) === "rn";
         const separation = radialDyonicSample ? 0.055 : 0;
         ePlot.update(componentRows(rows, "electric", [-separation, 0, 0]));
@@ -1207,8 +1227,8 @@ function makeFieldPlotter() {
         }
         context.requestRender();
       };
-      electricGroup.visible = state.electric;
-      magneticGroup.visible = state.magnetic;
+      electricGroup.visible = hasComponentField(state.solution, "electric") && state.electric;
+      magneticGroup.visible = hasComponentField(state.solution, "magnetic") && state.magnetic;
       updateSurfaceVisibility();
       return {
         capabilities: ["time", "animation", "layers", "thresholds", "tubeRadius", "surfaceCount"],
@@ -1227,8 +1247,8 @@ function makeFieldPlotter() {
           refresh();
         },
         setLayerVisible(id, visible) {
-          if (id === "electric") { state.electric = Boolean(visible); electricGroup.visible = state.electric; }
-          if (id === "magnetic") { state.magnetic = Boolean(visible); magneticGroup.visible = state.magnetic; }
+          if (id === "electric") { state.electric = Boolean(visible); electricGroup.visible = hasComponentField(state.solution, "electric") && state.electric; }
+          if (id === "magnetic") { state.magnetic = Boolean(visible); magneticGroup.visible = hasComponentField(state.solution, "magnetic") && state.magnetic; }
           if (id === "isosurfaces") { state.isosurfaces = Boolean(visible); updateSurfaceVisibility(); }
           if (id === "electric-isosurface") { state.electricSurface = Boolean(visible); updateSurfaceVisibility(); updateConeIsoCount(); }
           if (id === "magnetic-isosurface") { state.magneticSurface = Boolean(visible); updateSurfaceVisibility(); updateConeIsoCount(); }
