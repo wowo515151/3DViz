@@ -2,7 +2,7 @@
 
 Purpose
 
-This folder is the local, reviewable content for the public wowo515151/3DViz repository. It bundles the shared Three.js plotter library source and the Weather, Science, and SpinParticle beta apps in one self-contained repository. The CSV and weather-signal development tools remain under the sibling `Tools/` folder and import the library by relative path.
+This folder is the local, reviewable content for the public wowo515151/3DViz repository. It bundles the shared Three.js plotter library source and the Weather, Science, SpinParticle, Geometry, and 4D Solutions apps in one self-contained repository. The CSV and weather-signal development tools remain under the sibling `Tools/` folder and import the library by relative path.
 
 Tree
 
@@ -14,7 +14,7 @@ Tree
 - apps/science/: runnable electromagnetic field lab, app specification, and implementation tasks.
 - apps/spin-particle/: SI-to-atomic-scale N-body component, CODATA electron/proton presets, Three.js plotter, UI, and dependency-free unit tests.
 - apps/geometry/: interactive geometric configuration catalog, shared-shading instanced-sphere plotter, and supercell selector. It presents common geometric forms seen in crystals, not specific chemicals.
-- apps/solutions/: searchable 43-entry Maxwell/Einstein–Maxwell catalog with general representations, named families, live flat-space samples, and isosurface controls.
+- apps/solutions/: searchable 50-entry Maxwell/Einstein–Maxwell catalog with general representations, named families, live flat-space samples, and isosurface controls.
 - library/three-viz/src/: browser library modules, with one file per plotter, ConeIso facet sampling, and shared wireframe/isosurface helpers.
 - library/three-viz/tests/: library development tests; not loaded by the site.
 - library/three-viz/package.json: native ES module metadata for local test execution.

@@ -113,6 +113,26 @@ const SOLUTIONS = Object.freeze([
     source: "https://arxiv.org/abs/1211.6983",
     subheading: "CURVED SPACETIME · EINSTEIN–MAXWELL · HOMOGENEOUS",
   },
+  symbolicFamily({
+    id: "charged-nariai", symbol: "dS₂×S²", name: "Charged Nariai universe", short: "extremal charged de Sitter horizons · curved spacetime",
+    category: "Curved spacetime · Einstein–Maxwell–Λ product solution",
+    description: "The charged Nariai geometry is the limiting electrovacuum when the black-hole and cosmological horizons of a Reissner–Nordström–de Sitter solution coincide. It is a direct product of two constant-curvature two-spaces carrying a uniform electric or magnetic field.",
+    equation: "ds² = L₁² ds²(dS₂) + L₂² dΩ²
+F = E·vol(dS₂) + P·vol(S²)
+L₁, L₂, E, P are constrained by Einstein–Maxwell–Λ",
+    caveat: "The product radii and field strengths are coupled by the field equations; they are not independent parameters. This curved geometry is shown symbolically.",
+    source: "https://arxiv.org/abs/0905.2476",
+  }),
+  symbolicFamily({
+    id: "plebanski-hacyan", symbol: "M₂×S²", name: "Plebański–Hacyan electrovacuum", short: "flat two-space × sphere with uniform field",
+    category: "Curved spacetime · Einstein–Maxwell–Λ product solution",
+    description: "This exceptional homogeneous electrovacuum combines a flat two-dimensional Lorentzian factor with a curved two-sphere and a uniform electromagnetic field. It belongs to the direct-product type-D Einstein–Maxwell solutions with cosmological constant.",
+    equation: "ds² = ds²(M₁,₁) + R²dΩ²
+F = E·vol(M₁,₁) + P·vol(S²)
+R, E, P are constrained by Λ and Einstein–Maxwell",
+    caveat: "The curvature radius and field amplitudes satisfy algebraic coupling conditions; the flat-space renderer does not represent this product geometry.",
+    source: "https://doi.org/10.1063/1.524174",
+  }),
   {
     id: "mp", symbol: "U(x)", name: "Majumdar–Papapetrou", short: "extremal charged multi-centre family · curved spacetime",
     kind: "EINSTEIN–MAXWELL ELECTROVACUUM", heading: "Majumdar–Papapetrou family",
@@ -260,6 +280,26 @@ const SOLUTIONS = Object.freeze([
     source: "https://arxiv.org/abs/2210.07947",
   }),
   symbolicFamily({
+    id: "accelerating-beams", symbol: "Jₙ(ks)", name: "Non-paraxial accelerating beams", short: "exact full-Maxwell TE/TM beams · curved trajectories",
+    category: "Minkowski · exact vector beams",
+    description: "These TE and TM solutions of the full Maxwell equations bend along circular trajectories without using the paraxial approximation. They generalize Airy-like accelerating beams and include periodic accelerating families.",
+    equation: "(∇²+k²)ψ = 0
+E,H from exact TE/TM vector solutions
+Circular-coordinate separation gives Bessel profiles Jₙ(ks)",
+    caveat: "Airy beams are recovered only in a paraxial limit. The ideal non-paraxial solutions have extended spectra and are represented here symbolically.",
+    source: "https://doi.org/10.1103/PhysRevLett.108.163901",
+  }),
+  symbolicFamily({
+    id: "rindler-wave", symbol: "KᵢΩ/a", name: "Relativistic accelerating Maxwell waves", short: "exact TE/TM modes in Rindler spacetime",
+    category: "Minkowski · exact Maxwell modes in accelerated coordinates",
+    description: "A Maxwell field with fixed shape in a uniformly accelerated Rindler frame appears as an accelerating electromagnetic wave to inertial observers. Its non-relativistic limit connects to Airy-like beams.",
+    equation: "ds² = −a²Z²dT²+dx²+dy²+dZ²
+U = e^{−iΩT+i k⊥·x⊥}KᵢΩ/a(k⊥Z)
+Aᴱ, Aᴹ are the TE/TM potentials built from U;  F=dA",
+    caveat: "Rindler coordinates cover a wedge of Minkowski spacetime and describe uniformly accelerated observers; this exact solution is a coordinate-frame family, not a self-gravitating field.",
+    source: "https://arxiv.org/abs/1105.0631",
+  }),
+  symbolicFamily({
     id: "bateman", symbol: "α,β", name: "Bateman null-field construction", short: "analytic generator for infinitely many null Maxwell fields",
     category: "Minkowski · null-field generating family",
     description: "Bateman pairs generate exact null vacuum fields from complex scalar functions. Holomorphic reparameterizations create infinitely many null fields, including localized knotted and linked examples.",
@@ -356,12 +396,42 @@ const SOLUTIONS = Object.freeze([
     source: "https://arxiv.org/abs/gr-qc/0507021",
   }),
   symbolicFamily({
+    id: "ernst-accelerating", symbol: "A,Q,B₀", name: "Ernst accelerating black holes", short: "charged C-metric balanced by an external field",
+    category: "Curved spacetime · Einstein–Maxwell exact solution",
+    description: "The Ernst solution embeds an accelerating charged black-hole pair in an external electric or magnetic universe. The applied field can balance the acceleration and remove the conical defect on both symmetry axes.",
+    equation: "(g,A) = H_B₀(g_C-metric,A_C-metric)
+F = dA;  external field backreacts on g
+B₀ and Q are tuned against acceleration A",
+    caveat: "This is the fully coupled Ernst solution, distinct from a test field on a fixed black-hole metric. Coordinate and gauge choices change its displayed form.",
+    source: "https://arxiv.org/abs/gr-qc/9808044",
+  }),
+  symbolicFamily({
     id: "magnetized-black-hole", symbol: "B₀·KN", name: "Ernst magnetized black holes", short: "Harrison-generated black holes in external fields",
     category: "Curved spacetime · Einstein–Maxwell exact solutions",
     description: "Harrison transformations embed black-hole solutions in external electromagnetic universes, yielding exact magnetized Schwarzschild, Reissner–Nordström, and rotating charged configurations.",
     equation: "(g,A) = Harrison_{B₀}(g_seed,A_seed)\nSeed: Schwarzschild, RN, or Kerr–Newman\nExternal field backreacts on both metric and F=dA",
     caveat: "The transformed field includes the external background and gravitational backreaction; it is not a test-field approximation.",
     source: "https://doi.org/10.1063/1.522781",
+  }),
+  symbolicFamily({
+    id: "harrison", symbol: "Hλ", name: "Ernst–Harrison solution generators", short: "symmetry transformations that generate electrovacua",
+    category: "Curved spacetime · Einstein–Maxwell generating family",
+    description: "The stationary axisymmetric Einstein–Maxwell equations admit transformations of their complex Ernst potentials that produce new exact electrovacua from seed solutions. Harrison transformations generate charged or externally magnetized fields; related transformations generate NUT and other families.",
+    equation: "(ℰ,Φ) → Hλ(ℰ,Φ) = (ℰ′,Φ′)
+F′ = dA(Φ′)
+Seed metric and transformed potentials solve coupled Einstein–Maxwell",
+    caveat: "This is a solution-generating symmetry, not one spacetime. Global regularity, asymptotics, and physical interpretation depend on the seed and transformation parameters.",
+    source: "https://scholarsarchive.byu.edu/facpub/801/",
+  }),
+  symbolicFamily({
+    id: "kn-ads", symbol: "Q,Λ", name: "Kerr–Newman–(anti-)de Sitter", short: "rotating charged electrovacuum · cosmological constant",
+    category: "Curved spacetime · Einstein–Maxwell–Λ black hole",
+    description: "This exact rotating charged black-hole family extends Kerr–Newman to de Sitter or anti-de Sitter asymptotics. It is a principal subfamily of Plebański–Demiański and has an explicit electromagnetic potential.",
+    equation: "Σ = r²+a²cos²θ;  Ξ = 1−a²/L²
+A = −Qr/Σ (dt−a sin²θ/Ξ dφ);  F=dA
+Δᵣ=(r²+a²)(1+r²/L²)−2Mr+Q²;  Λ=−3/L²",
+    caveat: "The displayed radial function is the AdS branch; analytic continuation gives the de Sitter branch. Coordinate normalization and angular factors vary across conventions.",
+    source: "https://arxiv.org/abs/hep-th/0702129",
   }),
   symbolicFamily({
     id: "exponential-beam", symbol: "e^{-κρ}", name: "Whittaker exponential beams", short: "Bessel-wavepacket family with finite energy per unit length",
@@ -374,7 +444,7 @@ const SOLUTIONS = Object.freeze([
 ]);
 
 const SAMPLED_FIELDS = new Set(["plane", "bessel", "dipole", "hopfion", "coulomb", "uniform"]);
-const CURVED_REFERENCES = new Set(["rn", "kn", "wald", "melvin", "br", "mp", "iwp", "emwave", "bell-szekeres", "robinson-trautman", "weyl-electrovac", "pd", "cmetric", "magnetized-black-hole"]);
+const CURVED_REFERENCES = new Set(["rn", "kn", "wald", "melvin", "br", "charged-nariai", "plebanski-hacyan", "mp", "iwp", "emwave", "bell-szekeres", "robinson-trautman", "weyl-electrovac", "pd", "cmetric", "ernst-accelerating", "magnetized-black-hole", "harrison", "kn-ads"]);
 
 const state = { controller: undefined, solution: "plane", time: 0, resolution: DEFAULT_RESOLUTION, surfaceResolution: 11, playing: false, electric: true, magnetic: true, isosurfaces: true, threshold: ISO_OPTIONS.threshold, nested: false, surfaceCount: ISO_OPTIONS.surfaceCount, tubeRadius: ISO_OPTIONS.tubeRadius, solidSurface: true, wireframes: true };
 
