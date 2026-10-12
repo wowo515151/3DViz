@@ -489,6 +489,7 @@ const SAMPLE_MODELS = Object.freeze({
   "flying-focus": "flying-focus",
   "weber-beams": "weber",
   "exponential-beam": "whittaker-exponential",
+  "rindler-wave": "rindler-te",
 });
 const SAMPLED_FIELDS = new Set(Object.keys(SAMPLE_MODELS));
 const SAMPLE_DESCRIPTIONS = Object.freeze({
@@ -534,6 +535,7 @@ const SAMPLE_DESCRIPTIONS = Object.freeze({
   "flying-focus": "Lorentz-boosted complex-source field with its peak moving at 0.65c along +z",
   "weber-beams": "symmetric non-paraxial Weber mode (separation parameter a = 0)",
   "exponential-beam": "m = 0 Whittaker exponential beam with qz = 0.9 and τ = 1.2",
+  "rindler-wave": "exact TE Rindler mode with imaginary-order K profile, transformed to inertial coordinates",
 });
 const CURVED_REFERENCES = new Set(["rn", "kn", "wald", "melvin", "br", "charged-nariai", "plebanski-hacyan", "mp", "iwp", "emwave", "bell-szekeres", "robinson-trautman", "weyl-electrovac", "pd", "cmetric", "ernst-accelerating", "magnetized-black-hole", "harrison", "kn-ads"]);
 
@@ -732,6 +734,42 @@ function whittakerExponentialField(x, y, z, t) {
   return { ex: Fx.v[0], ey: Fy.v[0], ez: Fz.v[0], bx: Fx.v[1], by: Fy.v[1], bz: Fz.v[1] };
 }
 
+function rindlerBesselK(order, argument) {
+  // K_(i order)(x) = integral exp(-x cosh u) cos(order*u) du.
+  // The derivative is with respect to x. Simpson quadrature evaluates the
+  // exact special-function representation without an external runtime.
+  const panels = 96, upper = 8, step = upper / panels;
+  let value = 0, derivative = 0;
+  for (let i = 0; i <= panels; i += 1) {
+    const u = i * step, ch = Math.cosh(u), weight = i === 0 || i === panels ? 1 : i % 2 ? 4 : 2;
+    const term = Math.exp(-argument * ch) * Math.cos(order * u) * weight;
+    value += term;
+    derivative -= ch * term;
+  }
+  return { value: value * step / 3, derivative: derivative * step / 3 };
+}
+
+function rindlerTEField(x, y, z, t) {
+  // Exact TE mode from Hacyan (2011), Eqs. (2.14)-(2.17), with
+  // a=kx=1, ky=0, Omega=0.8. Convert Rindler (T,Z) to Minkowski (t,z).
+  const a = 1, k = 1, omega = 0.8;
+  const zSquared = z * z - t * t;
+  if (z <= Math.abs(t) || zSquared < 0.16) return { ex: 0, ey: 0, ez: 0, bx: 0, by: 0, bz: 0 };
+  const Z = Math.sqrt(zSquared), aT = Math.atanh(t / z), { value: K, derivative: Kp } = rindlerBesselK(omega / a, k * Z);
+  const phase = k * x - omega * aT / a, cp = Math.cos(phase), sp = Math.sin(phase);
+  const F = [omega / (a * Z) * Math.sinh(aT) * K, -k * Math.cosh(aT) * Kp];
+  const G = [omega / (a * Z) * Math.cosh(aT) * K, -k * Math.sinh(aT) * Kp];
+  // Re[e^(i phase) times the source's complex phasor components].
+  return {
+    ex: 0,
+    ey: k * (G[0] * cp - G[1] * sp),
+    ez: 0,
+    bx: -k * (F[0] * cp - F[1] * sp),
+    by: 0,
+    bz: k * k * K * cp,
+  };
+}
+
 function solutionField(id, x, y, z, t) {
   const model = SAMPLE_MODELS[id] ?? id;
   if (model === "plane") {
@@ -780,6 +818,7 @@ function solutionField(id, x, y, z, t) {
   }
   if (model === "weber") return hertzTEFromScalar(weberScalar(x, z, t));
   if (model === "whittaker-exponential") return whittakerExponentialField(x, y, z, t);
+  if (model === "rindler-te") return rindlerTEField(x, y, z, t);
   if (model === "dipole") {
     const r = Math.hypot(x, y, z);
     if (r < 0.48) return { ex: 0, ey: 0, ez: 0, bx: 0, by: 0, bz: 0 };
@@ -941,7 +980,7 @@ function hasSampledField(id) {
 }
 
 function isTimeDependent(id) {
-  return ["plane", "bessel", "dipole", "hopfion", "evanescent", "spherical", "focus-wave", "focused-doughnut", "supertoroidal", "xwave-finite-spectrum", "flying-focus", "weber", "whittaker-exponential"].includes(SAMPLE_MODELS[id] ?? id);
+  return ["plane", "bessel", "dipole", "hopfion", "evanescent", "spherical", "focus-wave", "focused-doughnut", "supertoroidal", "xwave-finite-spectrum", "flying-focus", "weber", "whittaker-exponential", "rindler-te"].includes(SAMPLE_MODELS[id] ?? id);
 }
 
 function isReferenceOnly(id) {
