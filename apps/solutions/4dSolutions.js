@@ -465,6 +465,7 @@ const SAMPLE_MODELS = Object.freeze({
   evanescent: "evanescent",
   rn: "rn",
   kn: "rn",
+  wald: "wald",
   "robinson-trautman": "rn",
   "weyl-electrovac": "rn",
   mp: "mp",
@@ -501,6 +502,7 @@ const SAMPLE_DESCRIPTIONS = Object.freeze({
   evanescent: "TE evanescent mode with complex wavevector",
   rn: "static dyonic Reissner–Nordström exterior",
   kn: "non-rotating Reissner–Nordström member (a = 0)",
+  wald: "aligned magnetic test field on Schwarzschild (a = 0)",
   "robinson-trautman": "static Reissner–Nordström member",
   "weyl-electrovac": "spherical Reissner–Nordström member",
   mp: "single-centre Majumdar–Papapetrou extremal solution",
@@ -630,6 +632,17 @@ function solutionField(id, x, y, z, t) {
     return { ex: electricCharge * x * scale, ey: electricCharge * y * scale, ez: electricCharge * z * scale, bx: magneticCharge * x * scale, by: magneticCharge * y * scale, bz: magneticCharge * z * scale };
   }
 
+  if (model === "wald") {
+    // Schwarzschild member (a=0) of the Wald test field, in a static orthonormal frame.
+    const mass = 0.65, r = Math.hypot(x, y, z), rho = Math.hypot(x, y);
+    if (r <= 2 * mass) return { ex: 0, ey: 0, ez: 0, bx: 0, by: 0, bz: 0 };
+    const sinTheta = rho / r, cosTheta = z / r, redshift = Math.sqrt(1 - 2 * mass / r);
+    const radial = cosTheta;
+    const polar = -redshift * sinTheta;
+    const ex = rho > 1e-9 ? x / rho : 0, ey = rho > 1e-9 ? y / rho : 0;
+    return { ex: 0, ey: 0, ez: 0, bx: radial * sinTheta * ex + polar * cosTheta * ex, by: radial * sinTheta * ey + polar * cosTheta * ey, bz: radial * cosTheta - polar * sinTheta };
+  }
+
   if (model === "melvin") {
     // B measured in the static orthonormal frame for A_phi=B0*rho^2/(2 Lambda).
     const b0 = 1, lambda = 1 + b0 * b0 * (x * x + y * y) / 4;
@@ -713,6 +726,10 @@ function hasSampledField(id) {
   return SAMPLED_FIELDS.has(id);
 }
 
+function isTimeDependent(id) {
+  return ["plane", "bessel", "dipole", "hopfion", "evanescent", "spherical"].includes(SAMPLE_MODELS[id] ?? id);
+}
+
 function isReferenceOnly(id) {
   return !hasSampledField(id);
 }
@@ -728,6 +745,7 @@ function hasComponentMagnitudeVariation(id, component) {
   if (model === "mp") return component === "electric";
   if (model === "harmonic-static") return component === "electric";
   if (model === "melvin") return component === "magnetic";
+  if (model === "wald") return component === "magnetic";
   return true;
 }
 
@@ -744,6 +762,10 @@ function updateLegend() {
   $("#time-value").textContent = time;
   $("#time-slider").value = String(state.time);
   $("#time-readout").textContent = `t = ${time}`;
+  const timeNote = $("#time-slider").closest(".control-section").querySelector(".field-note");
+  timeNote.textContent = isTimeDependent(solution.id)
+    ? "Units use c = 1. Move the slider to inspect successive spatial slices of this time-dependent field."
+    : "Static field preview: time is fixed at t = 0; use the spatial and isosurface controls to inspect it.";
   $("#legend-title").textContent = `${solution.name.toUpperCase()} · t = ${time}`;
   $("#legend-electric").hidden = !state.electric;
   $("#legend-magnetic").hidden = !state.magnetic;
@@ -780,8 +802,8 @@ function updateLegend() {
   $("#iso-count").disabled = !isoAvailable || $("#iso-solid").checked || !$("#iso-multiple").checked;
   $("#iso-resolution").disabled = !isoAvailable;
   $("#iso-radius").disabled = !isoAvailable;
-  $("#time-slider").disabled = referenceOnly;
-  $("#play-toggle").disabled = referenceOnly || !state.controller;
+  $("#time-slider").disabled = referenceOnly || !isTimeDependent(solution.id);
+  $("#play-toggle").disabled = referenceOnly || !state.controller || !isTimeDependent(solution.id);
   $("#reset-time").disabled = referenceOnly;
   $("#density").disabled = referenceOnly;
   if (referenceOnly) {
@@ -1013,11 +1035,15 @@ function renderSolutionList() {
     const badge = hasSampledField(solution.id) ? "LIVE FIELD" : "SYMBOLIC";
     button.innerHTML = `<span class="solution-symbol" aria-hidden="true">${solution.symbol}</span><span><strong>${solution.name}</strong><small>${solution.short}</small></span><span class="sample-badge ${hasSampledField(solution.id) ? "sampled" : "reference"}">${badge}</span>`;
     button.addEventListener("click", () => {
-      if (isReferenceOnly(solution.id) && state.playing) {
+      if ((!hasSampledField(solution.id) || !isTimeDependent(solution.id)) && state.playing) {
         state.controller?.pause();
         state.playing = false;
         $("#play-toggle").textContent = "PLAY TIME";
         $("#play-toggle").setAttribute("aria-pressed", "false");
+      }
+      if (!isTimeDependent(solution.id)) {
+        state.time = 0;
+        state.controller?.setTime(0);
       }
       state.solution = solution.id;
       for (const item of list.querySelectorAll("button")) item.setAttribute("aria-pressed", String(item === button));
@@ -1050,9 +1076,7 @@ async function start() {
       callbacks: { onError(error) { $("#status-text").textContent = "VIEW ERROR"; $("#status-dot").className = "status-dot error"; showError(error.message); } },
     });
     $("#loading").hidden = true;
-    $("#status-text").textContent = "SPACETIME SLICE READY";
-    $("#status-dot").className = "status-dot ready";
-    $("#play-toggle").disabled = false;
+    updateLegend();
   } catch (error) {
     $("#loading").hidden = true;
     $("#status-text").textContent = "VIEW FAILED";
