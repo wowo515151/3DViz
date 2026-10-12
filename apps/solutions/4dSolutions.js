@@ -558,30 +558,58 @@ const cjScale = (a, n) => [a[0] * n, a[1] * n];
 const cjInv = a => { const d = a[0] * a[0] + a[1] * a[1] || 1e-24; return [a[0] / d, -a[1] / d]; };
 const cjExp = a => { const e = Math.exp(a[0]); return [e * Math.cos(a[1]), e * Math.sin(a[1])]; };
 function jet(value, variable = -1) {
-  return { v: value, d: Array.from({ length: 4 }, (_, i) => cj(i === variable ? 1 : 0)), h: Array.from({ length: 4 }, () => Array.from({ length: 4 }, () => cj(0))) };
+  return {
+    v: value,
+    d: Array.from({ length: 4 }, (_, i) => cj(i === variable ? 1 : 0)),
+    h: Array.from({ length: 4 }, () => Array.from({ length: 4 }, () => cj(0))),
+    t: Array.from({ length: 4 }, () => Array.from({ length: 4 }, () => Array.from({ length: 4 }, () => cj(0)))),
+  };
 }
 function jetAdd(a, b) {
-  return { v: cjAdd(a.v, b.v), d: a.d.map((x, i) => cjAdd(x, b.d[i])), h: a.h.map((row, i) => row.map((x, j) => cjAdd(x, b.h[i][j]))) };
+  return {
+    v: cjAdd(a.v, b.v), d: a.d.map((x, i) => cjAdd(x, b.d[i])),
+    h: a.h.map((row, i) => row.map((x, j) => cjAdd(x, b.h[i][j]))),
+    t: a.t.map((plane, i) => plane.map((row, j) => row.map((x, k) => cjAdd(x, b.t[i][j][k])))),
+  };
 }
 function jetScale(a, scale) {
-  return { v: cjScale(a.v, scale), d: a.d.map(x => cjScale(x, scale)), h: a.h.map(row => row.map(x => cjScale(x, scale))) };
+  return {
+    v: cjScale(a.v, scale), d: a.d.map(x => cjScale(x, scale)),
+    h: a.h.map(row => row.map(x => cjScale(x, scale))),
+    t: a.t.map(plane => plane.map(row => row.map(x => cjScale(x, scale)))),
+  };
 }
 function jetMul(a, b) {
   return {
     v: cjMul(a.v, b.v),
     d: a.d.map((x, i) => cjAdd(cjMul(x, b.v), cjMul(a.v, b.d[i]))),
     h: a.h.map((row, i) => row.map((x, j) => cjAdd(cjAdd(cjMul(x, b.v), cjMul(a.d[i], b.d[j])), cjAdd(cjMul(a.d[j], b.d[i]), cjMul(a.v, b.h[i][j]))))),
+    t: a.t.map((plane, i) => plane.map((row, j) => row.map((x, k) => cjAdd(
+      cjAdd(cjAdd(cjMul(x, b.v), cjMul(a.h[i][j], b.d[k])), cjMul(a.h[i][k], b.d[j])),
+      cjAdd(cjAdd(cjMul(a.h[j][k], b.d[i]), cjMul(a.d[i], b.h[j][k])),
+        cjAdd(cjMul(a.d[j], b.h[i][k]), cjAdd(cjMul(a.d[k], b.h[i][j]), cjMul(a.v, b.t[i][j][k])))),
+    )))),
   };
 }
-function jetUnary(a, f, fp, fpp) {
-  const v = f(a.v), first = fp(a.v), second = fpp(a.v);
-  return { v, d: a.d.map(x => cjMul(first, x)), h: a.h.map((row, i) => row.map((x, j) => cjAdd(cjMul(first, x), cjMul(second, cjMul(a.d[i], a.d[j]))))) };
+function jetUnary(a, f, fp, fpp, fppp) {
+  const v = f(a.v), first = fp(a.v), second = fpp(a.v), third = fppp(a.v);
+  return {
+    v, d: a.d.map(x => cjMul(first, x)),
+    h: a.h.map((row, i) => row.map((x, j) => cjAdd(cjMul(first, x), cjMul(second, cjMul(a.d[i], a.d[j]))))),
+    t: a.t.map((plane, i) => plane.map((row, j) => row.map((x, k) => cjAdd(
+      cjAdd(cjMul(first, x), cjMul(second, cjMul(a.h[i][j], a.d[k]))),
+      cjAdd(cjMul(second, cjMul(a.h[i][k], a.d[j])), cjAdd(cjMul(second, cjMul(a.h[j][k], a.d[i])), cjMul(third, cjMul(cjMul(a.d[i], a.d[j]), a.d[k])))),
+    )))),
+  };
 }
 function jetInv(a) {
-  return jetUnary(a, cjInv, x => cjScale(cjMul(cjInv(x), cjInv(x)), -1), x => cjScale(cjMul(cjMul(cjInv(x), cjInv(x)), cjInv(x)), 2));
+  return jetUnary(a, cjInv,
+    x => cjScale(cjMul(cjInv(x), cjInv(x)), -1),
+    x => cjScale(cjMul(cjMul(cjInv(x), cjInv(x)), cjInv(x)), 2),
+    x => cjScale(cjMul(cjMul(cjMul(cjInv(x), cjInv(x)), cjInv(x)), cjInv(x)), -6));
 }
 function jetExp(a) {
-  return jetUnary(a, cjExp, cjExp, cjExp);
+  return jetUnary(a, cjExp, cjExp, cjExp, cjExp);
 }
 function jetDiv(a, b) { return jetMul(a, jetInv(b)); }
 function jetPowInt(a, n) { let result = jet(cj(1)); for (let i = 0; i < n; i += 1) result = jetMul(result, a); return result; }
@@ -589,6 +617,13 @@ function jetPowInt(a, n) { let result = jet(cj(1)); for (let i = 0; i < n; i += 
 function hertzTEFromScalar(scalar) {
   const e = [scalar.h[0][2], scalar.h[1][2], cjScale(cjAdd(scalar.h[0][0], scalar.h[1][1]), -1)];
   const b = [scalar.h[1][3], cjScale(scalar.h[0][3], -1), cj(0)];
+  return { ex: e[0][0], ey: e[1][0], ez: e[2][0], bx: b[0][0], by: b[1][0], bz: b[2][0] };
+}
+function supertoroidalHertzLift(scalar) {
+  // Here the vector Hertz potential is Pi = curl(z_hat f), as in this family.
+  // □f=0 reduces the third-order electric derivatives to spatial-time terms.
+  const e = [cjScale(scalar.t[1][3][3], -1), scalar.t[0][3][3], cj(0)];
+  const b = [scalar.t[0][2][3], scalar.t[1][2][3], cjScale(cjAdd(scalar.t[0][0][3], scalar.t[1][1][3]), -1)];
   return { ex: e[0][0], ey: e[1][0], ez: e[2][0], bx: b[0][0], by: b[1][0], bz: b[2][0] };
 }
 
@@ -646,7 +681,8 @@ function solutionField(id, x, y, z, t) {
     return { ex, ey, ez, bx, by, bz: 0 };
   }
   if (["focus-wave", "focused-doughnut", "supertoroidal"].includes(model)) {
-    return hertzTEFromScalar(scalarPulse(model, x, y, z, t));
+    const scalar = scalarPulse(model, x, y, z, t);
+    return model === "supertoroidal" ? supertoroidalHertzLift(scalar) : hertzTEFromScalar(scalar);
   }
   if (model === "dipole") {
     const r = Math.hypot(x, y, z);
