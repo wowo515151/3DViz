@@ -487,6 +487,8 @@ const SAMPLE_MODELS = Object.freeze({
   supertoroidal: "supertoroidal",
   xwave: "xwave-finite-spectrum",
   "flying-focus": "flying-focus",
+  "elegant-lg": "elegant-lg-fundamental",
+  "accelerating-beams": "accelerating-bessel",
   "weber-beams": "weber",
   "exponential-beam": "whittaker-exponential",
   "rindler-wave": "rindler-te",
@@ -533,6 +535,8 @@ const SAMPLE_DESCRIPTIONS = Object.freeze({
   supertoroidal: "α = 2 finite-energy supertoroidal pulse",
   xwave: "three-frequency exact Bessel-mode superposition on one superluminal cone",
   "flying-focus": "Lorentz-boosted complex-source field with its peak moving at 0.65c along +z",
+  "elegant-lg": "p = 0, m = 0 exact nonparaxial eLG scalar mode with a TE Hertz lift",
+  "accelerating-beams": "order-1 exact circular Bessel accelerating mode with a TE Hertz lift",
   "weber-beams": "symmetric non-paraxial Weber mode (separation parameter a = 0)",
   "exponential-beam": "m = 0 Whittaker exponential beam with qz = 0.9 and τ = 1.2",
   "rindler-wave": "exact TE Rindler mode with imaginary-order K profile in the right wedge, sampled away from the horizon",
@@ -734,6 +738,42 @@ function whittakerExponentialField(x, y, z, t) {
   return { ex: Fx.v[0], ey: Fy.v[0], ez: Fz.v[0], bx: Fx.v[1], by: Fy.v[1], bz: Fz.v[1] };
 }
 
+function elegantLGScalar(x, y, z, t) {
+  // Fundamental p=0,m=0 nonparaxial eLG mode: exp(-k a) j0(k R~),
+  // where R~²=x²+y²+(z+i a)². Evaluate j0 as an entire series so the
+  // complex-source ring never introduces a square-root branch singularity.
+  const X = jet(cj(x), 0), Y = jet(cj(y), 1), Z = jet(cj(z), 2), T = jet(cj(t), 3);
+  const I = jet(cj(0, 1)), k = 1, a = 1.15;
+  const shiftedZ = jetAdd(Z, jetScale(I, a));
+  const radiusSquared = jetAdd(jetAdd(jetMul(X, X), jetMul(Y, Y)), jetMul(shiftedZ, shiftedZ));
+  const qSquared = jetScale(radiusSquared, k * k);
+  let sum = jet(cj(1)), term = jet(cj(1));
+  for (let n = 1; n <= 48; n += 1) {
+    term = jetScale(jetMul(term, qSquared), -1 / ((2 * n) * (2 * n + 1)));
+    sum = jetAdd(sum, term);
+    if (n > 24 && Math.hypot(...term.v) < 1e-15) break;
+  }
+  return jetScale(jetMul(sum, jetExp(jetScale(jetMul(I, T), -k))), Math.exp(-k * a));
+}
+
+function acceleratingBesselScalar(x, y, z, t) {
+  // Exact circular-coordinate Helmholtz mode J1(kxz r)e^(i theta), with
+  // a plane-wave factor in y. The latter keeps the sample fully 3D while
+  // kxz² + ky² = omega² (c=1).
+  const X = jet(cj(x), 0), Y = jet(cj(y), 1), Z = jet(cj(z), 2), T = jet(cj(t), 3);
+  const I = jet(cj(0, 1)), omega = 1.2, ky = 0.3, kxz = Math.sqrt(omega * omega - ky * ky);
+  const radiusSquared = jetAdd(jetMul(X, X), jetMul(Z, Z));
+  let radialSeries = jet(cj(1)), term = jet(cj(1));
+  for (let n = 1; n <= 36; n += 1) {
+    term = jetScale(jetMul(term, radiusSquared), -(kxz * kxz) / (4 * n * (n + 1)));
+    radialSeries = jetAdd(radialSeries, term);
+    if (n > 18 && Math.hypot(...term.v) < 1e-15) break;
+  }
+  const circularVortex = jetMul(jetAdd(X, jetMul(I, Z)), jetScale(radialSeries, kxz / 2));
+  const phase = jetAdd(jetScale(Y, ky), jetScale(T, -omega));
+  return jetMul(circularVortex, jetExp(jetMul(I, phase)));
+}
+
 function rindlerBesselK(order, argument) {
   // K_(i order)(x) = integral exp(-x cosh u) cos(order*u) du.
   // The derivative is with respect to x. Simpson quadrature evaluates the
@@ -819,6 +859,8 @@ function solutionField(id, x, y, z, t) {
   if (model === "weber") return hertzTEFromScalar(weberScalar(x, z, t));
   if (model === "whittaker-exponential") return whittakerExponentialField(x, y, z, t);
   if (model === "rindler-te") return rindlerTEField(x, y, z, t);
+  if (model === "elegant-lg-fundamental") return hertzTEFromScalar(elegantLGScalar(x, y, z, t));
+  if (model === "accelerating-bessel") return hertzTEFromScalar(acceleratingBesselScalar(x, y, z, t));
   if (model === "dipole") {
     const r = Math.hypot(x, y, z);
     if (r < 0.48) return { ex: 0, ey: 0, ez: 0, bx: 0, by: 0, bz: 0 };
@@ -980,7 +1022,7 @@ function hasSampledField(id) {
 }
 
 function isTimeDependent(id) {
-  return ["plane", "bessel", "dipole", "hopfion", "evanescent", "spherical", "focus-wave", "focused-doughnut", "supertoroidal", "xwave-finite-spectrum", "flying-focus", "weber", "whittaker-exponential", "rindler-te"].includes(SAMPLE_MODELS[id] ?? id);
+  return ["plane", "bessel", "dipole", "hopfion", "evanescent", "spherical", "focus-wave", "focused-doughnut", "supertoroidal", "xwave-finite-spectrum", "flying-focus", "weber", "whittaker-exponential", "rindler-te", "elegant-lg-fundamental", "accelerating-bessel"].includes(SAMPLE_MODELS[id] ?? id);
 }
 
 function isReferenceOnly(id) {
