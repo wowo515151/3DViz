@@ -1128,7 +1128,7 @@ function updateLegend() {
   $("#iso-note").textContent = referenceOnly
     ? "No live field preview is available for this entry yet; its formulas and sources are shown below. Choose a catalog entry marked LIVE FIELD to inspect vectors and isosurfaces."
     : !hasSpatialMagnitudeVariation(solution.id)
-      ? "This exact sample has spatially constant field magnitude, so no magnitude isosurface exists. Field vectors can be enabled here; absent components are disabled."
+      ? "This sample has constant field magnitude, so ConeIso and magnitude surfaces have nothing to draw. Turn on field vectors to inspect it; absent components are disabled."
       : SAMPLE_DESCRIPTIONS[solution.id]
         ? `Live preview: ${SAMPLE_DESCRIPTIONS[solution.id]}. ${curvedReference ? "The field is shown in a local orthonormal frame; spacetime curvature is not drawn. " : ""}Available component surfaces can be configured independently; unsupported components stay disabled. Multiple nested surfaces replaces the single shell with nested surfaces for standard surfaces and ConeIso; set the surface count below. ConeIso aligns cones with the field; set tube radius to 0 for flat wires.`
       : "Available E and B surfaces can be configured independently. Multiple nested surfaces replaces the single shell with nested surfaces for standard surfaces and ConeIso; set the surface count below. ConeIso places field-aligned cones on shell facets; set tube radius to 0 for flat wire lines.";
@@ -1216,7 +1216,9 @@ function makeFieldPlotter() {
       let surfaceElapsed = 0;
       const updateConeIsoCount = () => {
         if (!hasComponentMagnitudeVariation(state.solution, "electric") && !hasComponentMagnitudeVariation(state.solution, "magnetic")) {
-          $("#cone-iso-count").textContent = "This entry has no spatially varying sampled field.";
+          $("#cone-iso-count").textContent = hasSampledField(state.solution)
+            ? "No spatial magnitude variation for ConeIso or surfaces. Turn on field vectors to inspect this field."
+            : "Reference entry: no sampled field is available for ConeIso.";
           return;
         }
         if (!state.coneIso) {
@@ -1225,7 +1227,13 @@ function makeFieldPlotter() {
         }
         const electricCount = state.electricSurface && hasComponentMagnitudeVariation(state.solution, "electric") ? (eConeIsoPlot.report?.count ?? 0) : 0;
         const magneticCount = state.magneticSurface && hasComponentMagnitudeVariation(state.solution, "magnetic") ? (bConeIsoPlot.report?.count ?? 0) : 0;
-        $("#cone-iso-count").textContent = `ConeIso cones · E ${electricCount.toLocaleString()} · B ${magneticCount.toLocaleString()}`;
+        const noFacetHints = [];
+        if (state.electricSurface && hasComponentMagnitudeVariation(state.solution, "electric") && electricCount === 0) noFacetHints.push("E has no facets at this threshold");
+        if (state.magneticSurface && hasComponentMagnitudeVariation(state.solution, "magnetic") && magneticCount === 0) noFacetHints.push("B has no facets at this threshold");
+        const settingsHint = noFacetHints.length
+          ? ` · ${noFacetHints.join("; ")}. Adjust the threshold or surface tessellation, or try multiple nested surfaces.`
+          : "";
+        $("#cone-iso-count").textContent = `ConeIso cones · E ${electricCount.toLocaleString()} · B ${magneticCount.toLocaleString()}${settingsHint}`;
       };
       const updateSurfaceVisibility = () => {
         const electricAvailable = hasComponentMagnitudeVariation(state.solution, "electric");
