@@ -18,10 +18,10 @@ function symbolicFamily({ id, symbol, name, short, category, description, equati
 const SOLUTIONS = Object.freeze([
   {
     id: "plane", symbol: "→", name: "Plane wave", short: "any profile · transverse",
-    kind: "SOURCE-FREE PLANE WAVE", heading: "Circularly polarized plane wave",
-    description: "A plane-fronted vacuum family. This view shows one circularly polarized monochromatic member travelling along +z.",
-    equation: "F = E + iB = (x̂ + i ŷ) e^{i(z − t)}\nE = Re(F),  B = Im(F);  c = 1",
-    caveat: "The arbitrary-profile family replaces e^{i(z−t)} with a suitable function of z−t.",
+    kind: "SOURCE-FREE PLANE WAVE", heading: "Circularly polarized plane-wave pulse",
+    description: "An exact plane-fronted vacuum wave travelling along +z. This view uses a Gaussian longitudinal envelope; any sufficiently regular profile of z−t is an exact plane-wave solution.",
+    equation: "u=z−t,  g(u)=exp[−u²/(2σ²)]\nF = E+iB = (x̂+i ŷ)g(u)e^{iku}\nE=Re(F),  B=Im(F);  k=1.8, σ=1.35, c=1",
+    caveat: "The envelope is localized only along the propagation direction; an ideal plane wave remains uniform across the transverse plane and has infinite total energy.",
     source: "https://www.feynmanlectures.caltech.edu/II_20.html",
     subheading: "VACUUM · SOURCE-FREE · PLANE FRONTED",
   },
@@ -289,7 +289,7 @@ const SOLUTIONS = Object.freeze([
     category: "Minkowski · exact vector beams",
     description: "These TE and TM solutions of the full Maxwell equations bend along circular trajectories without using the paraxial approximation. They generalize Airy-like accelerating beams and include periodic accelerating families.",
     equation: "(∇²+k²)ψ = 0\nE,H from exact TE/TM vector solutions\nCircular-coordinate separation gives Bessel profiles Jₙ(ks)",
-    caveat: "Airy beams are recovered only in a paraxial limit. The ideal non-paraxial solutions have extended spectra and are represented here symbolically.",
+    caveat: "Airy beams are recovered only in a paraxial limit. The ideal circular beam has infinite power; finite apertures produce finite-range approximations. This preview shows the order-1 TE Hertz lift with a small y-directed spectral component.",
     source: "https://doi.org/10.1103/PhysRevLett.108.163901",
   }),
   symbolicFamily({
@@ -495,7 +495,7 @@ const SAMPLE_MODELS = Object.freeze({
 });
 const SAMPLED_FIELDS = new Set(Object.keys(SAMPLE_MODELS));
 const SAMPLE_DESCRIPTIONS = Object.freeze({
-  fourier: "single circularly polarized plane-wave mode",
+  fourier: "single Gaussian-profile circularly polarized plane-wave mode from the arbitrary-profile family",
   rs: "Hopfion initial-data member",
   hertz: "axisymmetric TE Bessel mode",
   "spherical-out": "outgoing electric dipole (l = 1) member",
@@ -518,7 +518,7 @@ const SAMPLE_DESCRIPTIONS = Object.freeze({
   "weyl-electrovac": "spherical Reissner–Nordström member",
   mp: "single-centre Majumdar–Papapetrou extremal solution",
   iwp: "single-centre real-harmonic Majumdar–Papapetrou member",
-  emwave: "circularly polarized Einstein–Maxwell plane-wave member",
+  emwave: "Gaussian-profile electromagnetic plane-wave member of an Einstein–Maxwell pp-wave family",
   pd: "non-rotating Reissner–Nordström member",
   cmetric: "zero-acceleration Reissner–Nordström limit",
   "ernst-accelerating": "zero-acceleration Reissner–Nordström limit",
@@ -813,8 +813,8 @@ function rindlerTEField(x, y, z, t) {
 function solutionField(id, x, y, z, t) {
   const model = SAMPLE_MODELS[id] ?? id;
   if (model === "plane") {
-    const phase = z - t;
-    return { ex: Math.cos(phase), ey: -Math.sin(phase), ez: 0, bx: Math.sin(phase), by: Math.cos(phase), bz: 0 };
+    const u = z - t, phase = 1.8 * u, envelope = Math.exp(-(u * u) / (2 * 1.35 * 1.35));
+    return { ex: envelope * Math.cos(phase), ey: -envelope * Math.sin(phase), ez: 0, bx: envelope * Math.sin(phase), by: envelope * Math.cos(phase), bz: 0 };
   }
   if (model === "bessel") {
     const kappa = 1.1, kz = 1.1, omega = Math.hypot(kappa, kz);
@@ -1030,7 +1030,7 @@ function isReferenceOnly(id) {
 }
 
 function hasSpatialMagnitudeVariation(id) {
-  return hasSampledField(id) && !["plane", "uniform", "uniform-electric", "br"].includes(SAMPLE_MODELS[id] ?? id);
+  return hasSampledField(id) && !["uniform", "uniform-electric", "br"].includes(SAMPLE_MODELS[id] ?? id);
 }
 
 function hasComponentMagnitudeVariation(id, component) {
@@ -1080,8 +1080,8 @@ function updateLegend() {
     : !hasSpatialMagnitudeVariation(solution.id)
       ? "This exact sample has spatially constant field magnitude, so no magnitude isosurface exists. Vector controls remain available."
       : SAMPLE_DESCRIPTIONS[solution.id]
-        ? `Live preview: ${SAMPLE_DESCRIPTIONS[solution.id]}. ${curvedReference ? "The field is shown in a local orthonormal frame; spacetime curvature is not drawn. " : ""}Available component surfaces can be configured independently; unsupported components stay disabled. ConeIso aligns cones with the field; set tube radius to 0 for flat wires.`
-      : "Available E and B surfaces can be configured independently. ConeIso places field-aligned cones on shell facets; set tube radius to 0 for flat wire lines.";
+        ? `Live preview: ${SAMPLE_DESCRIPTIONS[solution.id]}. ${curvedReference ? "The field is shown in a local orthonormal frame; spacetime curvature is not drawn. " : ""}Available component surfaces can be configured independently; unsupported components stay disabled. Multiple nested wireframes turns off the solid shell; its surface count is set below. ConeIso aligns cones with the field; set tube radius to 0 for flat wires.`
+      : "Available E and B surfaces can be configured independently. Multiple nested wireframes turns off the solid shell; its surface count is set below. ConeIso places field-aligned cones on shell facets; set tube radius to 0 for flat wire lines.";
   const electricIsoAvailable = hasComponentMagnitudeVariation(solution.id, "electric");
   const magneticIsoAvailable = hasComponentMagnitudeVariation(solution.id, "magnetic");
   const isoAvailable = electricIsoAvailable || magneticIsoAvailable;
@@ -1093,7 +1093,7 @@ function updateLegend() {
   $("#iso-threshold").disabled = !isoAvailable;
   $("#iso-solid").disabled = !isoAvailable;
   $("#iso-wireframe").disabled = !isoAvailable;
-  $("#iso-multiple").disabled = !isoAvailable || $("#iso-solid").checked;
+  $("#iso-multiple").disabled = !isoAvailable;
   $("#iso-count").disabled = !isoAvailable || $("#iso-solid").checked || !$("#iso-multiple").checked;
   $("#iso-resolution").disabled = !isoAvailable;
   $("#iso-radius").disabled = !isoAvailable;
@@ -1419,7 +1419,6 @@ $("#iso-threshold").addEventListener("input", event => {
 });
 $("#iso-solid").addEventListener("change", event => {
   if (event.target.checked) $("#iso-multiple").checked = false;
-  $("#iso-multiple").disabled = event.target.checked;
   $("#iso-count").disabled = event.target.checked || !$("#iso-multiple").checked;
   state.controller?.setLayerVisible("surface", event.target.checked);
   state.controller?.setLayerVisible("multiple", $("#iso-multiple").checked);
