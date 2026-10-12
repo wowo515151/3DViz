@@ -297,7 +297,7 @@ const SOLUTIONS = Object.freeze([
     category: "Minkowski · exact Maxwell modes in accelerated coordinates",
     description: "A Maxwell field with fixed shape in a uniformly accelerated Rindler frame appears as an accelerating electromagnetic wave to inertial observers. Its non-relativistic limit connects to Airy-like beams.",
     equation: "ds² = −a²Z²dT²+dx²+dy²+dZ²\nU = e^{−iΩT+i k⊥·x⊥}KᵢΩ/a(k⊥Z)\nAᴱ, Aᴹ are the TE/TM potentials built from U;  F=dA",
-    caveat: "Rindler coordinates cover a wedge of Minkowski spacetime and describe uniformly accelerated observers; this exact solution is a coordinate-frame family, not a self-gravitating field.",
+    caveat: "The preview is restricted to the right Rindler wedge z > |t| and omits a near-horizon layer where the ideal mode diverges; the blank region is outside the sampled chart, not a claim of zero physical field. This is a coordinate-frame family in flat spacetime, not a self-gravitating field.",
     source: "https://arxiv.org/abs/1105.0631",
   }),
   symbolicFamily({
@@ -535,7 +535,7 @@ const SAMPLE_DESCRIPTIONS = Object.freeze({
   "flying-focus": "Lorentz-boosted complex-source field with its peak moving at 0.65c along +z",
   "weber-beams": "symmetric non-paraxial Weber mode (separation parameter a = 0)",
   "exponential-beam": "m = 0 Whittaker exponential beam with qz = 0.9 and τ = 1.2",
-  "rindler-wave": "exact TE Rindler mode with imaginary-order K profile, transformed to inertial coordinates",
+  "rindler-wave": "exact TE Rindler mode with imaginary-order K profile in the right wedge, sampled away from the horizon",
 });
 const CURVED_REFERENCES = new Set(["rn", "kn", "wald", "melvin", "br", "charged-nariai", "plebanski-hacyan", "mp", "iwp", "emwave", "bell-szekeres", "robinson-trautman", "weyl-electrovac", "pd", "cmetric", "ernst-accelerating", "magnetized-black-hole", "harrison", "kn-ads"]);
 
